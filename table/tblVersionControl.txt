@@ -1,0 +1,411 @@
+"ID","entryDate","version","change"
+1,21-Dec-2017 14:21:32,"0.1","test"
+7,30-Dec-2017 09:25:40,"0.11","sbsdlfhkdjsfv"
+8,30-Dec-2017 09:25:49,"0.12","+ Added a Change Log (finally)
+* Adjusted size of certain fields to get rid of the ####
+* Background changes
+* Slight theme changes"
+9,05-Jan-2018 12:13:11,"0.13","*"
+11,05-Jan-2018 12:24:19,"0.14","* Fixed issue where entering 00:00 would make flight plans disappear
+* Fixed minor sharepoint connection issues
+* Theme changes
+*""Logged in as"" should show your proper name"
+21,06-Jan-2018 12:00:59,"0.15","+ Added method to check for updates to AeroStat"
+22,06-Jan-2018 12:13:05,"0.16","+ Added method to check for updates to AeroStat"
+24,08-Jan-2018 10:43:03,"0.17","* Cleaned up SharePoint code
+* Reduced lag when refreshing tables
+* Fix SharePoint error handling
+* Fixed Date conversion errors
+* Check in / out now inputs the current time by default"
+25,08-Jan-2018 10:45:11,"0.18","* Cleaned up SharePoint code
+* Reduced lag when refreshing tables
+* Fix SharePoint error handling
+* Fixed Date conversion errors
+* Check in / out now inputs the current time by default"
+26,08-Jan-2018 11:13:17,"0.19","* Cleaned up SharePoint code
+* Reduced lag when refreshing tables
+* Fix SharePoint error handling
+* Fixed Date conversion errors
+* Check in / out now inputs the current time by default"
+27,09-Jan-2018 20:45:55,"0.2","- Started work on the ""All Flights"" page. (Buttons do not work yet)
+-Fixed another disappearing flights issue"
+28,10-Jan-2018 12:01:51,"0.21","- Fixed critical SharePoint issue re: KANTO's
+- Made a text box bigger"
+29,11-Jan-2018 11:40:13,"0.22","- Fixed disappearing flights
+- Fixed a critical SharePoint issue
+- Fixed flights being marked ""Closed"" for no reason"
+30,12-Jan-2018 13:02:24,"0.23","- Added master PPR Log
+- Set PPR Wiget to only show PPRs for the day.
+- Added parking spots to PPR wiget
+- Major SharePoint improvements"
+31,12-Jan-2018 13:12:27,"0.24","- Added master PPR Log
+- Set PPR Wiget to only show PPRs for the day.
+- Added parking spots to PPR wiget
+- Major SharePoint improvements"
+32,12-Jan-2018 13:12:55,"0.23","- Added master PPR Log
+- Set PPR Wiget to only show PPRs for the day.
+- Added parking spots to PPR wiget
+- Major SharePoint improvements"
+35,12-Jan-2018 13:24:30,"0.25","- Added master PPR Log
+- Set PPR Wiget to only show PPRs for the day.
+- Added parking spots to PPR wiget
+- Major SharePoint improvements"
+38,12-Jan-2018 13:25:41,"0.26","- Added master PPR Log
+- Set PPR Wiget to only show PPRs for the day.
+- Added parking spots to PPR wiget
+- Major SharePoint improvements"
+39,12-Jan-2018 13:30:36,"0.27","- Added master PPR Log
+- Set PPR Wiget to only show PPRs for the day.
+- Added parking spots to PPR wiget
+- Major SharePoint improvements"
+40,12-Jan-2018 13:32:33,"0.28","- Added master PPR Log
+- Set PPR Wiget to only show PPRs for the day.
+- Added parking spots to PPR wiget
+- Major SharePoint improvements"
+41,12-Jan-2018 13:38:30,"0.29","- Added master PPR Log
+- Set PPR Wiget to only show PPRs for the day.
+- Added parking spots to PPR wiget
+- Major SharePoint improvements"
+42,14-Jan-2018 12:54:02,"0.3","- Added field for internal (AMOPS Only) Comments to the PPR Form"
+43,15-Jan-2018 22:07:00,"0.31","- Several cosmetic changes
+- ""All Flights"" now shows Arrival/Departure/Local
+- ""All Flights"" shows flights for the current day (this cannot be changed yet)"
+45,17-Jan-2018 12:46:27,"0.32","+ Added DV column to PPR wiget
++ Added method to reconnect to SharePoint when initial connection fails
++ You can now edit PPRs from other days using the master PPR menu
+* Slight changes to cosmetics
+* Fixed yet another time conversion error"
+46,20-Jan-2018 13:22:16,"0.33","!IF THE *ATD* IS AFTER 0000Z, MAKE SURE THE DOF IS THE CURRENT DATE
+
+* Cancelled PPRs now show on the SharePoint
+
+* ""All Flights"" can now show ""All Flights"""
+47,24-Jan-2018 20:13:24,"0.34","* HUGE improvements to the ""All Flights"" page"
+48,27-Jan-2018 13:31:52,"0.35","+ Added Julian Date clock format (yellow)
++Added Flight plan quick cancel buttons (only one works)
+* Fixed the Approach checkbox not working
+* Code cleanup
+* Made the ""On Station"" a little more stable
+* Backend secrets! :D"
+49,28-Jan-2018 13:22:32,"0.36","! Fixed an issue where editing a PPR would create duplicates on SP.
++ Added (and fixed) ""Quick Cancel"" buttons. They work just like the arr/dep buttons.
+* Fixed the error when cancelling a flight plan directly from the strip.
+* Optimized the traffic count code
+* Checked the stability of ""On station"" wiget. I didn't change anything, but it didn't work, and now it works. Enough said.
+? More backround setup for future super cool features"
+50,30-Jan-2018 20:44:19,"0.37","* Fixed the time conversion errors. For real this time.
+
+* Fixed a deadly SP bug that killed the database"
+51,01-Feb-2018 05:25:27,"0.38","fw"
+52,01-Feb-2018 08:56:49,"0.39","Force shutdown"
+53,04-Feb-2018 21:34:14,"0.4","If the database does not work correctly, call me (SD) right away
+
+* Applied a fix that only allowed one user to look at the database
+* Backend formation handling (doesn't work yet)
+* Backend Traffic count fix
+* Fixed a potential DB crash"
+54,10-Feb-2018 05:35:49,"0.41","* Fixed A LOT of errors and bugs
+* Database no longer needs to be closed when pushing updates"
+55,10-Feb-2018 08:03:18,"0.42","* Fixed A LOT of errors and bugs
+* Database no longer needs to be closed when pushing updates"
+56,11-Feb-2018 12:50:49,"0.43","* Background tweaks"
+57,14-Feb-2018 08:32:04,"0.44","* Optimized PPR backend handling code"
+58,17-Feb-2018 13:13:07,"0.45","* Fixed issue where searching flights by date wouldn't respond appropriately
+
+* Code cleanup"
+59,25-Feb-2018 10:39:35,"0.46","* Code cleanup
+
+* Added backend code for 'Announcements' feature
+
+* Fixed a bug with certain pages where they would sometimes appear on the wrong screen
+
+* Added a preventitive check to 'Flight Plan Input' if the DOF doesn't make sense to the current date"
+60,28-Feb-2018 21:40:04,"0.47","* The Traffic Count can now be found under the ""Analytics"" button!!"
+63,05-Mar-2018 05:36:19,"0","* Fixed something weird…"
+64,05-Mar-2018 05:36:28,"0.48","* Fixed something weird…"
+66,07-Mar-2018 12:36:36,"0.49","test"
+68,12-Mar-2018 13:02:38,"0.5","* Traffic Count is now fully functional. Check it out
+
+* Optimized traffic count numbers; should be more accurate"
+70,18-Mar-2018 14:40:53,"0.51","* Permenantly fixed startup issue when trying to launch on a mapped drive."
+71,19-Mar-2018 18:49:26,"0.52","* Added a Quiet Hour tracker to the Analytics page
+* Tweaked the traffic count for accuracy
+* Synced the daily shift count from the old excel file for this year
+* Disabled forcing the latest version (until needed)
+* Cosmetics"
+72,24-Mar-2018 08:32:00,"0.53","Boot."
+76,24-Mar-2018 12:20:13,"0.54","-Added DV, Haz Cargo, and Transient* (inaccurate) to Analytics
+-Added Haz Cargo option to Flight Plan Input
+
+* The transient count is based on the tail number you input. If it is a formation, make sure at least one valid tail number is entered.*"
+81,27-Mar-2018 22:00:09,"0.55","* Added Announcements! This wiget is now in a testing phase.
+* Fixed some nuisance error messages when doing certain things"
+83,08-Apr-2018 22:20:21,"0.56","* Fixed bug where someone users would still be ""Logged in"" after logging out
+* Added search function to the PPR Log (All other buttons still do not work)
+* Made the PPR List font a wee bit bigger
+* Added/finshed the Events Log (it's still invisible)"
+84,02-May-2018 23:09:28,"0.57","* Fixed the search bar in ""All Flights""
+* Finished Digital 3616; not ready for use yet
+* Added a way to see issue times in the PPR Request and Flight Plan Input windows"
+85,03-May-2018 21:33:04,"0.58","* GUI Upgrade!!!
+* Bug fix."
+86,08-May-2018 21:51:03,"0.59","* Fixed aircraft sorting in 'All Flights.'
+* Fixed an issue where the 'Flight Tracker' page would freeze for 2 seconds on the minute."
+87,15-May-2018 16:42:24,"0.6","* Tracker now only updates when it detects a change"
+89,16-May-2018 21:54:03,"0.61","* PPR requests now have different levels of approval."
+91,28-May-2018 21:27:07,"0.62","* Started work on QRC/SOPs
+* Started work on Airfield Parking Diagram
+* Added duplicate protection for flight plans and PPRs
+* Fixed a few errors
+* Minor UI tweaks"
+92,03-Jun-2018 13:05:38,"0.63","* Fixed another time-sorting issue in one of the wigets.
+* Cosmetics
+* Multiple tail numbers can be added to flight plans.
+* Formations no longer need to be seperated, but if the formation lands at separate times, they shouldn't be a formation in the first place. (KANTOs)"
+93,17-Jun-2018 14:11:57,"0.64","* Duplicate checks now automatically replace cancelled flight plans of the same callsign/tail if they overlap.
+
+* Creating a new shift adds users upon creation (not enabled)
+
+* Joining a shift automatically opens the log (for now; not enabled)"
+94,21-Jun-2018 13:14:27,"0.65","* Enabled the Events Log for beta testing. Try it out!"
+95,23-Jun-2018 10:34:34,"0.66","* Added capability to save events log as PDF
+* Fixed issue where some users could not open the Events Log
+* Fixed issue where the entry box wouldn’t clear when submitting an entry"
+96,24-Jun-2018 12:49:12,"0.67","* Added useful buttons to the Analytics page
+
+* Added feature to change dates on Analytics with arrow keys, and then apply changes with Enter
+
+*Fixed an issue where the aircraft count would be slightly off
+
+* Unfinished UI changes to Shift Dashboard
+
+* Other changes that I probably forgot about"
+97,29-Jun-2018 07:25:39,"0.68","* Implemented the Shift Brief (finally)
+*Fixed issue where flight would disappear if their ATD didn't match their DOF
+*Fixed potential issue with enterign times
+*Fixed issue where ATA time would not update SharePoint
+* Shift Dashboard can now reopen past shift logs
+* Logs now lock when the shift closes"
+98,02-Jul-2018 10:25:56,"0.69","* Added Shift Brief button
+* Fixed some issues with everything
+* Added BASH report entry button to the Shift Brief Menu
+* You can now open/close shifts from the shift dashboard (Main Menu)"
+99,30-Jul-2018 21:06:19,"0.7","DO NOT PRINT FLIGHT PLANS IF YOU ARE NOT GOING TO SCAN THEM BACK INTO THE DRIVE."
+100,31-Jul-2018 20:44:26,"0.71","Minor bug fix"
+101,09-Aug-2018 21:56:05,"0.72","* Added AMC-specific features in the PPR Request form.
+* Fixed issue where database would freeze for 0.23 seconds when someone adds/edits a flight plan
+* Changed behavior when closing out the Events Log"
+102,11-Aug-2018 21:08:23,"0.73","-All flight plans can now be associated with a PPR. If this doesn't automatically happen, you can choose the PPR# in the bottom left corner of the flight plan
+-Fixed lots o' bugs"
+103,17-Aug-2018 21:23:43,"0.74","-Fixed bug where Flight Plans weren't able to find match PPRs"
+104,19-Aug-2018 20:56:22,"0.75","- Improved PPR matchmaking/handling
+
+- Updated PPR number generator to be based off of initials rather than year. 
+
+**Don't be alarmed if the PPR number looks lower that usual; it is correct.**
+
+- Fixed bug where duplicate flight plans were being detected even when they were aready closed.
+
+- Fixed bug where the AMC PPR view wouldn't save certain data types"
+105,20-Aug-2018 13:04:23,"0.76","Oooops, Hotfix"
+106,25-Aug-2018 14:24:03,"0.77","- Added a fancy print button to the PPR Log
+
+- Added features to the PPR Log"
+107,28-Aug-2018 12:08:05,"0.78","- Fixed issue where PPR Log didn't show future PPRs with a click of a button.
+
+- Enhanced PPR Report.
+
+- Added check message toPPR Log print button to prevent possible oopsies.
+
+- Fixed a bug…somewhere"
+108,04-Sep-2018 17:11:12,"0.79","- Backend work on the 483 Log. Stay tuned…"
+109,08-Sep-2018 12:55:43,"0.8","- Improved PPR synchronization with SharePoint
+
+- PPR Request now enforces Callsign Xor Tail requirement"
+110,09-Sep-2018 13:06:57,"0.81","- Improved SharePoint synchronization (again)
+
+- Enforced PPR/Flight Plan link (again…I think)
+
+- Prevented potential human errors"
+111,13-Sep-2018 21:56:17,"0.82","- Enabled entering of manual PPR #'s on the New PPR screen (Back Office Only)
+
+- Improved PPR Matchmaking
+
+- You can now see the PPR # before you save/issue the PPR #"
+112,21-Sep-2018 12:07:39,"0.83","- Started work on new 3616…again
+- Using Shift + Enter keys will click the save buttons on Flight Plan Input, New PPR, and Check In/Out screens"
+113,23-Sep-2018 13:15:06,"0.84","- Finished new 3616 (Using it is the same, only the style changed)"
+115,06-Oct-2018 10:55:16,"0.86.303","- Changed version scheme
+- Numerous updates to events log
+- Numerous updates to 483 tracker
+- Added inspection/checks tracker
+- Fixed even more bugs in PPR/Sharepoint sync"
+116,06-Oct-2018 11:03:17,"0.87.304","- Changed version scheme
+- Numerous updates to events log
+- Numerous updates to 483 tracker
+- Added inspection/checks tracker
+- Fixed even more bugs in PPR/Sharepoint sync"
+117,07-Oct-2018 06:18:17,"0.87.315","- Bug fix"
+118,07-Oct-2018 12:32:58,"0.87.316","- Added work to inspection and 483 trackers"
+119,08-Oct-2018 16:48:56,"0.88.318","- Added button to Traffic Log that switches On Station view between transients and base-assigned aircraft (will become more accurate as time goes on)"
+120,11-Oct-2018 17:27:32,"0.88.319","- Fixed On Station sync/update"
+121,11-Oct-2018 22:05:55,"0.89.320","- Updated the Shift Dashboard to be more user friendly and easier to find.
+- Fixed issue where On Station view would not properly update.
+- Other little tweaks"
+122,12-Oct-2018 15:54:53,"0.89.321","- Enabled Airfield Driving button"
+123,12-Oct-2018 22:18:27,"0.89.322","- Inspection changes"
+124,13-Oct-2018 14:59:23,"0.89.323","- PPR mini bugfix"
+125,13-Oct-2018 20:39:53,"0.89.324","- Fixed dupe protection"
+126,14-Oct-2018 21:51:51,"0.89.325","- Shift manager tweaks"
+127,17-Oct-2018 21:52:36,"0.89.326","- sMALL ppr BEHAVIOR TWEAK"
+128,18-Oct-2018 19:39:19,"0.90.327","- Added a dialog to the Traffic Log that notifies of any changes
+
+- Added Inspection/Check tracker. Currently, marking a check as an inspection does nothing.
+
+- Fixed Events Log quick buttons for 483's and Checks/inspections to actually work as intended"
+129,18-Oct-2018 20:25:21,"0.90.328","- TrafficLogAlert tweak"
+130,18-Oct-2018 20:25:37,"0.90.329","- TrafficLogAlert tweak"
+131,18-Oct-2018 20:25:40,"0.90.330","- TrafficLogAlert tweak"
+132,22-Oct-2018 21:38:07,"0.91.331","- Improved Traffic Log Updates window
+
+- Fixed an annoying repeating error message"
+133,23-Oct-2018 22:06:28,"0.92.332","- Added the long awaited Announcement window to the main menu.
+
+- Added some kool graphics to 3 windows"
+134,24-Oct-2018 21:32:27,"0.93.334","- Replaced the 'Close Shift' button on the Events Log
+
+- Fixed a potential issue that caused the Events Log to overwrite existing logs.
+
+- Sruced up the announcement window
+
+- Little bug fixes with various moving parts"
+135,25-Oct-2018 15:00:05,"0.93.335","- Shift manager fix and announcer fix"
+136,29-Oct-2018 19:25:06,"0.93.336","- General build"
+137,29-Oct-2018 19:25:08,"0.93.337","- General build"
+138,29-Oct-2018 21:44:25,"0.94.338","- Drastic updates to Check/Inspection tracker. (Inspections portion is still WIP)
+
+- Enabled the Email button on the PPR report.
+
+- Bug fixes that were so small I forgot all about them already"
+139,30-Oct-2018 16:34:50,"0.94.339","- PPR Report fix"
+140,30-Oct-2018 16:39:00,"0.94.340","- PPR Report Fix"
+141,02-Nov-2018 00:20:07,"0.95.341","- Fixed issue in PPR Request where leaving the departure date blank caused an error message.
+
+- Fixed issue in Events Log where adding an entry past midnight local would place it at the top of the list.
+
+- Many improvements to the Check/Inspection tracker. I highly encourage using it for bullet purposes or something.
+
+- Disabled the Print button on PPR Reports because issues.
+
+- Started work on a daily inspection report that will eventually replace the PDF version (like everything else I'm trying to replace)"
+142,04-Nov-2018 14:28:15,"0.95.342","- 3616 time conversion bug"
+143,05-Nov-2018 21:42:04,"0.95.343","- Inspection sheet work"
+144,12-Nov-2018 00:28:41,"0.95.344","- General build"
+145,13-Nov-2018 21:58:14,"0.96.345","- Added a feature to warn users of airfield restrictions (if any) when saving PPRs
+(You can add future restrictions to the announcer on the main menu)"
+146,14-Nov-2018 21:04:04,"0.96.346","- SharePoint/PPR sync issue"
+147,14-Nov-2018 21:04:16,"0.96.347","- Flight Plan/PPR sync issue"
+148,25-Nov-2018 21:05:41,"0.97.348","- Huge update to Shift Dashboard GUI.
+- Added ability to tag flight plans as Round-robin flights.
+- Aircraft type will show number of ships on the Flight Tracker windows.
+- Some bugs were harmed in the making of this update."
+149,26-Nov-2018 13:29:04,"0.97.349","- Shift Dashboard events log error fix"
+150,29-Nov-2018 12:31:04,"0.98.350","- Fixed issue where saving a PPR without a departure date throws an error
+- Fixed issue where logging a check through the tracker would cause it to freeze
+-Started work on NOTAM Control Log"
+151,04-Dec-2018 22:03:08,"0.99.351","- Enabled NOTAM Control Log
+- Added ability to add NOTAMs to control log
+- Adding NOTAMs can automatically add a log entry to the current shift.
+- Pasting the ICAO format of NOTAMs into the Parser (bottom bar next to the parse button)  gets imported to the control log automatically
+- Fixed issue where ATDs were not getting sent to the SharePoint"
+152,08-Dec-2018 12:37:57,"0.100.352","- Finalized NOTAM Control Log bugs
+- Fixed issue where some PPRs caused random errors
+- Changed how Round Robins are displayed
+- Started work on POV Pass Control"
+153,09-Dec-2018 06:34:38,"0.100.353","- Minor fixes"
+154,10-Dec-2018 05:55:27,"0.100.354","- PPR sync issues"
+155,11-Dec-2018 14:11:41,"0.101.355","- Added POV Pass Manager."
+156,28-Dec-2018 10:35:49,"0.102.356","-Fixed recent SharePoint connection issues
+-Minor fixes to POV Pass generator"
+157,29-Dec-2018 07:20:28,"0.103.357","- Tweaked SharePoint/PPR update behavior
+
+-Fixed potential serious issue where PPRs would not save correctly if the year did not match the current year"
+158,12-Jan-2019 12:49:52,"0.104.358","- Implemented DateSerial to fix queries from returning the obviously wrong year
+- PPR Searches returning only one record will open the PPR window automatically
+- Fixed Checks/Insp window (new buttons do nothing yet)"
+159,13-Jan-2019 13:11:09,"0.105.359","- Finished additional buttons in Check Log
+- More DateSerial fixes
+- Small bugfix when linking flight plans to PPRs"
+160,14-Jan-2019 13:15:28,"0.105.360","- Tweaked PPR Report format"
+161,14-Jan-2019 13:15:34,"0.105.361","- General build"
+162,17-Jan-2019 12:45:25,"0.106.362","- Made NOTAM control stupid-proof"
+163,18-Jan-2019 13:05:19,"0.107.363","- Fixed date error on PPR Select pop-up
+- Fixed issue where NOTAM Control send blank log entries
+- Transient flight plans now require PPR numbers"
+164,19-Jan-2019 13:20:29,"0.108.364","- Fixed certain monthly announcements not shoing up
+- Added a method to sort PPRs by arrival/departure or issue date"
+165,29-Jan-2019 10:56:54,"0.109.365","- Events log now gets signed when the shift by the lead when the shift closes."
+166,15-Feb-2019 21:58:41,"0.110.366","- Haven't updated in a while…
+- Tweaked PPR Report
+- Tweaked digital signature display"
+167,03-Mar-2019 11:25:27,"0.111.367","- Fixed issue where if SharePoint connection failed on startup, new PPR's/Flight Plans wouldn't be added to the SharePoint until after a restart
+
+-Finally fixed updates window in the center of the Flight Tracker
+
+- Some Parking Map tweaks; preparing for the future
+
+- Started globalChangeLog"
+168,16-Mar-2019 13:19:40,"0.112.368","- Fixed issue where restrictions wouldn't alert users
+- PPR Log may falsely claim there are duplicate PPR's. I'm working on it…"
+169,19-Mar-2019 13:24:03,"0.113.369","- Fixed PPR Type Mismatch error
+
+- Created view for overlapping PPRs
+
+- Adjusted PPR Entry tab order
+
+- Added toggle button on Traffic Log to show/hide cancelled PPRs"
+170,31-Mar-2019 05:49:55,"0.113.370","- NOTAM Parse 3616 time overlap fix"
+171,31-Mar-2019 05:50:00,"0.113.371","- General build"
+172,04-Apr-2019 21:49:49,"0.114.372","- Fixed issue where PPR Dupe Finder was doing strange things…"
+173,07-Apr-2019 22:02:54,"0.113.372","- Work on new Shift Brief form; Performance "
+174,12-Apr-2019 22:04:33,"0.113.373","- General build"
+175,21-Apr-2019 20:18:35,"0.114.374","- Added Events Log Review screen
+- NAMO and AFM can now sign Events Logs"
+176,29-Apr-2019 22:07:20,"0.114.375","- PPR restriction notification fix"
+177,06-May-2019 13:10:00,"0.115.376","- Slight performance updates
+- Added a little button that pulls up a specific PPR form for a given PPR #"
+178,16-Jun-2019 12:55:59,"0.116.377","- Completely overhauled the Shift Dashboard. Equipment outages and related fields now carry over shift to shift.
+
+-Due to popular demand, removed the 'Main Menu'
+
+-Started work on CHECKLISTS.
+
+-Fixed issue where there was yet another date/time conversion issue with sharepoint
+
+-Fixed issue where 'Analytics' would not include counts from the last day of the search.
+
+- Other bug fixes and minuscule performance fixes"
+179,23-Jun-2019 06:06:49,"0.117.378","- Enabled 483 Logging
+- Fixed dashboard issues"
+180,23-Jun-2019 12:44:34,"0.118.379","- Changed the way PPR duplicates are handled"
+182,29-Jun-2019 12:26:21,"0.119.380","- Fixed error where all AMSLs on a shift would be labeled as AMSLs on the log
+
+-Changing members of a shift can now be auto-logged
+
+-Fixed issue where the middle initial field on a 483 check was mandatory"
+183,03-Jul-2019 13:39:08,"0.120.381","Hello!"
+184,05-Jul-2019 21:49:31,"0.120.381","-Fixed issue where PPR requests wouldn't report duplicates
+
+-Fixed issue where the start button on the shift would read close and sign, even though there was no shift started"
+185,06-Jul-2019 17:04:20,"0.121.382","Do not issue PPRs without a valid callsign or a tail number.
+
+Do not issue PPRs without a valid callsign or a tail number."
+186,10-Jul-2019 21:46:38,"0.122.383","-Performance boost when viewing ""All Flights"""
+187,02-Aug-2019 11:52:20,"0.122.383","Changed fields on Shift Brief to include signed out LMRs
+
+Construction and personnel on afld are now the same field
+
+UI Tweaks"
+188,15-Aug-2019 06:58:12,"0.123.384","- Fixed issue where some users were unable to start a shift properly
+- Added a warning on the SharePoint side of PPRs if a PPR was not approved yet
+- Made slight improvement in response times when inputting flight plans"
