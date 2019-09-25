@@ -1,6 +1,0 @@
-"ID","shiftID","obTime","wx","activity","location","species","number","dispersalMethod","remarks","initials"
-5,75,01-Jul-2018 13:55:48,"fg",3,"fg",8,4,1,"fd","sd"
-6,86,05-Jul-2018 11:26:54,"CLOUDY",3,"RED CARPET",8,6,1,"N/A","KG"
-7,88,06-Jul-2018 06:49:00,"RAINY",3,"INFIELD BETWEEN A1 AND B",6,10,1,"N/A","KG"
-8,88,06-Jul-2018 06:49:00,"RAINY",3,"ON RWY BETWEEN TWY A1 AND B",6,25,1,"N/A","KG"
-9,187,14-Oct-2018 14:20:00,"CLEAR",3,"RWY:36 TWY A1",8,12,1,"BIRDS LOCATED N SIDE OF RWY BY TWY A1. DISPERSED WITH TRUCK","CB"
