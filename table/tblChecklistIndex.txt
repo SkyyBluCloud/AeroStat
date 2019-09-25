@@ -1,0 +1,5 @@
+"checklistID","title","code","repeatable"
+1,"Shift Checklist (8 hr) Dayshift","SC8D",0
+2,"Shift Checklist (12[/24] hr)","SC12",0
+3,"Shift Checklist (8/24 hr)","SC8M",0
+4,"Shift Checklist (8 hr) Swingshift","SC8S",0
