@@ -226,10 +226,10 @@ funcExit:
     relinkTables = True
     Exit Function
 errtrap:
-    'errHandler err, Error$, "Util.relinkTables"
+    errHandler err, Error$, "Util.relinkTables"
     Resume Next
 showErr:
-    'errHandler err, Error$, "Util.relinkTables"
+    errHandler err, Error$, "Util.relinkTables"
     MsgBox "Invalid AeroStat Backend format.", vbCritical, "AeroStat"
     GoTo show
 End Function
@@ -256,7 +256,6 @@ Public Sub log(msg As String, module As String, Optional priority As String = "I
 Dim db As DAO.Database
 Set db = CurrentDb
 Dim sql As String
-DoEvents
 sql = "INSERT INTO debug (username,initials,computername,priority,module,details) SELECT tblUserAuth.username, tblUserAuth.opInitials, tblUserAuth.lastsystem, '" & priority & "', '" & module & "', " & """" & msg & """" & " FROM tblUserAuth WHERE tblUserAuth.username = '" & getUSN & "';"
 
     db.Execute sql

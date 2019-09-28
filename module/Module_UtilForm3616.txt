@@ -15,7 +15,7 @@ If dupeEntry <> "" Then
             zuluDateTime = DateAdd("n", 1, zuluDateTime)
         Wend
     Else
-        CurrentDb.Execute "DELETE FROM tbl3616 WHERE entry = '" & dupeEntry & "'", dbFailOnError
+        CurrentDb.Execute "DELETE FROM tbl3616 WHERE entry = " & """" & dupeEntry & """", dbFailOnError
     End If
 End If
 
