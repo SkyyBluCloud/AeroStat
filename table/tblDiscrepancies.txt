@@ -1,6 +1,0 @@
-"ID","inspID","itemID","spallName","LOCATION","SEVERITY","reportDate","amInitials","ceInitials","lastFollowUp","fuInitials","cmpltDate","picture"
-2,,,"B-1","Twy Alpha near VFR hold line","Mild",12/15/2017 0:00:00,"AS",,,,,""
-3,,,"B-2","Mid Twy Bravo near corner","Mild",12/15/2017 0:00:00,"AS",,,,,""
-4,,,"B-3","Twy Bravo CL near entrance to Twy Alpha","Mild",12/15/2017 0:00:00,"AS",,,,,""
-5,,,,,,,,,,,,""
-6,,,,,,,,,,,,""
