@@ -208,7 +208,6 @@ open_err:
     Resume Next
     
 End Sub
-
 Private Sub Form_Timer()
 On Error GoTo errTrap
 Dim usn As String

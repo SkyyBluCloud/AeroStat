@@ -10,7 +10,7 @@ Dim num As Integer
 
     For Each c In Application.VBE.VBProjects(1).VBComponents
         exportLocation = CurrentProject.Path & "\DB EXPORT\"
-        
+
         Select Case c.Type
             Case vbext_ct_ClassModule, vbext_ct_Document
                 Sfx = ".cls"
@@ -25,7 +25,7 @@ Dim num As Integer
         If Sfx <> "" Then
             log "Exporting " & c.Name & Sfx & "...", "Util.ExportAllCode"
             DoEvents
-            
+
             Select Case Left(c.Name, InStr(1, c.Name, "_"))
                 Case "Form_"
                     exportLocation = exportLocation & "Forms\"
@@ -34,15 +34,16 @@ Dim num As Integer
                 Case Else
                     exportLocation = exportLocation & "Modules\"
             End Select
-            
+
             If dir(exportLocation) = "" Then createPath exportLocation
             c.Export exportLocation & "\" & c.Name & Sfx
+            num = num + 1
         End If
-        num = num + 1
     Next c
-    
+
     log "Done! Successfully exported " & num & " objects.", "Util.exportAllCode"
 End Sub
+
 
 Public Sub exportAllObjects()
 On Error GoTo errTrap
@@ -51,47 +52,77 @@ Dim td As TableDef
 Dim d As Document
 Dim c As Container
 Dim i As Integer
-Dim exportLocation As String
+Dim exportLocation, pDir, subDir As String
 
 Set db = CurrentDb
-exportLocation = Environ$("USERPROFILE") & "\Documents\DB EXPORT\"
-If dir(exportLocation) = "" Then createPath exportLocation
+pDir = CurrentProject.Path & "\DB EXPORT\"
+'If dir(exportLocation) = "" Then createPath exportLocation
 
     log "Exporting Tables...", "Util.exportAllObjects"
-    For Each td In db.TableDefs
-        If Left(td.Name, 3) = "tbl" Then
-            DoCmd.TransferText acExportDelim, , td.Name, exportLocation & td.Name & ".tbl.txt", True
-        End If
-    Next
+    
+        subDir = "table\"
+        exportLocation = pDir & subDir
+        If dir(exportLocation) = "" Then createPath exportLocation
+        
+        For Each td In db.TableDefs
+            If Left(td.Name, 3) = "tbl" Then
+                DoCmd.TransferText acExportDelim, , td.Name, exportLocation & td.Name & ".txt", True
+            End If
+        Next
     
     log "Exporting Forms...", "Util.exportAllObjects"
-    Set c = db.Containers("Forms")
-    For Each d In c.Documents
-        Application.SaveAsText acForm, d.Name, exportLocation & "Form_" & d.Name & ".txt"
-    Next d
+    
+        subDir = "form\"
+        exportLocation = pDir & subDir
+        If dir(exportLocation) = "" Then createPath exportLocation
+        
+        Set c = db.Containers("Forms")
+        For Each d In c.Documents
+            Application.SaveAsText acForm, d.Name, exportLocation & "Form_" & d.Name & ".txt"
+        Next d
     
     log "Exporting Reports...", "Util.exportAllObjects"
-    Set c = db.Containers("Reports")
-    For Each d In c.Documents
-        Application.SaveAsText acReport, d.Name, exportLocation & "Report_" & d.Name & ".txt"
-    Next d
+    
+        subDir = "report\"
+        exportLocation = pDir & subDir
+        If dir(exportLocation) = "" Then createPath exportLocation
+        
+        Set c = db.Containers("Reports")
+        For Each d In c.Documents
+            Application.SaveAsText acReport, d.Name, exportLocation & "Report_" & d.Name & ".txt"
+        Next d
     
     log "Exporting Scripts...", "Util.exportAllObjects"
-    Set c = db.Containers("Scripts")
-    For Each d In c.Documents
-        Application.SaveAsText acMacro, d.Name, exportLocation & "Macro_" & d.Name & ".txt"
-    Next d
+    
+        subDir = "scripts\"
+        exportLocation = pDir & subDir
+        If dir(exportLocation) = "" Then createPath exportLocation
+        
+        Set c = db.Containers("Scripts")
+        For Each d In c.Documents
+            Application.SaveAsText acMacro, d.Name, exportLocation & "Macro_" & d.Name & ".txt"
+        Next d
     
     log "Exporting Modules...", "Util.exportAllObjects"
-    Set c = db.Containers("Modules")
-    For Each d In c.Documents
-        Application.SaveAsText acModule, d.Name, exportLocation & "Module_" & d.Name & ".txt"
-    Next d
+    
+        subDir = "module\"
+        exportLocation = pDir & subDir
+        If dir(exportLocation) = "" Then createPath exportLocation
+        
+        Set c = db.Containers("Modules")
+        For Each d In c.Documents
+            Application.SaveAsText acModule, d.Name, exportLocation & "Module_" & d.Name & ".txt"
+        Next d
     
     log "Exporting Queries...", "Util.exportAllObjects"
-    For i = 0 To db.QueryDefs.Count - 1
-        Application.SaveAsText acQuery, db.QueryDefs(i).Name, exportLocation & "Query_" & db.QueryDefs(i).Name & ".txt"
-    Next i
+    
+        subDir = "query\"
+        exportLocation = pDir & subDir
+        If dir(exportLocation) = "" Then createPath exportLocation
+        
+        For i = 0 To db.QueryDefs.Count - 1
+            Application.SaveAsText acQuery, db.QueryDefs(i).Name, exportLocation & "Query_" & db.QueryDefs(i).Name & ".txt"
+        Next i
     
     Set db = Nothing
     Set c = Nothing
@@ -181,7 +212,7 @@ Set db = CurrentDb
             MsgBox "Invalid AeroStat Backend file.", vbCritical, "AeroStat"
             Exit Function
         ElseIf !key <> key Then
-            MsgBox "Invalid AeroStat Backend format. (Outdated backend)", vbCritical, "AeroStat"
+            MsgBox "Invalid AeroStat Backend format. (Key mismatch)", vbCritical, "AeroStat"
             Exit Function
         End If
         .Close
@@ -226,7 +257,7 @@ On Error GoTo showErr
 '                objAccess.OpenCurrentDatabase lnkDatabase
 '                Set objRecordset = objAccess.CurrentProject.Connection.Execute("settings")
 '                If objRecordset.Fields("key") <> key Then
-'                    MsgBox "Invalid AeroStat Backend format. (Outdated backend)", vbCritical, "AeroStat"
+'                    MsgBox "Invalid AeroStat Backend format. (Key mismatch)", vbCritical, "AeroStat"
 '                    GoTo show
 '                End If
             Else
@@ -302,7 +333,6 @@ sql = "INSERT INTO debug (username,initials,computername,priority,module,details
 
     db.Execute sql
     Debug.Print Format(Now, "dd-mmm-yy hh:nn:ssL") & "[" & priority & "] " & module & ": " & msg
-
 End Sub
 
 Public Function base7(ByVal num As Integer) As Integer

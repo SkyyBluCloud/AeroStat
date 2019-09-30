@@ -613,10 +613,10 @@ DoEvents
                             With db
                                 .Execute "DELETE FROM [Mission Tracker] WHERE ID = " & rsDUPE!spID
                             
-                                If .RecordsAffected <> 0 Then
+                                If .RecordsAffected < 2 Then
                                     sending.Caption = "Success!"
                                 Else
-                                    sending.Caption = "Nope!"
+                                    log "More than one SP record was affected. This was not supposed to happen. Let's continue anyway!", Me.Name & ".savePPR", "WARN"
                                 End If
                                 DoEvents
                             End With
@@ -632,7 +632,9 @@ DoEvents
                             DoCmd.OpenForm "new_ppr", , , "PPR = '" & !PPR & "'", acFormEdit, acDialog
                             Exit Function
                         Else 'Otherwise, stop everything, because we shouldn't be saving duplicates. :)
-                            GoTo fallback
+                            'GoTo fallback
+                            '....but sometimes we have no choice...
+                            
                         End If
                     End If
                 End If

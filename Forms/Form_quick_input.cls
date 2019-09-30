@@ -278,6 +278,11 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                             Else
                                 !Spot = Spot
                             End If
+                            
+                            'db.Execute "UPDATE tblPPR SET arrID = " & ID & ", tblPPR.type = '" & Me.Type & "', tail = '" & Tail & "' WHERE " & _
+                                        "(((Callsign = '" & Callsign & "' or tail = '" & Tail & "') or ppr = '" & PPR & "') And status <> 'Cancelled')" & _
+                                        "AND ((Destination = '" & stn & "' And (arrID = 0 Or arrID = " & ID & ")) Xor depPoint = '" & stn & "')"
+                            
 
                         ElseIf depPoint = stn Or Nz(PPR) = "" Then
                             
@@ -442,7 +447,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                 If csnospace <> Callsign Then rstSP![Call Sign] = Me.Callsign
                 
                 If PPR <> "-" Then
-                    rsPPR.Bookmark = rsPPR.LastModified
+                    'rsPPR.Bookmark = rsPPR.LastModified
                     rstSP![PPR #] = PPR
                     With rsPPR
                         If Nz(!spID) = "" Then
