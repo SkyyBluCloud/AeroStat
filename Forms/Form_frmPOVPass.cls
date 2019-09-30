@@ -17,7 +17,9 @@ Dim pass As String
 Dim s() As String
 Dim c As String
 Dim rs As DAO.Recordset
+Dim db As DAO.Database
 Dim rc As Integer
+Set db = CurrentDb
 sending.Caption = "Sending to SharePoint..."
 sending.Visible = True
 DoEvents
@@ -30,7 +32,7 @@ sid = DLookup("ID", "ADPMUsers", "[User name] = '" & Environ$("username") & "'")
         pass = "C"
     End Select
 
-Set rs = CurrentDb.OpenRecordset(getSelection)
+Set rs = db.OpenRecordset(getSelection)
 With rs: Do While Not .EOF
     .edit
     rc = rc + 1
@@ -40,7 +42,7 @@ With rs: Do While Not .EOF
     If Nz(.Fields("Pass Number")) = "" Then .Fields("Pass Number") = getPassNumber(pass)
     .Fields("Date Issued") = Date
     If Nz(.Fields("Authorizations/Restrictions")) = "" Then .Fields("Authorizations/Restrictions") = UCase(.Fields("Requested Areas"))
-    .Fields("Expiration Date") = DateSerial(Year(.Fields("Date Issued")), 12, 31)
+    .Fields("Expiration Date") = Nz(.Fields("Expiration Date"), DateSerial(Year(.Fields("Date Issued")) + 1, Month(.Fields("Date Issued")), Day(.Fields("Date Issued"))))
     .Fields("AM Representitive") = sid
     If Nz(.Fields("Requested Areas")) = "" Then .Fields("Authorizations/Restrictions") = UCase(.Fields("Requested Areas"))
     'On Error Resume Next
