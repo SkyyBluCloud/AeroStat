@@ -212,6 +212,12 @@ MsgBox "Time: " & internalComments.Column(1) & vbCrLf & _
         "By: " & internalComments.Column(3), vbInformation, "PPR Comment"
 End Sub
 
+Private Sub lstRelatedFlights_DblClick(cancel As Integer)
+If Nz(lstRelatedFlights) = "" Then Exit Sub
+DoCmd.OpenForm "quick_input", , , "ID = " & lstRelatedFlights, acFormEdit
+
+End Sub
+
 Private Sub parkingMap_Click()
 DoCmd.OpenForm "frmParkingMap", , , , , , "PPR"
 End Sub
