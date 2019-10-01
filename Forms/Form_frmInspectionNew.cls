@@ -81,7 +81,7 @@ Dim t As Date
     outTime = Left(Nz(oTime), 2) & IIf(Nz(oTime) <> "", ".", "") & Right(Nz(oTime), 2)
     inTime = Left(Nz(iTime), 2) & IIf(Nz(iTime) <> "", ".", "") & Right(Nz(iTime), 2)
     
-    'Should not be hard coded......
+    'TODO: Should not be hard coded......
     If specialCheck <> 0 Then
         Select Case specialCheck
             Case 1: ctSimple = "PRIOR TO FLYING CK"
@@ -109,7 +109,11 @@ log:
     t = checkDate & " " & ZToL(outTime, True)
     If firstEntryComplete Or (Not NewRecord And logOff = 0) Then
         firstEntryComplete = True
-        entry = Callsign & "/" & Initials & " OFF AFLD. " & IIf(Nz(Remarks) = Nz(Remarks.OldValue), "NO CHANGES TO REPORT", Nz(Remarks))
+        If logOff = 0 Then
+            entry = Callsign & "/" & Initials & " OFF AFLD. " & IIf(Nz(Remarks) = Nz(Remarks.OldValue), "NO CHANGES TO REPORT", Nz(Remarks))
+        Else
+            entry = Callsign & "/" & Initials & " OFF AFLD. " & Nz(Remarks)
+        End If
         'entry = Callsign & "/" & Initials & " OFF AFLD. " & IIf(Nz(Remarks) = "", "NO CHANGES TO REPORT", Nz(Remarks))
         'entry = Callsign & "/" & Initials & " OFF AFLD. " & IIf(Nz(Remarks) = "", "NO CHANGES TO REPORT", "")
         t = checkDate & " " & ZToL(inTime, True)
@@ -146,6 +150,7 @@ log:
     
 sexit:
     'Parent.Parent.Form!sf3616.Form.logView.Requery
+    bClose = True
     Parent!back.Visible = False
     Parent.changeView "frmInspectionList", shiftID
     'DoCmd.close acForm, "frmInspections"
