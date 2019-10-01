@@ -238,7 +238,21 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
                 
                 Case "{CRASH}"
                     entry = Replace(entry, arg, "CRASH STATUS " & aarf)
-                
+                    
+                Case "{OPENCALL}"
+                    Dim ocInitials As String
+                    Dim opencall() As String
+                    
+                    If IsNull(DLookup("opencall", "tblshiftdef", "shifttitle = '" & shiftTitle & "'")) Then
+                        entry = Replace(entry, arg, "")
+                    Else
+                        opencall = Split(DLookup("opencall", "tblshiftdef", "shifttitle = '" & shiftTitle & "'"), ",")
+                        For Each oc In opencall
+                            ocInitials = Nz(ocInitials) & IIf(Nz(ocInitials) = "", "", ", ") & oc & "/" & InputBox("Call/notify and enter initials for " & oc, "Coordination Required")
+                        Next
+                        result = ocInitials & " NOTIFIED."
+                        entry = Replace(entry, arg, result)
+                    End If
                 End Select
             Next
             
