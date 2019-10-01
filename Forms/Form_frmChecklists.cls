@@ -41,7 +41,7 @@ si = DLookup("suppInitials", "tblchecklistitems", "itemid = " & itemID)
         'suppInitials = InputBox("Coordination is required. Enter the initials below:" & vbCrLf & si, "Coordination", join(siArray, "/__, ") & "/__")
         
         For Each s In siArray
-            suppInitials = IIf(IsNull(suppInitials), "", ", ") & InputBox("Call/notify and enter initials for " & s, "Coordination Required")
+            suppInitials = Nz(suppInitials) & IIf(IsNull(suppInitials), "", ", ") & InputBox("Call/notify and enter initials for " & s, "Coordination Required")
         Next
     End If
     
