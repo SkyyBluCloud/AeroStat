@@ -173,6 +173,8 @@ strSlash = "\"
 intCurrPos = 4
 strFolder = Path
 intLength = Len(strFolder)
+
+If Left(Path, 2) = "\\" Then intCurrPos = InStr(InStr(3, Path, strSlash) + 1, Path, strSlash)
     
     If intLength > 3 Then
         Do
