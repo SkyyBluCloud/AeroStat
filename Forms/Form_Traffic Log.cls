@@ -39,6 +39,11 @@ DoCmd.OpenForm "new_ppr", , , "PPR = '" & on_station.Column(1) & "'", acFormEdit
 onPPRFormClose
 End Sub
 
+Private Sub btnAddNotice_Click()
+    DoCmd.OpenForm "frmAnnounceSet", , , , acFormAdd, acDialog
+    lstNotice.Requery
+End Sub
+
 Private Sub btnOnStation_Click()
     Select Case btnOnStation
         Case True
@@ -226,6 +231,12 @@ Set update = CurrentDb.OpenRecordset("lclver")
         !frmTrafficLogSync = DLookup("frmTrafficLogSync", "settings")
         .update
     End With
+    
+    For Each ctl In Me.Controls
+        If ctl.Tag Like "*notice*" Then
+            ctl.Visible = lstNotice.ListCount <> 0
+        End If
+    Next
 End Sub
 
 Private Sub Form_Timer()
@@ -256,18 +267,18 @@ Set update = Nothing
 End Sub
 
 Public Function refreshAlert(Optional All As Boolean)
-Dim ud As String
-ud = Left(btnUpdate.Caption, 4)
-    new_flt.SetFocus
-    If All Then
-        alert.RowSource = "SELECT tblTrafficLogAlert.id, tblTrafficLogAlert.timestamp, tblTrafficLogAlert.msg FROM tblTrafficLogAlert ORDER BY timestamp DESC;"
-    Else
-        alert.RowSource = "SELECT tblTrafficLogAlert.id, tblTrafficLogAlert.timestamp, tblTrafficLogAlert.msg FROM tblTrafficLogAlert WHERE (((tblTrafficLogAlert.id)>" & DLookup("frmtrafficlogalert", "tbluserauth", "username = '" & Environ$("username") & "'") & ")) ORDER BY timestamp DESC;"
-    End If
-    alert.Visible = (ud = "Show") And ((alert.ListCount >= 1) And alert.RowSource <> "")
-    ud = IIf(Not alert.Visible, "Show", "Hide")
-    
-    btnUpdate.Caption = Replace(btnUpdate.Caption, IIf(ud = "Hide", "Show", "Hide"), IIf(ud = "Hide", "Hide", "Show"))
+'Dim ud As String
+'ud = Left(btnUpdate.Caption, 4)
+'    new_flt.SetFocus
+'    If All Then
+'        alert.RowSource = "SELECT tblTrafficLogAlert.id, tblTrafficLogAlert.timestamp, tblTrafficLogAlert.msg FROM tblTrafficLogAlert ORDER BY timestamp DESC;"
+'    Else
+'        alert.RowSource = "SELECT tblTrafficLogAlert.id, tblTrafficLogAlert.timestamp, tblTrafficLogAlert.msg FROM tblTrafficLogAlert WHERE (((tblTrafficLogAlert.id)>" & DLookup("frmtrafficlogalert", "tbluserauth", "username = '" & Environ$("username") & "'") & ")) ORDER BY timestamp DESC;"
+'    End If
+'    alert.Visible = (ud = "Show") And ((alert.ListCount >= 1) And alert.RowSource <> "")
+'    ud = IIf(Not alert.Visible, "Show", "Hide")
+'
+'    btnUpdate.Caption = Replace(btnUpdate.Caption, IIf(ud = "Hide", "Show", "Hide"), IIf(ud = "Hide", "Hide", "Show"))
     
 '    Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & Environ$("username") & "'")
 '    With rs
@@ -392,6 +403,21 @@ End Sub
 Private Sub menu_Click()
     DoCmd.Close acForm, "Traffic Log", acSaveNo
     DoCmd.OpenForm "frmMain"
+End Sub
+
+Private Sub lstNotice_DblClick(cancel As Integer)
+If IsNull(lstNotice) Then Exit Sub
+Dim rs As DAO.Recordset
+Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblAnnounce WHERE ID = " & lstNotice)
+With rs
+    If rs.RecordCount = 1 Then
+        MsgBox "Date: " & !startDate & " - " & !endDate & vbCrLf & _
+                "Time: " & !startEvent & " - " & !endEvent & vbCrLf & vbCrLf & _
+                !msg, _
+                vbInformation, "Notice"
+    End If
+End With
+
 End Sub
 
 Private Sub new_flt_Click()

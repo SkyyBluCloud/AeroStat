@@ -125,6 +125,10 @@ Private Sub sscope_LostFocus()
     rrefresh
 End Sub
 
+Private Sub startDate_AfterUpdate()
+endDate = Nz(startDate, endDate)
+End Sub
+
 Private Sub startDate_LostFocus()
     rrefresh
 End Sub
