@@ -83,10 +83,12 @@ End Sub
 Private Sub done_DblClick(cancel As Integer)
 
     If Not IsNull(Me.done.Column(0)) Then
-        DoCmd.OpenForm "quick_input", , , "ID=" & Me.done.Column(0), acFormEdit
-        For Each ctl In Forms!quick_input.Controls
-            If ctl.Name Like "*ctime*" Then ctl.Visible = True
-        Next
+        DoCmd.OpenForm "quick_input", , , "ID=" & Me.done.Column(0), acFormEdit, acDialog
+        DoCmd.Close acForm, "quick_input"
+        done.Requery
+'        For Each ctl In Forms!quick_input.Controls
+'            If ctl.Name Like "*ctime*" Then ctl.Visible = True
+'        Next
     End If
     
 check_out_Click_err:
