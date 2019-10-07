@@ -167,12 +167,27 @@ Dim qusn As String
 usn = Nz(DLookup("username", "tblUserAuth", "username = '" & Environ$("username") & "'"))
 qusn = "SELECT * FROM tblUserAuth WHERE username = '" & usn & "'"
     
-    If usn <> "1516576541A" Then DoCmd.ShowToolbar "Ribbon", acToolbarNo
+    If Not CurrentProject.Name Like "*MASTER*" Then DoCmd.ShowToolbar "Ribbon", acToolbarNo
     
-    If InStr(1, CurrentProject.Path, Environ$("userprofile")) = 0 Then
+    If InStr(1, CurrentProject.Path, Environ$("userprofile")) = 0 And Not CurrentProject.Name Like "*MASTER*" Then
+        Dim dbFrom, dbTo As String
+        Dim fso As New FileSystemObject
+        
+        dbFrom = CurrentProject.fullName
+        dbTo = Environ$("userprofile") & "\Documents\AeroStat\"
+        If dir(dbTo, vbDirectory) = "" Then createPath dbTo
+        fso.CopyFile dbFrom, dbTo
+        Application.FollowHyperlink dbTo & CurrentProject.Name
+        Application.Quit
+        cancel = True
+        Exit Sub
+        
         'redo this please....
-        Shell "\\znre-fs-022v\Wing\374OG\374OSS\374OSS.OSAA\00_Section_Info\50_Section_Specific_Info\Traffic Log Tracker\DATABASE\BACKEND\update.bat"
-        MsgBox "This database should be launched from your user profile. Things may not work well.", vbInformation, "AeroStat"
+        'Shell "\\znre-fs-022v\Wing\374OG\374OSS\374OSS.OSAA\00_Section_Info\50_Section_Specific_Info\Traffic Log Tracker\DATABASE\BACKEND\update.bat"
+'        MsgBox "This database should be launched from your user profile. Things may not work well.", vbInformation, "AeroStat"
+        
+
+'        DBEngine.CompactDatabase dbFrom, dbTo
         'Application.Quit
 '    ElseIf DLookup("lclver", "lclver") <> DLookup("lastver", "settings") Then
 '        If MsgBox("An update is available. Update now?", vbInformation + vbYesNo, "Update") = vbYes Then
