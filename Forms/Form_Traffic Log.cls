@@ -94,6 +94,10 @@ Private Sub pprlogReload()
     ppr_list.Requery
 End Sub
 
+Private Sub btnViewNotice_Click()
+DoCmd.OpenForm "frmAnnounce"
+End Sub
+
 Private Sub dep_arr_lcl_Click()
 On Error GoTo check_out_Click_err
     DoCmd.OpenForm "check_in_out", , , "ID=" & local_aircraft.Column(0), acFormEdit
@@ -232,11 +236,11 @@ Set update = CurrentDb.OpenRecordset("lclver")
         .update
     End With
     
-    For Each ctl In Me.Controls
-        If ctl.Tag Like "*notice*" Then
-            ctl.Visible = lstNotice.ListCount <> 0
-        End If
-    Next
+'    For Each ctl In Me.Controls
+'        If ctl.Tag Like "*notice*" Then
+'            ctl.Visible = lstNotice.ListCount <> 0
+'        End If
+'    Next
 End Sub
 
 Private Sub Form_Timer()
