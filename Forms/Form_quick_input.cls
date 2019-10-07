@@ -202,7 +202,7 @@ DoEvents
                     If IsNull(ParentID) Then ParentID = rs!ID
                     'rs!Stationed = False
                     With db
-                        .Execute "UPDATE Traffic SET Stationed = False WHERE ID <> " & ID & " AND (Right(Tail, 4) = '" & Right(Me.Tail, 4) & "' Or Callsign = '" & Callsign & "')"
+                        .Execute "UPDATE Traffic SET Stationed = False WHERE Stationed = True AND ID <> " & ID & " AND (Right(Tail, 4) = '" & Right(Me.Tail, 4) & "' Or Callsign = '" & Callsign & "')"
                         log "Updated " & .RecordsAffected & " records", Me.Name & ".done_Click"
                     End With
                     Stationed = True
