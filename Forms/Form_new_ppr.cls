@@ -705,7 +705,7 @@ inoutsearch:
             GoTo inoutsearch
         End If
     Else
-        archive = True
+        'archive = True
         Status = "Cancelled"
     End If
 
@@ -907,7 +907,7 @@ End Sub
 
 Private Sub unArchive_Click()
 bClose = True
-archive = False
+'archive = False
 If Dirty Then Dirty = False
 DoCmd.OpenForm "new_ppr", , , "PPR = '" & formPPR & "'", acFormEdit
 MsgBox "Removed PPR from archive", vbInformation, "PPR"
