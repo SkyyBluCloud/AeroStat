@@ -50,8 +50,8 @@ Private Sub Form_Current()
     bClose = False
 End Sub
 
-Private Sub Form_Error(DataErr As Integer, Response As Integer)
-    If DataErr = 2169 Then Response = True
+Private Sub Form_Error(DataErr As Integer, response As Integer)
+    If DataErr = 2169 Then response = True
 End Sub
 
 Private Sub Form_Load()

@@ -23,7 +23,7 @@ Private Sub Form_Load()
                 !BOOT = False
                 !isLoggedIn = False
             End If
-            .update
+            .Update
             .MoveNext
         Loop
     .Close
@@ -45,7 +45,7 @@ With rst
         Do While Not .EOF
             .edit
             IIf(rs, !rs, !BOOT) = True
-            .update
+            .Update
             .MoveNext
         Loop
         MsgBox "Booted!", vbInformation, "AeroStat"
@@ -58,7 +58,7 @@ With rst
         If MsgBox(IIf(rs, "Force reset ", "Boot ") & !rank & " " & !lastName & "?", vbInformation + vbYesNo, "AeroStat") = vbNo Then Exit Function
         .edit
         IIf(rs, !rs, !BOOT) = True
-        .update
+        .Update
         MsgBox "Done!", vbInformation, "AeroStat"
     End If
     .Close

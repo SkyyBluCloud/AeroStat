@@ -35,8 +35,8 @@ Private Sub Form_BeforeUpdate(cancel As Integer)
     End If
 End Sub
 
-Private Sub Form_Error(DataErr As Integer, Response As Integer)
-    If DataErr = 2169 Then Response = True
+Private Sub Form_Error(DataErr As Integer, response As Integer)
+    If DataErr = 2169 Then response = True
 End Sub
 
 Private Sub Form_Current()
@@ -79,6 +79,7 @@ err: If err.Number = 2501 Then Resume Next
 End Sub
 
 Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+On Error Resume Next
     If KeyCode = 13 And Shift = acShiftMask Then
         submit.SetFocus
         submit_Click
@@ -86,10 +87,10 @@ Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
 End Sub
 
 Private Sub Form_Load()
-On Error GoTo errTrap
+On Error GoTo errtrap
 Dim stn As String
 
-stn = DLookup("Station", "settings", "ID=1")
+stn = DLookup("Station", "tblSettings")
 reload:
     If Status = "Pending" Then
         If depPoint = Destination Or Not Destination = stn Then
@@ -115,6 +116,8 @@ reload:
             CP_in.Visible = True
             edit.Visible = False
             undoDep.Visible = True
+            Spot.Visible = True
+            lblSpot.Visible = True
             If Not IsNull(ETA) Then undoDep.Caption = "Reset ATD"
         End If
         
@@ -130,10 +133,10 @@ reload:
         
         Exit Sub
     End If
-sexit:
+sExit:
     Exit Sub
-errTrap:
-    errHandler err, Error$, Me.Name & ".Form_Load"
+errtrap:
+    ErrHandler err, Error$, Me.Name & ".Form_Load"
     Resume Next
     
 End Sub
@@ -154,8 +157,8 @@ Dim tz As Double
 bClose = True
 spAccess = DLookup("spAccess", "tblUserAuth", "username = '" & Environ$("username") & "'")
 If spAccess Then spAccess = sp
-tz = DLookup("Timezone", "settings")
-stn = DLookup("Station", "settings", "ID=1")
+tz = DLookup("Timezone", "tblSettings")
+stn = DLookup("Station", "tblSettings")
 sending.Visible = True
 sp.Visible = False
 DoEvents
@@ -163,6 +166,9 @@ DoEvents
     If ATD = "0:00" Then ATD = "0:01"
     If ETA = "0:00" Then ETA = "0:01"
     If ATA = "0:00" Then ATA = "0:01"
+    
+    ATD = Format(ATD, "hh.nn")
+    ATA = Format(ATA, "hh.nn")
     
     If Not IsNull(ETA) Then ATD = ""
     
@@ -187,7 +193,7 @@ DoEvents
     'Open the appropriate traffic count record for the day
     Dim arrordep As String
     If Destination = stn Then
-        arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "mm/dd/yy") & " " & Format(ZToL(cETA, True), "hh:nn")
+        arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "dd-mmm-yy") & " " & Format(ZToL(IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE), True), "hh:nn")
         arrordep = arrDate
     End If
     If depPoint = stn Then
@@ -251,6 +257,8 @@ DoEvents
                 rstSP.edit
                 sending.Caption = "Sending to SharePoint...."
                 DoEvents
+                If IsNull(rstSP![Start Time]) Then rstSP![Start Time] = Date
+                If IsNull(rstSP![End Time]) Then rstSP![End Time] = Date
                 Exit Do
             End If
             csnospace = Replace(Nz(rstSP![Call Sign]), " ", "")
@@ -279,12 +287,12 @@ DoEvents
         If Destination = stn Then
             If Not Stationed Then
                 If Not findParentByTail(Tail, 2) = 0 Then
-                    Set rs = CurrentDb.OpenRecordset("SELECT * FROM Traffic WHERE ID = " & findParentByTail(Tail, 2))
+                    Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblTraffic WHERE ID = " & findParentByTail(Tail, 2))
                     With rs
                     If Not .EOF Then
                         .edit
                         !Stationed = True
-                        .update
+                        .Update
                         .Close
                     End If
                     End With
@@ -294,7 +302,7 @@ DoEvents
             End If
             ''rstCount.Fields(countType & "arr") = 'rstCount.Fields(countType & "arr") + Me.Number
             'arrDate = Format(ZToL(DOF & " " & Nz(ATD, ETD)), "mm/dd/yy") & " " & Format(ZToL(ATA), "hh:nn")
-            arrDate = Format(DateAdd("n", (60 * Format(ETE, "h")) + Format(ETE, "nn"), ZToL(DOF & " " & Nz(ATD, ETD))), "dd-mmm-yy") & " " & Format(ZToL(ATA), "hh.nn")
+            'arrDate = Format(DateAdd("n", (60 * Format(ETE, "h")) + Format(ETE, "nn"), ZToL(DOF & " " & Nz(ATD, ETD))), "dd-mmm-yy") & " " & Format(ZToL(ATA), "hh.nn")
             If spfound Then
                 rstSP![ATA (Z)] = LToZ(arrDate)
                 rstSP![Tower Initials] = TWR_in
@@ -310,6 +318,8 @@ DoEvents
                         End Select
                         
                         Spot = IIf(Left(Nz(![Parking Spot/Location]), 3) = "HOT", "HC" & Right(Nz(![Parking Spot/Location]), 1), Nz(![Parking Spot/Location]))
+                        
+                        
                         '![Parking Spot/Location] = Spot
                             
                     Case Is <> ![Parking Spot/Location] 'We have assignment, but it doesnt match the SharePoint
@@ -325,6 +335,7 @@ els:
                             Spot = ![Parking Spot/Location]
                         End If
                 End Select: End With
+                CurrentDb.Execute "UPDATE tblTraffic SET Spot = '" & Spot & "' WHERE Status Not Like 'C*' AND PPR = '" & PPR & "'"
             End If
         End If
     
@@ -347,19 +358,19 @@ els:
             If Stationed Then
                 Stationed = False
             ElseIf Not IsNull(ParentID) Then
-                Set rs = CurrentDb.OpenRecordset("SELECT * FROM Traffic WHERE ID = " & ParentID)
+                Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblTraffic WHERE ID = " & ParentID)
                 With rs
                 If Not .EOF Then
                     .edit
                     !Stationed = False
-                    .update
+                    .Update
                     .Close
                 End If
                 End With
             End If
             'rstCount.Fields(countType & "dep") = 'rstCount.Fields(countType & "dep") + Me.Number
             'If Not checkParking(Callsign, Nz(Tail)) = 0 Then ParentID = checkParking(Callsign, Nz(Tail))
-            'If Destination = stn Then arrDate = DOF + DateAdd("h", DLookup("Timezone", "settings", "ID=1"), IIf(Status = "Enroute" Or Status = "Closed", IIf(Status = "Enroute", cETA, ATA), cETA))
+            'If Destination = stn Then arrDate = DOF + DateAdd("h", DLookup("Timezone", "tblSettings"), IIf(Status = "Enroute" Or Status = "Closed", IIf(Status = "Enroute", cETA, ATA), cETA))
             
             
             If spfound Then
@@ -368,7 +379,7 @@ els:
             End If
         Else
             If spfound Then
-                rstSP![ETA (Z)] = DateAdd("h", -DLookup("Timezone", "settings", "ID=1"), arrDate)
+                rstSP![ETA (Z)] = DateAdd("h", -DLookup("Timezone", "tblSettings"), arrDate)
             End If
         End If
     Else
@@ -377,7 +388,7 @@ els:
     
     'rstCount.Update
     If spfound Then
-        rstSP.update
+        rstSP.Update
         sending.Caption = "Success!"
     Else
         sending.Caption = "Not Found"
@@ -390,8 +401,8 @@ els:
     If Not Destination = depPoint Then ' Not a local flt
     
         'This is probably redundant...
-        'If Destination = stn Then arrDate = DOF + DateAdd("h", DLookup("Timezone", "settings", "ID=1"), IIf(Status = "Enroute" Or Status = "Closed", IIf(Status = "Enroute", cETA, ATA), cETA))
-        'If depPoint = stn Then depDate = DOF + DateAdd("h", DLookup("Timezone", "settings", "ID=1"), IIf(Status = "Enroute", ATD, ETD))
+        'If Destination = stn Then arrDate = DOF + DateAdd("h", DLookup("Timezone", "tblSettings"), IIf(Status = "Enroute" Or Status = "Closed", IIf(Status = "Enroute", cETA, ATA), cETA))
+        'If depPoint = stn Then depDate = DOF + DateAdd("h", DLookup("Timezone", "tblSettings"), IIf(Status = "Enroute", ATD, ETD))
 
         If Not Nz(PPR) = "" Then
             Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblPPR WHERE tblPPR.PPR = '" & PPR & "'")
@@ -405,8 +416,8 @@ els:
                 Else
                     rs!Spot = Spot
                 End If
-                rs.update
-'                Set rs = CurrentDb.OpenRecordset("SELECT Traffic.ID, Traffic.Stationed, Traffic.Status FROM Traffic WHERE Traffic.ID = " & rs!ParentID)
+                rs.Update
+'                Set rs = CurrentDb.OpenRecordset("SELECT tblTraffic.ID, tblTraffic.Stationed, tblTraffic.Status FROM tblTraffic WHERE tblTraffic.ID = " & rs!ParentID)
 '                rs.edit
 '                If rs!Stationed Then rs!Stationed = False
 '                rs!Status = IIf(Stationed, Spot, IIf(Not Destination = stn, "Closed", Status))
@@ -464,10 +475,10 @@ reopen = ID
     Status = "Pending"
     DoCmd.RunCommand acCmdSaveRecord
     If Not IsNull(ParentID) Then
-        Set rs = CurrentDb.OpenRecordset("SELECT * FROM Traffic WHERE Traffic.ID = " & ParentID)
+        Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblTraffic WHERE tblTraffic.ID = " & ParentID)
         rs.edit
         'rs!Status = "Pending"
-        rs.update
+        rs.Update
     End If
 
     DoCmd.Close acForm, "check_in_out", acSaveYes

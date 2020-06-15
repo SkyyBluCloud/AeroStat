@@ -16,7 +16,7 @@ Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" 
 With rs
     .edit
     !frmtrafficlogalert = alert.ItemData(alert.ListCount - 1)
-    .update
+    .Update
     refreshAlert
 End With
 End Sub
@@ -65,8 +65,14 @@ Set on_station.Recordset = qdf.OpenRecordset
 End Function
 
 Private Sub btnPPRQuickSearch_Click()
-Dim ibPPR As String
-ibPPR = Nz(DLookup("ppr", "tblppr", "ppr = '" & InputBox("Please enter a PPR number:", "PPR Quick Search") & "'"))
+Dim s, ibPPR As String
+
+s = InputBox("Please enter a PPR number:", "PPR Quick Search")
+
+DoCmd.Hourglass True
+ibPPR = Nz(DLookup("ppr", "tblppr", "replace(ppr,'-','') = '" & s & "' OR ppr = '" & s & "'"))
+DoCmd.Hourglass False
+
 If ibPPR <> "" Then
     DoCmd.OpenForm "new_ppr", , , "ppr = '" & ibPPR & "'", acFormEdit, acDialog
     onPPRFormClose
@@ -125,7 +131,7 @@ Set db = CurrentDb
             rs.edit
             rs!Status = "Cancelled"
             rs!approval = 0
-            rs.update
+            rs.Update
             If DLookup("spAccess", "tblUserAuth", "username = '" & Environ$("username") & "'") And Not IsNull(rs!spID) Then
                 Set qdf = db.QueryDefs("qMissionTrackerByID")
                 qdf.Parameters("mtbid") = rs!spID
@@ -133,7 +139,7 @@ Set db = CurrentDb
                 With rstSP
                     .edit
                     ![Mission/Event Type] = "Cancelled"
-                    .update
+                    .Update
                 End With
             End If
         Else
@@ -145,7 +151,7 @@ Set db = CurrentDb
                 rs.edit
                 rs!Status = IIf(rs!approach, "Approach", "Approved")
                 rs!approval = 1
-                rs.update
+                rs.Update
                 If DLookup("spAccess", "tblUserAuth", "username='" & Environ$("username") & "'") And Not IsNull(rs!spID) Then
                     Set qdf = db.QueryDefs("qMissionTrackerByID")
                     qdf.Parameters("mtbid") = rs!spID
@@ -153,7 +159,7 @@ Set db = CurrentDb
                     With rstSP
                         .edit
                         ![Mission/Event Type] = "PPR"
-                        .update
+                        .Update
                     End With
                     rstSP.Close
                     Set rstSP = Nothing
@@ -179,11 +185,11 @@ bCancelPPR_Click_err:
 End Sub
 
 Private Sub bNewPPR_Click()
-On Error GoTo errTrap
+On Error GoTo errtrap
     isSubFormOpen = True
     DoCmd.OpenForm "new_ppr", , , , acFormAdd, acDialog
     onPPRFormClose
-errTrap:
+errtrap:
     isSubFormOpen = False
 End Sub
 
@@ -223,17 +229,17 @@ End Sub
 'End Sub
 
 Private Sub Form_Load()
-Dim update As DAO.Recordset
-Set update = CurrentDb.OpenRecordset("lclver")
+Dim Update As DAO.Recordset
+Set Update = CurrentDb.OpenRecordset("lclver")
 
-    If Not DLookup("spAccess", "tblUserAuth", "username='" & Environ$("username") & "'") Then sperr.Visible = True
+    'If Not DLookup("spAccess", "tblUserAuth", "username='" & Environ$("username") & "'") Then sperr.Visible = True
     osReload
     pprlogReload
     refreshAlert
-    With update
+    With Update
         .edit
-        !frmTrafficLogSync = DLookup("frmTrafficLogSync", "settings")
-        .update
+        !frmTrafficLogSync = DLookup("frmTrafficLogSync", "tblsettings")
+        .Update
     End With
     
 '    For Each ctl In Me.Controls
@@ -246,16 +252,17 @@ End Sub
 Private Sub Form_Timer()
 On Error Resume Next
 If isSubFormOpen Then Exit Sub
-Dim update As DAO.Recordset
-Set update = CurrentDb.OpenRecordset("lclver")
+Dim Update As DAO.Recordset
+Set Update = CurrentDb.OpenRecordset("lclver")
 
-With update
+With Update
     lclClock.Requery
     If !frmTrafficLogSync <> DLookup("frmTrafficLogSync", "settings") Then
         .edit
         !frmTrafficLogSync = DLookup("frmTrafficLogSync", "settings")
-        .update
-
+        .Update
+        
+        CurrentDb.Execute "qTrafficFlightStatusUpdate"
 '        For Each ctl In Controls
 '            If TypeOf ctl Is ListBox Then ctl.Requery
 '        Next
@@ -267,7 +274,7 @@ With update
     End If
     .Close
 End With
-Set update = Nothing
+Set Update = Nothing
 End Sub
 
 Public Function refreshAlert(Optional All As Boolean)
@@ -308,7 +315,7 @@ With rs
     If alert.Visible Then
         .edit
         !frmtrafficlogalert = DMax("ID", "tblTrafficLogAlert")
-        .update
+        .Update
     End If
     refreshAlert (!frmtrafficlogalert = DMax("ID", "tblTrafficLogAlert"))
 End With
@@ -383,11 +390,11 @@ End Sub
 
 Private Sub inCancel_Click()
     If inbound_aircraft = "" Then Exit Sub
-    If cnlFlight(CurrentDb.OpenRecordset("SELECT * FROM Traffic WHERE Traffic.ID = " & Nz(inbound_aircraft.Column(0)) & ";")) Then inbound_aircraft.Requery
+    If cnlFlight(CurrentDb.OpenRecordset("SELECT * FROM tblTraffic WHERE tblTraffic.ID = " & Nz(inbound_aircraft.Column(0)) & ";")) Then inbound_aircraft.Requery
 End Sub
 
 Private Sub lclCancel_Click()
-    If cnlFlight(CurrentDb.OpenRecordset("SELECT * FROM Traffic WHERE Traffic.ID = " & Nz(local_aircraft.Column(0)) & ";")) Then local_aircraft.Requery
+    If cnlFlight(CurrentDb.OpenRecordset("SELECT * FROM tblTraffic WHERE tblTraffic.ID = " & Nz(local_aircraft.Column(0)) & ";")) Then local_aircraft.Requery
 End Sub
 
 Private Sub local_aircraft_DblClick(cancel As Integer)
@@ -431,8 +438,8 @@ Private Sub new_flt_Click()
     openFlight
 End Sub
 
-Private Sub openFlight(Optional ID As Integer, Optional onstation As Boolean)
-    DoCmd.OpenForm "quick_input", , , IIf(ID <> 0, "ID = " & ID, ""), IIf(ID <> 0, acFormEdit, acFormAdd), acDialog, IIf(onstation, 4, Null)
+Private Sub openFlight(Optional ID As Integer, Optional onStation As Boolean)
+    DoCmd.OpenForm "quick_input", , , IIf(ID <> 0, "ID = " & ID, ""), IIf(ID <> 0, acFormEdit, acFormAdd), acDialog, IIf(onStation, 4, Null)
     If CurrentProject.AllForms("quick_input").IsLoaded Then
         fpReload Forms!quick_input.fpType
         DoCmd.Close acForm, "quick_input"
@@ -498,7 +505,7 @@ Set db = CurrentDb
 '        Loop
 '        rs.Close
 '        Set rs = Nothing
-        CurrentDb.Execute "UPDATE Traffic SET stationed = false WHERE ID = " & clm
+        CurrentDb.Execute "UPDATE tblTraffic SET stationed = false WHERE ID = " & clm
         osReload
     End If
 End Sub
@@ -515,7 +522,7 @@ check_out_Click_err:
 End Sub
 
 Private Sub outCancel_Click()
-    If cnlFlight(CurrentDb.OpenRecordset("SELECT * FROM Traffic WHERE Traffic.ID = " & Nz(outbound_aircraft.Column(0)) & ";")) Then outbound_aircraft.Requery
+    If cnlFlight(CurrentDb.OpenRecordset("SELECT * FROM tblTraffic WHERE tblTraffic.ID = " & Nz(outbound_aircraft.Column(0)) & ";")) Then outbound_aircraft.Requery
 End Sub
 
 Private Sub ppr_list_DblClick(cancel As Integer)
@@ -587,7 +594,7 @@ End Sub
 
 
 Private Sub pprSync_Click()
-On Error GoTo errTrap
+On Error GoTo errtrap
 Dim rs As DAO.Recordset
 Dim rsSP As DAO.Recordset
 Dim rsPPR As DAO.Recordset
@@ -616,7 +623,7 @@ tCount = 0
             If !spID = rsSP!ID Then
                 .edit
                 !Spot = rsSP![Parking Spot/Location]
-                .update
+                .Update
                 rsSP.MoveNext
             End If
             .MoveNext
@@ -628,10 +635,10 @@ tCount = 0
     DoEvents
     syncTrafficLog
     
-sexit:
+sExit:
     Exit Sub
-errTrap:
-    errHandler err, Error$, Name
+errtrap:
+    ErrHandler err, Error$, Name
     Resume Next
 End Sub
 
@@ -640,6 +647,6 @@ Dim rs As DAO.Recordset
 Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & Environ$("username") & "'")
 rs.edit
 rs!spAccess = getAccessSP
-rs.update
+rs.Update
 If rs!spAccess = True Then sperr.Visible = False
 End Sub

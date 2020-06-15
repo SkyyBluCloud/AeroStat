@@ -27,7 +27,7 @@ Attribute VB_Exposed = False
 Option Compare Database
 
 Private Sub addEntry_Click()
-On Error GoTo errTrap
+On Error GoTo errtrap
 Dim ex As Boolean
 Dim rs As DAO.Recordset
 
@@ -79,12 +79,12 @@ Dim rs As DAO.Recordset
     
 'End With
 
-sexit:
+sExit:
     entryTime = ""
     entry = ""
     logView.Requery
     Exit Sub
-errTrap:
+errtrap:
     MsgBox Error$
     Resume Next
 End Sub
@@ -146,7 +146,7 @@ Dim closeSt As Boolean
     With rss
         .edit
         !closed = True
-        .update
+        .Update
         .Close
     End With
     

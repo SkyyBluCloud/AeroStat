@@ -113,21 +113,3 @@ End Function
 Function userInitials() As String
     userInitials = Nz(DLookup("opInitials", "tblUserAuth", "username = '" & Environ$("username") & "'"))
 End Function
-
-Function LToZ(ByVal lcl As String) As Date
-    Dim timezone As Integer
-    timezone = DLookup("Timezone", "settings", "ID=1")
-    If lcl = "" Then Exit Function
-    
-    LToZ = DateAdd("h", -timezone, lcl)
-End Function
-
-Function ZToL(ByVal zulu As String, Optional isTime As Boolean) As String
-    Dim timezone As Integer
-    timezone = DLookup("Timezone", "settings", "ID=1")
-    If zulu = "" Then Exit Function
-    
-    ZToL = DateAdd("h", timezone, zulu)
-    If isTime Then ZToL = Format(ZToL, "hh:nn")
-End Function
-

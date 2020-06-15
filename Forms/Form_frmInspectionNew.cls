@@ -24,7 +24,7 @@ DoCmd.OpenForm "frmBASH", , , , , acDialog, Name
 End Sub
 
 Private Sub done_Click()
-On Error GoTo errTrap
+On Error GoTo errtrap
 Dim looped As Boolean
 Dim firstEntryComplete As Boolean
 Dim rsLog As DAO.Recordset
@@ -133,7 +133,7 @@ log:
             !entryTime = LToZ(t)
             !entry = entry
             !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
-            .update
+            .Update
             .Bookmark = .LastModified
             IIf(Not firstEntryComplete, logOn, logOff) = !ID
         End With
@@ -148,7 +148,7 @@ log:
     End If
     Dirty = False
     
-sexit:
+sExit:
     'Parent.Parent.Form!sf3616.Form.logView.Requery
     bClose = True
     Parent!back.Visible = False
@@ -160,11 +160,11 @@ fb:
         If TypeOf ctl Is CommandButton Or CheckBox Then ctl.Enabled = True
     Next
     Exit Sub
-errTrap:
+errtrap:
     If err = 3101 Then
         'MsgBox "This 483 is not in the database.", vbInformation, "AF483"
     End If
-    errHandler err, Error$, Me.Name
+    ErrHandler err, Error$, Me.Name
     GoTo fb
 End Sub
 
@@ -255,8 +255,8 @@ bClose = False
     
 End Sub
 
-Private Sub Form_Error(DataErr As Integer, Response As Integer)
-    If DataErr = 2169 Or DataErr = 3101 Then Response = True
+Private Sub Form_Error(DataErr As Integer, response As Integer)
+    If DataErr = 2169 Or DataErr = 3101 Then response = True
 End Sub
 
 Private Sub specialCheck_Click()

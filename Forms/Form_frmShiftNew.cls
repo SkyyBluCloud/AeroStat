@@ -18,8 +18,8 @@ Private Sub Form_BeforeUpdate(cancel As Integer)
     End If
 End Sub
 
-Private Sub Form_Error(DataErr As Integer, Response As Integer)
-    If DataErr = 2169 Then Response = True
+Private Sub Form_Error(DataErr As Integer, response As Integer)
+    If DataErr = 2169 Then response = True
 End Sub
 
 Private Sub Form_Current()
@@ -142,7 +142,7 @@ bClose = True
                         .edit
                         !lastShift = Me.shiftID
                         joined = joined & ctl.Value & ";"
-                        .update
+                        .Update
                         Exit Do
                     Else
                         .MoveNext
@@ -190,7 +190,7 @@ bClose = True
             IIf(shiftTitle = "SWINGSHIFT", "RWY " & rwy & " IN USE. RSC " & rsc & ", BWC " & bwc & ". BARRIERS " & IIf(barrier = "WITHDRAWN", "WITHDRAWN", "CONFIGURED FOR RWY " & barrier) & ". ", "") & _
             shiftTitle & " CHECKLIST INITIATED. MONITORING RAMPNET FOR PROPER PHRASEOLOGY THROUGHOUT SHIFT"
             'FUTURE: User customization
-            .update
+            .Update
         End With
         End If
        
@@ -199,7 +199,7 @@ bClose = True
         'DoCmd.close acForm, "frmShiftSelect", acSaveYes
     End If
     
-sexit:
+sExit:
     tor = Now
     'DoCmd.close acForm, "frmShiftNew", acSaveYes
     Exit Sub

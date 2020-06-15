@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Option Compare Database
 
 Private Sub Form_Load()
-On Error GoTo errTrap
+On Error GoTo errtrap
 Dim rs As DAO.Recordset
 Set qdf = CurrentDb.QueryDefs("qOnStation")
 qdf.Parameters("bos") = True
@@ -21,20 +21,20 @@ Do While Not .EOF
         
         If InStr(1, !Spot, ",") > 0 Then
             Dim r As String 'ramp
-            Dim n As New Collection 'number
+            Dim N As New Collection 'number
             Dim sspot As String
             sspot = Replace(!Spot, ",", "")
             
             For i = 1 To Len(sspot)
                 char = Mid(sspot, i, 1)
                 If IsNumeric(char) Then
-                    n.add i
+                    N.add i
                 Else
                     r = r & char
                 End If
             Next
             
-            For Each i In n
+            For Each i In N
                 Me.Controls(r & i) = !Stationed
             Next
             
@@ -49,10 +49,10 @@ Do While Not .EOF
 Loop
 End With
 
-sexit:
+sExit:
     Exit Sub
-errTrap:
-    errHandler err, Error$, Me.Name & ".onLoad"
+errtrap:
+    ErrHandler err, Error$, Me.Name & ".onLoad"
     Resume Next
 End Sub
 

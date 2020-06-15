@@ -16,7 +16,7 @@ Private Sub add483_Click()
 End Sub
 
 Private Sub done_Click()
-On Error GoTo errTrap
+On Error GoTo errtrap
 bClose = True
 Dim rsLog As DAO.Recordset
 Dim entry As String
@@ -75,7 +75,7 @@ log:    With rsLog
                 !entryTime = t
                 !entry = entry
                 !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
-                .update
+                .Update
             End If
         End With
         If Not IsNull(inTime) Then
@@ -84,10 +84,10 @@ log:    With rsLog
             GoTo log
         End If
     End If
-sexit:
+sExit:
     DoCmd.Close acForm, "frm483CompCheck", acSaveYes
     Exit Sub
-errTrap:
+errtrap:
     If err = 3101 Then
         MsgBox "This 483 is not in the database.", vbInformation, "AF483"
     End If
@@ -118,7 +118,7 @@ Private Sub Form_Current()
     bClose = False
 End Sub
 
-Private Sub Form_Error(DataErr As Integer, Response As Integer)
-    If DataErr = 2169 Or DataErr = 3101 Then Response = True
+Private Sub Form_Error(DataErr As Integer, response As Integer)
+    If DataErr = 2169 Or DataErr = 3101 Then response = True
 End Sub
 

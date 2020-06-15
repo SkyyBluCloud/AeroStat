@@ -28,11 +28,11 @@ Option Compare Database
 Dim isLoggedIn As Boolean
 
 Private Sub tabCtl_Change()
-On Error GoTo errTrap
+On Error GoTo errtrap
     If tabCtl = 1 And Not isLoggedIn Then
         If MsgBox("A SharePoint connection will be attempted. Continue?", vbQuestion + vbYesNo, "ADTP") = vbYes Then
             DoCmd.OpenForm "frmLoading"
-            Forms!frmloading!loadingText.Caption = "Logging into SharePoint..."
+            Forms!frmLoading!loadingText.Caption = "Logging into SharePoint..."
             DoEvents
             frmPOVPass.SourceObject = "frmPOVPass"
             DoCmd.Close acForm, "frmLoading"
@@ -41,8 +41,8 @@ On Error GoTo errTrap
             tabCtl = 0
         End If
     End If
-sexit:
+sExit:
     Exit Sub
-errTrap:
+errtrap:
     
 End Sub

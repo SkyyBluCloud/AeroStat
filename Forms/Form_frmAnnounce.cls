@@ -20,3 +20,11 @@ End Sub
 Private Sub announcements_GotFocus()
     announcements.Requery
 End Sub
+
+Private Sub del_Click()
+If IsNull(Me.announcements) Then Exit Sub
+    If MsgBox("Delete notice?", vbQuestion + vbYesNo, "Notice") = vbYes Then
+        CurrentDb.Execute "DELETE FROM tblAnnounce WHERE ID = " & Me.announcements
+        Me.announcements.Requery
+    End If
+End Sub

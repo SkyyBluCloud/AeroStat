@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Option Compare Database
 
 Private Sub join_Click()
-On Error GoTo errTrap
+On Error GoTo errtrap
 Dim ls As Integer
 ls = DLookup("lastShift", "tblUserAuth", "username = '" & Environ$("username") & "'")
 If IsNull(listShift.Column(0)) Then Exit Sub
@@ -33,11 +33,11 @@ End If
     DoCmd.OpenForm "frmShiftBoard", , , "shiftID = " & listShift.Column(0), acFormEdit, , listShift.Column(0)
     DoCmd.Close acForm, "frmShiftSelect"
     
-sexit:
+sExit:
     Exit Sub
-errTrap:
+errtrap:
     MsgBox Error$
-    errHandler err, Error$, Me.Name
+    ErrHandler err, Error$, Me.Name
     Resume Next
     
 End Sub

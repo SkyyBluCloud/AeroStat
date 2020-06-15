@@ -95,7 +95,7 @@ Private Sub Detail_Click()
 End Sub
 
 Private Sub Form_Load()
-bs = "AND (((traffic.PPR) Like '*" & search & "*')) OR (((traffic.Callsign) Like '*" & search & "*')) OR (((traffic.Type) Like '*" & search & "*')) OR (((traffic.Tail) Like '*" & search & "*')) OR (((traffic.Requester) Like '*" & search & "*')) OR (((traffic.ctcInfo) Like '*" & search & "*')) OR (((traffic.Remarks) Like '*" & search & "*')) "
+bs = "AND (((tblTraffic.PPR) Like '*" & search & "*')) OR (((tblTraffic.Callsign) Like '*" & search & "*')) OR (((tblTraffic.Type) Like '*" & search & "*')) OR (((tblTraffic.Tail) Like '*" & search & "*')) OR (((tblTraffic.Requester) Like '*" & search & "*')) OR (((tblTraffic.ctcInfo) Like '*" & search & "*')) OR (((tblTraffic.Remarks) Like '*" & search & "*')) "
 populate
 End Sub
 
@@ -130,7 +130,7 @@ Private Sub return_Click()
 End Sub
 
 Public Function populate(Optional ByVal qsearch As String, Optional ByVal prt As Boolean)
-On Error GoTo errTrap
+On Error GoTo errtrap
 Dim rs As DAO.Recordset
 Dim dc As String
 dc = IIf(dateCat = 1, "arrDate", IIf(dateCat = 2, "depDate", "issueDate"))
@@ -143,7 +143,7 @@ range = "WHERE serialDate(nz([" & dc & "],[" & IIf(dc = "arrDate", "depDate", II
 'range = "WHERE serialDate(nz([arrDate])) Between DateSerial(" & Year(date1) & "," & Month(date1) & "," & Day(date1) & ") And DateSerial(" & Year(date2) & "," & Month(date2) & "," & Day(date2) & ")"
 If dateCat = 0 Then range = "WHERE serialDate('" & date1 & "') Between serialDate(nz([arrDate])) and serialDate(nz([depDate])) OR serialDate('" & date2 & "') Between serialDate(nz([arrDate])) and serialDate(nz([depDate])) OR serialDate(nz([arrDate])) Between DateSerial(" & Year(date1) & "," & Month(date1) & "," & Day(date1) & ") And DateSerial(" & Year(date2) & "," & Month(date2) & "," & Day(date2) & ")"
 
-ppr_list.RowSource = "SELECT tblPPR.ID, tblPPR.PPR, tblPPR.Status, tblPPR.arrDate, tblPPR.depDate, tblPPR.Callsign, tblPPR.Type, tblPPR.Tail, tblPPR.issueDate, tblPPR.dvCode, tblPPR.Spot, tblPPR.Fuel, tblPPR.pocName, tblPPR.ctcInfo, tblPPR.Services, tblPPR.archive " & _
+ppr_list.RowSource = "SELECT tblPPR.ID, tblPPR.PPR, tblPPR.Status, tblPPR.arrDate, tblPPR.depDate, tblPPR.Callsign, tblPPR.Type, tblPPR.Tail, tblPPR.issueDate, tblPPR.dvCode, tblPPR.Spot, tblPPR.Fuel, tblPPR.pocName, tblPPR.ctcInfo, tblPPR.Services, tblPPR.archive, tblPPR.depPoint, tblPPR.destination, tblPPR.remarks  " & _
         "FROM tblPPR " & range & qsearch & _
         " AND archive = " & (dateCat = 4) & IIf(dateCat = 4, " OR Status = 'Cancelled'", " AND Status <> 'Cancelled'") & " ORDER BY tblPPR.arrDate DESC , tblPPR.depDate;"
         '"ORDER BY tblPPR.arrDate DESC , tblPPR.depDate;"
@@ -155,13 +155,14 @@ ppr_list.RowSource = "SELECT tblPPR.ID, tblPPR.PPR, tblPPR.Status, tblPPR.arrDat
 '        If MsgBox("This will print a PPR report containing the PPRs shown. Continue?", vbQuestion + vbYesNo, "PPR") = vbYes Then
 '            DoCmd.OpenReport "rPPR", , , Replace(range, "WHERE ", "") & qsearch
 '        End If
-        DoCmd.OpenReport "rPPR", acViewReport, , Replace(range, "WHERE ", "") & qsearch
+        'DoCmd.OpenReport "rPPR", acViewReport, , Replace(range, "WHERE ", "") & qsearch
+        DoCmd.OpenReport "rPPR", acViewReport, , , , ppr_list.RowSource
     ElseIf rs.RecordCount = 1 Then
         DoCmd.OpenForm "new_ppr", , , "PPR = '" & rs!PPR & "'", acFormEdit
     End If
 fExit:
     Exit Function
-errTrap:
+errtrap:
     MsgBox Error$
 End Function
 

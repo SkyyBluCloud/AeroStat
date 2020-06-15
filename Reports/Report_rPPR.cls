@@ -8,28 +8,28 @@ Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
-Dim obArrDate, obDepDate, obPPR As Boolean
+Dim doOrderArrDate, doOrderDepDate, doOrderPPR, obArrDate, obDepDate, obPPR As Boolean
 
 
 Private Sub arrdate_Label_Click()
-Me.OrderBy = "arrdate" & IIf(obArrDate, " DESC", "")
+doOrderArrDate = True
 obArrDate = Not obArrDate
-Me.OrderByOn = True
+refreshOrder 1
 End Sub
 
 Private Sub depdate_Label_Click()
-Me.OrderBy = "depDate" & IIf(obDepDate, " DESC", "")
+doOrderDepDate = True
 obDepDate = Not obDepDate
-Me.OrderByOn = True
+refreshOrder 2
 End Sub
 
 Private Sub email_Click()
-On Error GoTo errTrap
+On Error GoTo errtrap
 'Dim oApp As New Outlook.Application
 'Dim oEmail As Outlook.MailItem
 Dim file As String
 
-    file = DLookup("driveprefix", "settings") & "7. PPR and Quiet Hr Log Tracker\PPR Reports\" & Replace(Caption, ":", "") & ".pdf"
+    file = DLookup("driveprefix", "tblSettings") & "7. PPR and Quiet Hr Log Tracker\PPR Reports\" & Replace(Caption, ":", "") & ".pdf"
     'DoCmd.OutputTo acOutputReport, Me.Name, acFormatPDF, file, False
     DoCmd.SendObject acSendReport, Me.Name, acFormatPDF, , , , Caption, "Attached is the requested PPR Report, current as of " & Format(Now, "dd-mmm-yy hhnn(L)") & "." & vbCrLf & vbCrLf & "v/r" & vbCrLf, True
     DoCmd.Close acReport, Me.Name, acSaveNo
@@ -41,16 +41,16 @@ Dim file As String
 '        .Attachments.add file
 '    End With
 
-sexit:
+sExit:
     Exit Sub
-errTrap:
-    errHandler err, Error$, Me.Name
+errtrap:
+    ErrHandler err, Error$, Me.Name
 End Sub
 
 Private Sub PPR_Label_Click()
-Me.OrderBy = "PPR" & IIf(obPPR, " DESC", "")
+doOrderPPR = True
 obPPR = Not obPPR
-Me.OrderByOn = True
+refreshOrder 3
 End Sub
 
 Private Sub print_Click()
@@ -58,8 +58,41 @@ On Error Resume Next
     DoCmd.RunCommand acCmdPrint
 End Sub
 
+Private Sub refreshOrder(Optional priority As Integer)
+'obArrDate, obDepDate, obPPR
+Dim order As String
+
+If Nz(priority) <> "" Then
+    Select Case priority
+    Case 1
+        order = "arrdate" & IIf(obArrDate, " DESC", "")
+    Case 2
+        order = "depDate" & IIf(obDepDate, " DESC", "")
+    Case 3
+        order = "PPR" & IIf(obPPR, " DESC", "")
+    End Select
+End If
+
+If doOrderArrDate And priority <> 1 Then
+    order = order & ", arrdate" & IIf(obArrDate, " DESC", "")
+End If
+
+If doOrderDepDate And priority <> 2 Then
+    order = order & ", depDate" & IIf(obDepDate, " DESC", "")
+End If
+
+If doOrderPPR And priority <> 3 Then
+    order = order & ", PPR" & IIf(obPPR, " DESC", "")
+End If
+
+Me.OrderBy = order
+Me.OrderByOn = True
+    
+End Sub
+
 Private Sub Report_Load()
-    Caption = "PPR Report " & Nz(OpenArgs) & Format(Now, "dd-mmm-yy hhnn(L)")
+    Caption = "PPR Report " & Format(Now, "dd-mmm-yy hhnn(L)")
+    If Nz(OpenArgs) <> "" Then Me.RecordSource = OpenArgs
 End Sub
 
 

@@ -49,7 +49,7 @@ Dim fld As DAO.Field
                         End If
                     End With
                 Next
-                .update
+                .Update
                 .Close
             End With
         End If
@@ -63,7 +63,7 @@ Dim fld As DAO.Field
 End Sub
 
 Private Sub Form_Load()
-formList.RowSource = "SELECT Traffic.Callsign, Traffic.Type, Traffic.Tail FROM Traffic WHERE (((Traffic.FormID)=" & ID & "));"
+formList.RowSource = "SELECT tblTraffic.Callsign, tblTraffic.Type, tblTraffic.Tail FROM tblTraffic WHERE (((tblTraffic.FormID)=" & ID & "));"
 header.Caption = Replace(header.Caption, "<CALL>", Callsign)
 End Sub
 

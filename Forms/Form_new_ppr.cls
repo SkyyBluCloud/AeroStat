@@ -113,7 +113,7 @@ With rs
     !archive = True
     !archivetime = Now
     !archiveby = Util.getOpInitials
-    .update
+    .Update
     .Close
 End With
 Set rs = Nothing
@@ -133,7 +133,7 @@ If comment = "" Then Exit Sub
         !inputTime = Now
         !comment = comment
         !opInitials = Util.getOpInitials
-        .update
+        .Update
         .Bookmark = .LastModified
         If NewRecord Then unsavedComment = !ID
         .Close
@@ -338,8 +338,8 @@ unArchive.Visible = archive
     If NewRecord Then formatPPR
 End Sub
 
-Private Sub Form_Error(DataErr As Integer, Response As Integer)
-    If DataErr = 2169 Then Response = True
+Private Sub Form_Error(DataErr As Integer, response As Integer)
+    If DataErr = 2169 Then response = True
 End Sub
 
 Private Function savePPR(Optional cancelled As Boolean) As Boolean
@@ -347,7 +347,7 @@ On Error GoTo save_err
 Dim sperr As Boolean
 Dim spAccess As Boolean
 Dim stn As String
-stn = DLookup("station", "settings")
+stn = DLookup("station", "tblSettings")
 spAccess = DLookup("spaccess", "tbluserauth", "username = '" & getUSN & "'")
 If Not spAccess Then spAccess = getAccessSP
 If spAccess Then
@@ -414,7 +414,28 @@ DoEvents
                         ctl.BorderColor = RGB(166, 166, 166)
                     End If
                     
+                Case "depDate"
+                    If Nz(ctl.Value) = "" Then ctl.Value = DateAdd("d", 3, arrDate)
+                    
                 Case "Fuel", "Spot"
+                    Do 'Start loop
+                        If InStr(1, ctl.Value, "-") <> 0 Then 'Finds a hyphen
+                        
+                            If Not (IsNumeric(Mid(ctl.Value, InStr(1, ctl.Value, "-") - 1, 1)) _
+                            And IsNumeric(Mid(ctl.Value, InStr(1, ctl.Value, "-") + 1, 1))) Then 'both sides of hyphen are not both numeric
+                            
+                                ctl.Value = Replace(ctl.Value, "-", "", , 1) 'Remove hyphen; run loop again
+                                
+                            Else 'Both sides of hyphen are both numeric; stop the loop
+                            
+                                'Should probably add a check for hyphens appearing after a 'non-qualifying' hyphen, but I don't know if this situation will ever happen
+                                Exit Do
+                            End If
+                        Else 'No hyphen to begin with; prevent infinite loop
+                            Exit Do
+                        End If
+                    Loop
+                        
                     If Nz(ctl.Value) = "" And Not approach Then
                         ctl.BorderColor = RGB(255, 0, 0)
                         fail(3) = True
@@ -449,7 +470,7 @@ DoEvents
         If IsNumeric(Right(dvCode, 1)) And Right(dvCode, 1) <= 7 Then
         
             Select Case Left(dvCode, 1)
-            Case "B" To "E", "G" To "L", "N" To "Q", "T", "U"
+            Case "B", "D" To "E", "G" To "L", "N" To "Q", "T", "U", "W" To "Z"
                 MsgBox "Invalid DV Code", vbInformation, "AeroStat"
                 GoTo fallback
             End Select
@@ -497,26 +518,29 @@ DoEvents
                             
     'I'm sure theres a better way to write this...
     rcheck = False
+    Dim cd1, cd2 As Date
     Set qdf = CurrentDb.QueryDefs("qAnnounce")
-    qdf.Parameters("checkDate") = Format(arrDate, "mm/dd/yyyy")
+    cd1 = Format(arrDate, "mm/dd/yyyy")
+    cd2 = Format(Nz(depDate, arrDate), "mm/dd/yyyy")
+    qdf.Parameters("checkDate") = cd1
     Set rsRes = qdf.OpenRecordset
     With rsRes
         If Not .EOF Then
 '            .MoveLast
 '            .MoveFirst
             rcheck = True
-            DoCmd.OpenForm "frmRestrictions", , , , , acDialog, Format(arrDate, "mm/dd/yyyy")
+            DoCmd.OpenForm "frmRestrictions", , , , , acDialog, cd1
             If resOverride Then GoTo fallback
         End If
     End With
-    If Not rcheck And Not IsNull(depDate) Then
-        qdf.Parameters("checkDate") = Format(depDate, "mm/dd/yyyy")
+    If cd1 <> cd2 Then
+        qdf.Parameters("checkDate") = cd2
         Set rsRes = qdf.OpenRecordset
         With rsRes
             If Not .EOF Then
     '            .MoveLast
     '            .MoveFirst
-                DoCmd.OpenForm "frmRestrictions", , , , , acDialog, Format(depDate, "mm/dd/yyyy")
+                DoCmd.OpenForm "frmRestrictions", , , , , acDialog, cd2
                 If resOverride Then GoTo fallback
             End If
         End With
@@ -693,7 +717,7 @@ inoutsearch:
                     If Not inout Then arrID = !ID
                     !spID = spID
                     Callsign = !Callsign
-                    .update
+                    .Update
                     Exit Do
                 End If
             End If
@@ -741,7 +765,7 @@ inoutsearch:
                 ![Parking Spot/Location] = Spot
                 ![AM Initials] = AMOPS
                 ![TA Initials] = TA
-                .update
+                .Update
                 .Bookmark = .LastModified
                 spID = !ID
                 .Close
@@ -766,7 +790,7 @@ inoutsearch:
         Else
             If Not sperr Then
                 If Not rs.EOF Then
-                    Set rsFP = CurrentDb.OpenRecordset("SELECT * FROM Traffic WHERE ID = " & Nz(arrID, 0))
+                    Set rsFP = CurrentDb.OpenRecordset("SELECT * FROM tblTraffic WHERE ID = " & Nz(arrID, 0))
                     rs.edit
                     If Status = "Cancelled" Or Status = "Denied" Then
                         rs![Mission/Event Type] = "Cancelled"
@@ -798,7 +822,7 @@ inoutsearch:
                         
                         ![Current ICAO] = depPoint
                         If Not rsFP.EOF Then
-                            ![ETA (Z)] = LToZ(rsFP!arrDate)
+                            ![ETA (Z)] = LToZ(Nz(rsFP!arrDate, arrDate))
                         Else
                             ![ETA (Z)] = LToZ(arrDate)
                         End If
@@ -840,12 +864,12 @@ els:
                         End Select
                         
                         Dim tlog As DAO.Recordset
-                        Set tlog = CurrentDb.OpenRecordset("SELECT * FROM Traffic WHERE Traffic.ID = " & Nz(arrID, 0))
+                        Set tlog = CurrentDb.OpenRecordset("SELECT * FROM tblTraffic WHERE tblTraffic.ID = " & Nz(arrID, 0))
                         With tlog
                             If .RecordCount = 1 Then
                                 .edit
                                 !Spot = Spot
-                                .update
+                                .Update
                                 .Close
                             End If
                         End With
@@ -853,7 +877,7 @@ els:
                         
                         ![AM Initials] = AMOPS
                         ![TA Initials] = TA
-                        .update
+                        .Update
                         .Close
                         sending.Caption = "Success!"
                         DoEvents
@@ -886,16 +910,26 @@ fallback:
     Exit Function
 
 save_err:
-    MsgBox Error$
-    If err = 3011 Then
+    Select Case err
+    Case 3011
         sperr = True
         Resume Next
-    ElseIf err = 3044 Then
+    Case 3044
         If onShareDriveDisconnect Then GoTo 10
-    End If
-    
+    Case 3851
+        Util.relinkTables
+        MsgBox "Something went wrong. Try again in 5 seconds.", vbCritical, "PPR"
+    Case Else
+        Util.ErrHandler err, Error$, Me.Name & ".savePPR"
+    End Select
 GoTo fallback
+Resume Next
 End Function
+
+Private Sub Spot_LostFocus()
+    If Spot = "" Then Exit Sub
+    
+End Sub
 
 Private Sub Type_AfterUpdate()
     If Not fighter And (InStr(1, Me.Type, "A10") > 0 Or InStr(1, Me.Type, "F15") > 0 Or InStr(1, Me.Type, "F16") > 0 Or InStr(1, Me.Type, "18") > 0 Or InStr(1, Me.Type, "F22") > 0 Or InStr(1, Me.Type, "F35") > 0) Then

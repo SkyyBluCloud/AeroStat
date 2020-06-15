@@ -35,7 +35,7 @@ If MsgBox("This will archive all listed PPRs and keep the current PPR being edit
                     rs.Close
                 End If
             End If
-            .update
+            .Update
         End If
         .MoveNext
     Loop: End With
@@ -72,7 +72,7 @@ If MsgBox("This will keep selected PPRs and archive the rest.", vbInformation + 
                     rs.Close
                 End If
             End If
-            .update
+            .Update
         End If
         
         .MoveNext 'On to the next dupe

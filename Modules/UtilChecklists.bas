@@ -2,10 +2,23 @@ Attribute VB_Name = "UtilChecklists"
 Option Compare Database
 Const mName As String = "UtilChecklists"
 
+Public Function isComplete(ByVal checklist As Integer, ByVal instance As Integer) As Boolean
+Dim rCount, cCount As Integer
+Dim criteria As String
+criteria = "checklistID = " & checklist & " AND instance = " & instance
+rCount = DCount("ID", "tblChecklistCompletionData", criteria)
+cCount = DCount("opinitials", "tblChecklistCompletionData", criteria)
+isComplete = (rCount <> 0) And (rCount = cCount)
+End Function
+
+Public Function isclosed(ByVal checklistID As Integer, ByVal instance As Integer) As Boolean
+isclosed = Not IsNull(DLookup("opSig", "tblChecklistCompletionData", "checklistID = " & checklistID & " AND instance = " & instance))
+End Function
+
 Public Function startChecklist(ByVal checklistID As Integer, ByVal shiftID As Integer) As Integer
 'Initiate the <checklistID> for <shiftID>
 'Returns: True if successful, False if not
-On Error GoTo errTrap
+On Error GoTo errtrap
 Dim rsItems As DAO.Recordset
 Dim rsCD As DAO.Recordset
 Dim instance As Integer
@@ -22,7 +35,7 @@ Set rsCD = CurrentDb.OpenRecordset("tblChecklistCompletionData")
             !itemID = rsItems!itemID
             !shiftID = shiftID
             !startDate = Now
-            .update
+            .Update
         End With
         .MoveNext
     Loop: End With
@@ -30,11 +43,23 @@ Set rsCD = CurrentDb.OpenRecordset("tblChecklistCompletionData")
     startChecklist = instance
     
 fExit:
-    log CStr(startChecklist), "UtilChecklists.startChecklist"
+    log "Started instance " & instance & " of checklist " & checklistID & " for shift " & shiftID, "UtilChecklists.startChecklist"
     Exit Function
     
-errTrap:
-    errHandler err, Error$, mName & ".startChecklist"
+errtrap:
+    ErrHandler err, Error$, mName & ".startChecklist"
+    
+End Function
+
+Public Function closeChecklist(ByVal checklistID As Integer, ByVal instance As Integer, Optional ByVal opInitials As String) As Boolean
+If IsNull(instance) Then instance = DMax("instance", "tblChecklistCompletionData", "checklistID = " & checklistID)
+If IsNull(opInitials) Then opInitials = Util.getOpInitials
+Dim db As DAO.Database
+Set db = CurrentDb
+
+    opSig = Util.getUSN(opInitials)
+    db.Execute "UPDATE tblChecklistCompletionData SET opSig = '" & opSig & "' WHERE checklistID = " & checklistID & " AND instance = " & instance
+    closeChecklist = db.RecordsAffected <> 0
     
 End Function
 
@@ -51,7 +76,7 @@ Public Function deleteChecklist(ByVal checklistID As Integer, ByVal shiftID As I
 '            .MoveNext
 '        Loop
 '    End With
-On Error GoTo errTrap
+On Error GoTo errtrap
 Dim db As DAO.Database
 Set db = CurrentDb
 
@@ -65,8 +90,8 @@ fExit:
     log CStr(deleteChecklist), "UtilChecklists.startChecklist"
     Exit Function
 
-errTrap:
-    errHandler err, Error$, mName & ".deleteChecklist"
+errtrap:
+    ErrHandler err, Error$, mName & ".deleteChecklist"
     GoTo fExit
 End Function
 

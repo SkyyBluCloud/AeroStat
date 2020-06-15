@@ -39,7 +39,7 @@ reason.Visible = Not compliant
 End Sub
 
 Private Sub done_Click()
-On Error GoTo errTrap
+On Error GoTo errtrap
 Dim resp As String
 bClose = True
 Dim rsLog As DAO.Recordset
@@ -124,16 +124,16 @@ Dim rsLog As DAO.Recordset
                     !entryTime = LToZ(checkDate)
                     !entry = "483 CK LOGGED " & IIf(compliant, "IN COMPLIANCE", "NOT IN COMPLIANCE")
                     !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
-                    .update
+                    .Update
                 End With
             End If
         End If
     End If
     
-sexit:
+sExit:
     DoCmd.Close acForm, "frm483CompCheck", acSaveYes
     Exit Sub
-errTrap:
+errtrap:
 '    If err = 3101 Then
 '        If MsgBox("Confirm information:" & vbCrLf & vbCrLf & _
 '        AF483 & vbCrLf & _
@@ -158,7 +158,7 @@ errTrap:
         
 '    End If
     
-    errHandler err, Error$, Me.Name
+    ErrHandler err, Error$, Me.Name
     Resume Next
 End Sub
 
@@ -174,8 +174,8 @@ Private Sub Form_Current()
     bClose = False
 End Sub
 
-Private Sub Form_Error(DataErr As Integer, Response As Integer)
-    If DataErr = 2169 Or DataErr = 3101 Then Response = True
+Private Sub Form_Error(DataErr As Integer, response As Integer)
+    If DataErr = 2169 Or DataErr = 3101 Then response = True
 End Sub
 
 Private Sub Form_Load()

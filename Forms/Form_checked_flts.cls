@@ -28,7 +28,7 @@ Option Compare Database
 Dim bs As String
 
 Private Sub btnSearch_Click()
-On Error GoTo errTrap
+On Error GoTo errtrap
     If Not search = "" Then
         If InStr(1, search, "=") > 0 Then
             Dim sField As String
@@ -38,17 +38,17 @@ On Error GoTo errTrap
             idx = InStr(1, search, "=")
             fld = Left(search, idx - 1)
             param = Mid(search, idx + 1)
-            bs = "AND (((traffic." & fld & ") Like '*" & param & "*'))"
+            bs = "AND (((tblTraffic." & fld & ") Like '*" & param & "*'))"
         Else
-            bs = "AND ((((traffic.PPR) Like '*" & search & "*')) OR (((traffic.Callsign) Like '*" & search & "*')) OR (((traffic.Type) Like '*" & search & "*')) OR (((traffic.Tail) Like '*" & search & "*')) OR (((traffic.Requester) Like '*" & search & "*')) OR (((traffic.ctcInfo) Like '*" & search & "*')) OR (((traffic.Remarks) Like '*" & search & "*')))"
+            bs = "AND ((((tblTraffic.PPR) Like '*" & search & "*')) OR (((tblTraffic.Callsign) Like '*" & search & "*')) OR (((tblTraffic.Type) Like '*" & search & "*')) OR (((tblTraffic.Tail) Like '*" & search & "*')) OR (((tblTraffic.Requester) Like '*" & search & "*')) OR (((tblTraffic.ctcInfo) Like '*" & search & "*')) OR (((tblTraffic.Remarks) Like '*" & search & "*')))"
         End If
     Else
         bs = ""
     End If
     populate , , bs
-sexit:
+sExit:
     Exit Sub
-errTrap:
+errtrap:
     MsgBox Error$
     Resume Next
 End Sub
@@ -58,7 +58,7 @@ Private Sub btnSearchClear_Click()
     populate
 End Sub
 
-Private Sub customDate1_Change()
+Private Sub customDate1_AfterUpdate()
     If Not customDate2 = "" Then
         optDate = 3
         done.SetFocus
@@ -67,7 +67,7 @@ Private Sub customDate1_Change()
     End If
 End Sub
 
-Private Sub customDate2_Change()
+Private Sub customDate2_AfterUpdate()
     If Not customDate1 = "" Then
         optDate = 3
         done.SetFocus
@@ -98,20 +98,20 @@ End Sub
 Private Sub Form_Load()
 Dim rs As DAO.Recordset
 Direction = "Is Not Null"
-bs = "AND (((traffic.PPR) Like '*" & search & "*')) OR (((traffic.Callsign) Like '*" & search & "*')) OR (((traffic.Type) Like '*" & search & "*')) OR (((traffic.Tail) Like '*" & search & "*')) OR (((traffic.Requester) Like '*" & search & "*')) OR (((traffic.ctcInfo) Like '*" & search & "*')) OR (((traffic.Remarks) Like '*" & search & "*')) "
+bs = "AND (((tblTraffic.PPR) Like '*" & search & "*')) OR (((tblTraffic.Callsign) Like '*" & search & "*')) OR (((tblTraffic.Type) Like '*" & search & "*')) OR (((tblTraffic.Tail) Like '*" & search & "*')) OR (((tblTraffic.Requester) Like '*" & search & "*')) OR (((tblTraffic.ctcInfo) Like '*" & search & "*')) OR (((tblTraffic.Remarks) Like '*" & search & "*')) "
 populate
-    Set rs = CurrentDb.OpenRecordset("SELECT Traffic.Callsign, Traffic.Status, Traffic.depPoint, Traffic.Destination, Traffic.ATD FROM Traffic WHERE Traffic.Status Like 'Enroute' AND Traffic.depPoint Not Like Traffic.Destination AND Traffic.Destination not Like DLookUp('Station','settings','ID=1')")
-    If Not rs.EOF Then rs.MoveLast
-    Do Until rs.BOF
-    If DateAdd("n", 30, rs!ATD) < LToZ(Now()) Then
-            rs.edit
-            rs!Status = "Closed"
-            rs.update
-        End If
-        rs.MovePrevious
-    Loop
-    rs.Close
-    Set rs = Nothing
+'    Set rs = CurrentDb.OpenRecordset("SELECT tblTraffic.Callsign, tblTraffic.Status, tblTraffic.depPoint, tblTraffic.Destination, tblTraffic.ATD FROM tblTraffic WHERE tblTraffic.Status Like 'Enroute' AND tblTraffic.depPoint Not Like tblTraffic.Destination AND tblTraffic.Destination not Like DLookUp('Station','settings')")
+'    If Not rs.EOF Then rs.MoveLast
+'    Do Until rs.BOF
+'    If DateAdd("n", 30, rs!ATD) < LToZ(Now()) Then
+'            rs.edit
+'            rs!Status = "Closed"
+'            rs.Update
+'        End If
+'        rs.MovePrevious
+'    Loop
+'    rs.Close
+'    Set rs = Nothing
     
     
 End Sub
@@ -131,29 +131,29 @@ Dim rs As DAO.Recordset
     Direction = IIf(Direction = "", _
         IIf(sortDir = "All", "Is Not Null", "Like '" & sortDir & "'"), Direction)
     
-    qstatus = IIf(qstatus = "", IIf(Not sts = "All", "AND ((Traffic.Status) Like '" & sts & "' )", ""), qstatus)
+    qstatus = IIf(qstatus = "", IIf(Not sts = "All", "AND ((tblTraffic.Status) Like '" & sts & "' )", ""), qstatus)
     
     qsearch = IIf(qsearch = "", IIf(Nz(search) = "", "", bs), qsearch)
 
-    qaf = "SELECT Traffic.ID, IIf([depPoint]=DLookUp('Station','settings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival') AS Direction, Traffic.DOF, Traffic.flightRule, Traffic.Callsign, Traffic.Type, Traffic.Tail, Traffic.depPoint, Traffic.flightLvl, Traffic.ETD, Traffic.ATD, Traffic.ETE, Traffic.Destination, Traffic.cETA, Traffic.ATA, Traffic.Status, Traffic.TWR_In, Traffic.TWR_Out " & _
-    "FROM traffic " & _
-    "WHERE (((IIf([depPoint]=DLookUp('Station','settings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival')) " & Direction & ") " & _
+    qaf = "SELECT tblTraffic.ID, IIf([depPoint]=DLookUp('Station','tblSettings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival') AS Direction, tblTraffic.DOF, tblTraffic.flightRule, tblTraffic.Callsign, tblTraffic.Type, tblTraffic.Tail, tblTraffic.depPoint, tblTraffic.flightLvl, tblTraffic.ETD, tblTraffic.ATD, tblTraffic.ETE, tblTraffic.Destination, format(IIf(IsNull(ATD),IIf(Not ETA=0,ETA,ETD+ETE),ATD+ETE),'hh:nn') AS cETA, tblTraffic.ATA, tblTraffic.Status, tblTraffic.TWR_In, tblTraffic.TWR_Out " & _
+    "FROM tblTraffic " & _
+    "WHERE (((IIf([depPoint]=DLookUp('Station','tblSettings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival')) " & Direction & ") " & _
     qstatus & _
-    "AND ((Traffic.depPoint) Not Like DLookUp('Station','settings','ID=1')) " & _
-    "AND ((Traffic.Destination) Like DLookUp('Station','settings','ID=1')) " & _
-    "AND ((Format((DateAdd('h',DLookUp('Timezone','settings'),[dof]+IIf([atd] Is Null,[etd],[atd]))+[ete]),'mmddyy')) [magic])) " & qsearch & _
-    "OR (((IIf([depPoint]=DLookUp('Station','settings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival')) " & Direction & ") " & _
+    "AND ((tblTraffic.depPoint) Not Like DLookUp('Station','tblSettings')) " & _
+    "AND ((tblTraffic.Destination) Like DLookUp('Station','tblSettings')) " & _
+    "AND ((Format((DateAdd('h',DLookUp('Timezone','tblSettings'),[dof]+IIf([atd] Is Null,[etd],[atd]))+[ete]),'mmddyy')) [magic])) " & qsearch & _
+    "OR (((IIf([depPoint]=DLookUp('Station','tblSettings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival')) " & Direction & ") " & _
     qstatus & _
-    "AND ((Traffic.depPoint) Like DLookUp('Station','settings','ID=1')) " & _
-    "AND ((Traffic.Destination) Not Like DLookUp('Station','settings','ID=1')) " & _
-    "AND ((Format(DateAdd('h',DLookUp('Timezone','settings'),[dof]+[etd]),'mmddyy')) [magic])) " & qsearch & _
-    "OR (((IIf([depPoint]=DLookUp('Station','settings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival')) " & Direction & ") " & _
+    "AND ((tblTraffic.depPoint) Like DLookUp('Station','tblSettings')) " & _
+    "AND ((tblTraffic.Destination) Not Like DLookUp('Station','tblSettings')) " & _
+    "AND ((Format(DateAdd('h',DLookUp('Timezone','tblSettings'),[dof]+[etd]),'mmddyy')) [magic])) " & qsearch & _
+    "OR (((IIf([depPoint]=DLookUp('Station','tblSettings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival')) " & Direction & ") " & _
     qstatus & _
-    "AND ((Traffic.depPoint) Like DLookUp('Station','settings','ID=1')) " & _
-    "AND ((Traffic.Destination) Like DLookUp('Station','settings','ID=1')) " & _
-    "AND ((Format((DateAdd('h',DLookUp('Timezone','settings'),[dof]+IIf([atd] Is Null,[etd],[atd]))+[ete]),'mmddyy')) [magic])) " & qsearch & _
-    "ORDER BY Traffic.DOF DESC, IIf(Traffic.ATD Is Null,Traffic.ETD,Traffic.ATD) DESC;"
-    '"ORDER BY IIf(IIf([depPoint]=DLookUp('Station','settings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival') Not Like 'Local',IIf(IIf([depPoint]=DLookUp('Station','settings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival') Like 'Arrival',Traffic.arrDate,Traffic.depDate),Traffic.depDate) DESC;"
+    "AND ((tblTraffic.depPoint) Like DLookUp('Station','tblSettings')) " & _
+    "AND ((tblTraffic.Destination) Like DLookUp('Station','tblSettings')) " & _
+    "AND ((Format((DateAdd('h',DLookUp('Timezone','tblSettings'),[dof]+IIf([atd] Is Null,[etd],[atd]))+[ete]),'mmddyy')) [magic])) " & qsearch & _
+    "ORDER BY tblTraffic.DOF DESC, IIf(tblTraffic.ATD Is Null,tblTraffic.ETD,tblTraffic.ATD) DESC;"
+    '"ORDER BY IIf(IIf([depPoint]=DLookUp('Station','settings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival') Not Like 'Local',IIf(IIf([depPoint]=DLookUp('Station','settings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival') Like 'Arrival',tblTraffic.arrDate,tblTraffic.depDate),tblTraffic.depDate) DESC;"
 
     Select Case optDate
         Case 1
@@ -192,6 +192,6 @@ End Sub
 
 Private Sub sts_AfterUpdate()
 Dim qs As String
-    If Not sts = "All" Then qs = "AND ((Traffic.Status) Like '" & sts & "') " Else qs = ""
+    If Not sts = "All" Then qs = "AND ((tblTraffic.Status) Like '" & sts & "') " Else qs = ""
     populate , qs
 End Sub

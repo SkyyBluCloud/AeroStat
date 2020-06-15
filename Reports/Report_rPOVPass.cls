@@ -9,6 +9,12 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
 
+Private Sub pdf_Click()
+Dim f As String
+
+DoCmd.OutputTo acOutputReport, "new3616", acFormatPDF, f
+End Sub
+
 Private Sub print_Click()
 On Error Resume Next
     DoCmd.RunCommand acCmdPrint

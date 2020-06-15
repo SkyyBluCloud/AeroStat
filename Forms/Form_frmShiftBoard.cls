@@ -34,9 +34,10 @@ lstOsSel = getSelection(lstOnShift)
         lstOnShift.RemoveItem (a)
         authLevel = DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(a, 2) & "'")
         lstOnShiftChange.add (a & " " & IIf(authLevel = 8, "(TRAINEE)", "(AMOC)") & " OFF SHIFT")
+        
     Next
     
-    CurrentDb.Execute "UPDATE tblUserAuth SET onShift = False WHERE spName = '" & join(lstOsSel, "' OR spName = '") & "'"
+    CurrentDb.Execute "UPDATE tblUserAuth SET onShift = False WHERE ([rank] & ' ' & Left([firstName],1) & '. ' & [lastName] & '/' & [opInitials]) = '" & join(lstOsSel, "' OR ([rank] & ' ' & Left([firstName],1) & '. ' & [lastName] & '/' & [opInitials]) = '") & "'"
     
     Me.superLead.SetFocus
     Me.amoc = lstOnShift.RowSource
@@ -359,7 +360,7 @@ Dim offshift() As String
         'Get data from previous shift.
         lstOnShift.RowSource = ""
         btnStartStop.Caption = "Start Shift"
-        Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblShiftManager WHERE shiftid = " & DMax("shiftid", "tblshiftmanager"))
+        Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblShiftManager WHERE shiftid = " & Nz(DMax("shiftid", "tblshiftmanager"), 0))
         With rs
             On Error Resume Next
             For Each ctl In Me.Controls
@@ -388,8 +389,8 @@ btnSave = Me.Dirty
 bClose = False
 End Sub
 
-Private Sub Form_Error(DataErr As Integer, Response As Integer)
-    If DataErr = 2169 Then Response = True
+Private Sub Form_Error(DataErr As Integer, response As Integer)
+    If DataErr = 2169 Then response = True
 End Sub
 
 Public Function getShiftTitle() As String
@@ -458,7 +459,7 @@ Dim offshift() As String
 
     If Not IsNull(Me.amoc) Then lstOnShift.RowSource = Me.amoc
     
-    Set rsAmoc = CurrentDb.OpenRecordset("SELECT [rank] & ' ' & Left([firstname],1) & '. ' & [lastname] & '/' & [opinitials] AS Expr1 FROM tblUserAuth WHERE (((tblUserAuth.authLevel)<=8));")
+    Set rsAmoc = CurrentDb.OpenRecordset("SELECT tblUserAuth.rank & ' ' & Left([firstname],1) & '. ' & [lastname] & '/' & [opinitials] AS Expr1 FROM tblRank INNER JOIN tblUserAuth ON tblRank.rank = tblUserAuth.rank WHERE (((tblUserAuth.authLevel)<=8)) ORDER BY tblRank.order DESC;")
     With rsAmoc: Do While Not .EOF
     'For Each a In Split(lstOnShift.RowSource, ";")
     If !Expr1 <> Nz(superLead) Then

@@ -107,51 +107,56 @@ End Sub
 'End Sub
 
 Private Sub savePDF_Click()
-Dim f As String
-Dim n As Integer
-Dim ans As VbMsgBoxResult
-'log Me.RecordSource, Me.Name & ".savePDF_Click"
-    DoCmd.SetWarnings False
-    f = DLookup("drivePrefix", "settings") & "1. Events Logs\" & UCase(Format(rDate, "yyyy\\mm mmm yyyy\\d mmm yy ") & "db") & ".pdf"
-    If dir(f) = "" Then createPath DLookup("drivePrefix", "settings") & "1. Events Logs\" & UCase(Format(rDate, "yyyy\\mm mmm yyyy"))
-    Do While Len(dir(f)) > 0
-        n = n + 1
-        ans = IIf(ans <> 0, ans, MsgBox("A duplicate log was found for this date. replace?", vbQuestion + vbYesNoCancel, "Events Log"))
-        'This might not be right...
-        Select Case ans
-            Case vbYes
-                Exit Do
-            Case vbCancel
-                Exit Sub
-            Case vbNo
-                Select Case n
-                    Case 1
-                        f = Replace(f, ".pdf", " (" & n & ").pdf")
-                    Case Else
-                        f = Replace(f, " (" & n - 1 & ").pdf", " (" & n & ").pdf")
-                End Select
-                MsgBox "This log will be saved as '(" & n & ").pdf' instead", vbInformation, "AF3616"
-                Exit Do
-        End Select
-    Loop
-'    If Not n = 0 Then
-'        If MsgBox("A duplicate log was found for this date. replace?", vbQuestion + vbYesNo, "Events Log") = vbYes Then
-'            MsgBox "A log with the same title was found. This log was saved as '(" & n & ").pdf' instead", vbInformation, "AF3616"
-'        Else
-    'DoCmd.OpenReport "new3616", acViewReport, , Left(Mid(Me.RecordSource, InStr(1, Me.RecordSource, "WHERE ") + 6), Len(Mid(Me.RecordSource, InStr(1, Me.RecordSource, "WHERE ") + 6)) - 1)
-    DoCmd.OpenReport "new3616", acViewReport, , , , rDate
-    DoEvents
-    DoCmd.OutputTo acOutputReport, "new3616", acFormatPDF, f
-    'DoCmd.close acReport, "new3616", acSaveNo
-    
-    DoCmd.SetWarnings True
-    'MsgBox "To sign, go to: " & vbCrLf & "Tools -> Certificates -> Digitally Sign" & vbCrLf & vbCrLf & "Then draw a signature block under 'Signature'" & vbCrLf & "(This log is not valid without a signature)", vbInformation, "AeroStat"
-    Select Case MsgBox("Saved successfully in " & f & "." & vbCrLf & "Open PDF?", vbQuestion + vbYesNo, "Events Log")
-        Case vbYes
-            ShellExecute Me.hwnd, "Open", f, vbNullString, "\\", 1
-            DoCmd.Close acReport, "new3616"
-            
-    End Select
+'Dim f As String
+'Dim n As Integer
+'Dim ans As VbMsgBoxResult
+''log Me.RecordSource, Me.Name & ".savePDF_Click"
+'    DoCmd.SetWarnings False
+'    f = DLookup("drivePrefix", "tblSettings") & "1. Events Logs\" & UCase(Format(rDate, "yyyy\\mm mmm yyyy\\d mmm yy ") & "db") & ".pdf"
+'    If dir(f) = "" Then createPath DLookup("drivePrefix", "tblSettings") & "1. Events Logs\" & UCase(Format(rDate, "yyyy\\mm mmm yyyy"))
+'    Do While Len(dir(f)) > 0
+'        n = n + 1
+'        ans = IIf(ans <> 0, ans, MsgBox("A duplicate log was found for this date. replace?", vbQuestion + vbYesNoCancel, "Events Log"))
+'        'This might not be right...
+'        Select Case ans
+'            Case vbYes
+'                Exit Do
+'            Case vbCancel
+'                Exit Sub
+'            Case vbNo
+'                Select Case n
+'                    Case 1
+'                        f = Replace(f, ".pdf", " (" & n & ").pdf")
+'                    Case Else
+'                        f = Replace(f, " (" & n - 1 & ").pdf", " (" & n & ").pdf")
+'                End Select
+'                MsgBox "This log will be saved as '(" & n & ").pdf' instead", vbInformation, "AF3616"
+'                Exit Do
+'        End Select
+'    Loop
+''    If Not n = 0 Then
+''        If MsgBox("A duplicate log was found for this date. replace?", vbQuestion + vbYesNo, "Events Log") = vbYes Then
+''            MsgBox "A log with the same title was found. This log was saved as '(" & n & ").pdf' instead", vbInformation, "AF3616"
+''        Else
+'    'DoCmd.OpenReport "new3616", acViewReport, , Left(Mid(Me.RecordSource, InStr(1, Me.RecordSource, "WHERE ") + 6), Len(Mid(Me.RecordSource, InStr(1, Me.RecordSource, "WHERE ") + 6)) - 1)
+'    DoCmd.OpenReport "new3616", acViewReport, , , , rDate
+'    DoEvents
+'    DoCmd.OutputTo acOutputReport, "new3616", acFormatPDF, f
+'    'DoCmd.close acReport, "new3616", acSaveNo
+'
+'    DoCmd.SetWarnings True
+'    'MsgBox "To sign, go to: " & vbCrLf & "Tools -> Certificates -> Digitally Sign" & vbCrLf & vbCrLf & "Then draw a signature block under 'Signature'" & vbCrLf & "(This log is not valid without a signature)", vbInformation, "AeroStat"
+'    Select Case MsgBox("Saved successfully in " & f & "." & vbCrLf & "Open PDF?", vbQuestion + vbYesNo, "Events Log")
+'        Case vbYes
+'            Application.FollowHyperlink f
+'            DoCmd.Close acReport, "new3616"
+'
+'    End Select
+    If Not UtilForm3616.savePDF(rDate) Then
+        MsgBox "The log could not be saved. (" & err & ")", vbCritical, "AF3616"
+    Else
+        MsgBox "Log saved.", vbInformation, "Save PDF"
+    End If
 End Sub
 
 Private Sub savePDF2_Click()

@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Option Compare Database
 
 Private Sub bApprove_Click()
-On Error GoTo errTrap
+On Error GoTo errtrap
 If IsNull(requestBoard.Column(0)) Then Exit Sub
 If MsgBox("This will mark all selected requests as approved. Continue?", vbQuestion + vbYesNo, "POV Pass") = vbNo Then Exit Sub
 Dim pass As String
@@ -53,7 +53,7 @@ With rs: Do While Not .EOF
         fld = UCase(fld)
     Next
     'On Error GoTo errtrap
-    .update
+    .Update
     .MoveNext
 Loop: End With
 
@@ -62,10 +62,10 @@ DoEvents
 requestBoard.Requery
 sending.Visible = False
 
-sexit:
+sExit:
     Exit Sub
-errTrap:
-    errHandler err, Error$, Name
+errtrap:
+    ErrHandler err, Error$, Name
     sending.Caption = "Unable to process: " & Error$ & " (" & err & ")"
     DoEvents
     Exit Sub
@@ -98,7 +98,7 @@ requestBoard.Requery
 End Sub
 
 Private Sub bPrint_Click()
-On Error GoTo errTrap
+On Error GoTo errtrap
 If IsNull(requestBoard.Column(0)) Then Exit Sub
 Dim s() As String
 Dim c As String
@@ -117,10 +117,10 @@ Dim idx As Integer
         c = "qPOV.ID = " & join(s, " OR qPOV.ID = ")
         DoCmd.OpenReport "rPOVPass", acViewReport, , c
     End If
-sexit:
+sExit:
     Exit Sub
-errTrap:
-    errHandler err, Error$, Name
+errtrap:
+    ErrHandler err, Error$, Name
     Exit Sub
 printfail:
     MsgBox "There were no approved passes selected. Print failed.", vbInformation, "POV Pass"

@@ -32,7 +32,7 @@ End Sub
 ''Create nonexisting directories
 'Dim f As String
 '    DoCmd.SetWarnings False
-'    f = DLookup("drivePrefix", "settings") & "1. Events Logs\" & UCase(Format(rDate, "yyyy\\mm mmm yyyy\\d mmm yy ") & DLookup("shiftTitle", "tblShiftManager", Me.Filter) & " db") & ".pdf"
+'    f = DLookup("drivePrefix", "tblSettings") & "1. Events Logs\" & UCase(Format(rDate, "yyyy\\mm mmm yyyy\\d mmm yy ") & DLookup("shiftTitle", "tblShiftManager", Me.Filter) & " db") & ".pdf"
 '    DoCmd.OutputTo acOutputReport, "r3616", acFormatPDF, f
 '    MsgBox "To sign, go to: " & vbCrLf & "Tools -> Certificates -> Digitally Sign" & vbCrLf & vbCrLf & "Then draw a signature block under 'Signature'" & vbCrLf & "(This log is not valid without a signature)", vbInformation, "AeroStat"
 '    ShellExecute Me.hwnd, "Open", f, vbNullString, "\\", 1

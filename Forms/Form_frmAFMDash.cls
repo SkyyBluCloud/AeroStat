@@ -114,7 +114,7 @@ qry = "SELECT tblShiftManager.shiftID, tblShiftManager.shiftStart AS [Start Time
 End Sub
 
 Private Sub shiftList_Click()
-On Error GoTo errTrap
+On Error GoTo errtrap
 'If IsNull(shiftList) Then Exit Sub
 
     If shiftList.ItemsSelected.Count <= 1 Then
@@ -127,10 +127,10 @@ On Error GoTo errTrap
 '            .Report.FilterOn = True
         End With
     End If
-sexit:
+sExit:
     Exit Sub
-errTrap:
-    errHandler err, Error$, Me.Name
+errtrap:
+    ErrHandler err, Error$, Me.Name
 End Sub
 
 Private Sub shiftList_DblClick(cancel As Integer)

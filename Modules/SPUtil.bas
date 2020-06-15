@@ -92,18 +92,18 @@ End Function
 Public Function syncUserID()
 Dim rsSP As DAO.Recordset
 Dim rs As DAO.Recordset
-Dim n As Integer
+Dim N As Integer
 Set rs = CurrentDb.OpenRecordset("tblUserAuth")
-errHandler 0, "Started.", "SPUtil.syncUserID"
+ErrHandler 0, "Started.", "SPUtil.syncUserID"
 With rs: Do While Not .EOF
-    n = n + 1
-    errHandler 0, n & "/" & .RecordCount & " records complete...", "SPUtil.syncUserID"
+    N = N + 1
+    ErrHandler 0, N & "/" & .RecordCount & " records complete...", "SPUtil.syncUserID"
     DoEvents
     Set rsSP = CurrentDb.OpenRecordset("SELECT ID FROM ADPMUsers WHERE [User name] = '" & !username & "'")
     If Not rsSP.EOF Then
         .edit
         !spID = rsSP!ID
-        .update
+        .Update
     End If
     rsSP.Close
     Set rsSP = Nothing
@@ -111,5 +111,5 @@ With rs: Do While Not .EOF
 Loop: .Close: End With
 Set rs = Nothing
 
-errHandler 0, "DONE.", "SPUtil.syncUserID"
+ErrHandler 0, "DONE.", "SPUtil.syncUserID"
 End Function

@@ -34,6 +34,7 @@ Private Sub Form_BeforeUpdate(cancel As Integer)
 End Sub
 
 Private Sub Form_Current()
+On Error Resume Next
 bClose = False
 sending.Caption = "Loading..."
 sending.Visible = True
@@ -111,18 +112,18 @@ lName = Nz(DLookup("[tbluserauth].[rank] & ' ' & Left([tbluserauth].[firstname],
 End Sub
 
 Private Sub save_Click()
-On Error GoTo errTrap
+On Error GoTo errtrap
 bClose = True
 sending.Caption = "Sending to SharePoint..."
 sending.Visible = True
 DoEvents
 If Me.Dirty Then Me.Dirty = False
 
-sexit:
+sExit:
     sending.Caption = "Success!"
     DoEvents
     DoCmd.Close acForm, "frmPOVAdd", acSaveYes
     Exit Sub
-errTrap:
+errtrap:
     MsgBox Error$
 End Sub

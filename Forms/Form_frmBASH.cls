@@ -30,7 +30,7 @@ Private Sub Form_Load()
 End Sub
 
 Private Sub save_Click()
-On Error GoTo errTrap
+On Error GoTo errtrap
 bClose = True
 Dim rs As DAO.Recordset
 Dim e As Boolean
@@ -123,7 +123,7 @@ Dim msg As String
                 !entryTime = LToZ(obTime)
                 !entry = msg
                 !Initials = Initials
-                .update
+                .Update
                 .Close
             Else
                 MsgBox "Either you are not currently in a shift, or the log for the shift has been closed.", vbInformation, "BASH Report"
@@ -136,9 +136,9 @@ Dim msg As String
     DoCmd.Close acForm, "frmBASH", acSaveYes
     MsgBox "BASH entry successfully saved.", vbInformation, "BASH Report"
     
-sexit:
+sExit:
     Exit Sub
-errTrap:
-    errHandler err, Error$, Me.Name & ".save_Click"
+errtrap:
+    ErrHandler err, Error$, Me.Name & ".save_Click"
     
 End Sub

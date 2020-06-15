@@ -11,18 +11,18 @@ Option Compare Database
 Const maxColumnItems = 21
 
 Private Sub Report_Load()
-On Error GoTo errTrap
+On Error GoTo errtrap
 Dim start As Integer
 Dim icount As Integer
-Dim ccount As Integer
+Dim cCount As Integer
 Dim loadCats As Integer
 
 
 start = 1
-ccount = 0
+cCount = 0
 For i = start To DCount("ID", "tblInspectionItemCategory", "ID >= 1")
-    ccount = ccount + 1
-    icount = DCount("categoryID", "tblInspectionItems", "categoryID Between " & start & " And " & i) + (ccount * 2)
+    cCount = cCount + 1
+    icount = DCount("categoryID", "tblInspectionItems", "categoryID Between " & start & " And " & i) + (cCount * 2)
     If icount >= maxColumnItems Then
         loadCats = IIf(icount > maxColumnItems, i - 1, i)
         Exit For
@@ -31,10 +31,10 @@ Next
 inspectionItems1.Report.RecordSource = "SELECT * FROM tblInspectionItemCategory INNER JOIN tblInspectionItems ON tblInspectionItemCategory.ID = tblInspectionItems.categoryID WHERE tblInspectionItemCategory.ID Between " & start & " And " & loadCats
 
 start = loadCats + 1
-ccount = 0
+cCount = 0
 For i = start To DCount("ID", "tblInspectionItemCategory", "ID >= 1")
-    ccount = ccount + 1
-    icount = DCount("categoryID", "tblInspectionItems", "categoryID Between " & start & " And " & i) + (ccount * 2)
+    cCount = cCount + 1
+    icount = DCount("categoryID", "tblInspectionItems", "categoryID Between " & start & " And " & i) + (cCount * 2)
     If icount >= maxColumnItems Then
         loadCats = IIf(icount > maxColumnItems, i - 1, i)
         Exit For
@@ -43,10 +43,10 @@ Next
 inspectionItems2.Report.RecordSource = "SELECT * FROM tblInspectionItemCategory INNER JOIN tblInspectionItems ON tblInspectionItemCategory.ID = tblInspectionItems.categoryID WHERE tblInspectionItemCategory.ID Between " & start & " And " & loadCats
 
 start = loadCats + 1
-ccount = 0
+cCount = 0
 For i = start To DCount("ID", "tblInspectionItemCategory", "ID >= 1")
-    ccount = ccount + 1
-    icount = DCount("categoryID", "tblInspectionItems", "categoryID Between " & start & " And " & i) + (ccount * 2)
+    cCount = cCount + 1
+    icount = DCount("categoryID", "tblInspectionItems", "categoryID Between " & start & " And " & i) + (cCount * 2)
     If icount >= maxColumnItems Then
         loadCats = IIf(icount > maxColumnItems, i - 1, i)
         Exit For
@@ -54,9 +54,9 @@ For i = start To DCount("ID", "tblInspectionItemCategory", "ID >= 1")
 Next
 inspectionItems3.Report.RecordSource = "SELECT * FROM tblInspectionItemCategory INNER JOIN tblInspectionItems ON tblInspectionItemCategory.ID = tblInspectionItems.categoryID WHERE tblInspectionItemCategory.ID Between " & start & " And " & loadCats
 
-sexit:
+sExit:
     Exit Sub
-errTrap:
-    errHandler err, Error$, Name
+errtrap:
+    ErrHandler err, Error$, Name
     Resume Next
 End Sub

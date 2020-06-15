@@ -20,7 +20,7 @@ With rs
             Do While Not .EOF
                 .edit
                 !BOOT = True
-                .update
+                .Update
                 .MoveNext
             Loop
             MsgBox "Done!", vbInformation, "BOOT"
@@ -40,7 +40,7 @@ With rs
                 
                 .edit
                 !BOOT = True
-                .update
+                .Update
                 MsgBox !rank & " " & !lastName & " has been booted!", vbInformation, "BOOT"
                 Exit Do
                 
@@ -73,8 +73,8 @@ Private Sub Form_Current()
     bClose = False
 End Sub
 
-Private Sub Form_Error(DataErr As Integer, Response As Integer)
-    If DataErr = 2169 Then Response = True
+Private Sub Form_Error(DataErr As Integer, response As Integer)
+    If DataErr = 2169 Then response = True
 End Sub
 
 Private Sub push_Click()
@@ -87,13 +87,13 @@ bClose = True
             .edit
             !Minor = !Minor + 1
             !Build = !Build + 1
-            .update
+            .Update
             .Bookmark = .LastModified
-            Set rs = CurrentDb.OpenRecordset("settings")
+            Set rs = CurrentDb.OpenRecordset("tblSettings")
             rs.edit
             rs!LastVer = !version
             version = rs!LastVer
-            rs.update
+            rs.Update
         End With
         
         'DoCmd.RunCommand acCmdSaveRecord

@@ -23,8 +23,8 @@ End Sub
 
 Private Sub Form_Load()
 shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Environ$("username") & "'")
-isClosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
-dashShiftID = IIf(isClosed, 0, shiftID)
+Dim isclosed As Boolean: isclosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
+dashShiftID = IIf(isclosed, 0, shiftID)
 If dashShiftID <> 0 Then
     changeView "frmShiftDetails"
     view.Form!sf3616.SourceObject = "frm3616"
@@ -36,9 +36,9 @@ End Sub
 Private Sub newShift_Click()
 On Error Resume Next
 shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Environ$("username") & "'")
-isClosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
+Dim isclosed As Boolean: isclosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
 
-    If Not isClosed Then
+    If Not isclosed Then
         MsgBox "To create a new shift, the last one must be closed first.", vbInformation, "Shift Manager"
 '        changeView "frmShiftDetails"
 '        With view.Form!sfshiftbrief.Form
@@ -72,15 +72,15 @@ Public Function changeView(ByVal v As String, Optional ByVal Shift As Integer)
 End Function
 
 Public Function getShiftID() As Integer
-
+Dim isclosed As Boolean
     If dashShiftID <> 0 Then
         getShiftID = dashShiftID
         Exit Function
     End If
     
     shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Environ$("username") & "'")
-    isClosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
-    getShiftID = IIf(isClosed, 0, shiftID)
+    isclosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
+    getShiftID = IIf(isclosed, 0, shiftID)
     'frm!filter = "shiftID = " & dashShiftID
     'frm!FilterOn = True
 End Function

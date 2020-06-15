@@ -1,6 +1,74 @@
 Attribute VB_Name = "Util"
 Option Compare Database
 
+Public Function cETA(ByVal DOF, ATD, ETD, ETE As Date) As Date
+    cETA = Format([DOF] + IIf([ATD] Is Null, [ETD], [ATD]) + [ETE], "Short Time")
+End Function
+
+Function LToZ(ByVal lcl As String) As Date
+    Dim Timezone As Integer
+    Timezone = DLookup("Timezone", "tblSettings")
+    If DLookup("dst", "tblsettings") Then Timezone = Timezone + 1
+    If lcl = "" Then Exit Function
+    
+    LToZ = DateAdd("h", -Timezone, lcl)
+End Function
+
+Function ZToL(ByVal zulu As String, Optional isTime As Boolean) As String
+    Dim Timezone As Integer
+    Timezone = DLookup("Timezone", "tblSettings")
+    If DLookup("dst", "tblsettings") Then Timezone = Timezone - 1
+    If zulu = "" Then Exit Function
+    
+    ZToL = DateAdd("h", Timezone, zulu)
+    If isTime Then ZToL = Format(ZToL, "hh:nn")
+End Function
+
+Public Function isDST(ByVal d0 As Date, Optional locale As String = "US") As Boolean
+Dim dstOn, dstOff As String
+
+    Select Case locale
+    
+    Case "US"
+        dstOn = "MAR 8 "
+        dstOff = "NOV 1 "
+        isDST = d0 >= NextSun("Mar 8 " & Year(d0)) And d0 < NextSun("Nov 1 " & Year(d0))
+    Case "EU"
+        dstOn = "MAR 8 "
+        dstOff = "NOV 1 "
+        isDST = d0 >= LastSun("Mar 8 " & Year(d0)) And d0 < LastSun("Nov 1 " & Year(d0))
+        
+    End Select
+
+   
+End Function
+
+Private Function NextSun(D1 As Date) As Date
+   NextSun = IIf(Weekday(D1) = 1, D1, D1 + 7 - (Weekday(D1) - 1))
+End Function
+
+Private Function LastSun(D1 As Date) As Date
+    LastSun = D1 - IIf(Weekday(D1) = 1, 7, Weekday(D1) - 1)
+End Function
+
+Public Sub exportSchema(Optional Path As String = "%USERPROFILE%\Documents\AeroStat\Schema\")
+Dim f As String
+Dim tdf As DAO.TableDef
+Path = Replace(Path, "%USERPROFILE%", Environ$("userprofile"))
+
+    log "Creating path...", "Util.exportSchema"
+    log IIf(Util.createPath(Path), "Success!", "Failed to create path."), "Util.exportSchema"
+    
+    For Each tdf In CurrentDb.TableDefs
+        If Left(tdf.Name, 3) = "tbl" Then
+            log "Exporting schema: " & tdf.Name, "Util.exportSchema"
+            Application.ExportXML acExportTable, tdf.Name, , Path & tdf.Name & ".xsd"
+            DoEvents
+        End If
+    Next
+    log "Done!", "Util.exportSchema"
+End Sub
+
 Public Sub exportAllCode()
 Dim c As VBComponent
 Dim Sfx, exportLocation As String
@@ -9,7 +77,7 @@ Dim num As Integer
 'If dir(exportLocation) = "" Then createPath exportLocation
 
     For Each c In Application.VBE.VBProjects(1).VBComponents
-        exportLocation = CurrentProject.Path & "\DB EXPORT\"
+        exportLocation = CurrentProject.Path & "\VBE\"
 
         Select Case c.Type
             Case vbext_ct_ClassModule, vbext_ct_Document
@@ -46,7 +114,7 @@ End Sub
 
 
 Public Sub exportAllObjects()
-On Error GoTo errTrap
+On Error GoTo errtrap
 Dim db As DAO.Database
 Dim td As TableDef
 Dim d As Document
@@ -129,11 +197,11 @@ pDir = CurrentProject.Path & "\DB EXPORT\"
     
     log "All database objects have been exported as a text file to " & exportLocation, "Util.exportAllObjects"
 
-sexit:
+sExit:
     Exit Sub
-errTrap:
-    Util.errHandler err, Error$, "Util.EXPORT"
-    Resume sexit
+errtrap:
+    Util.ErrHandler err, Error$, "Util.EXPORT"
+    Resume sExit
 End Sub
 
 Public Function findRank(ByVal r As String) As Variant
@@ -163,11 +231,11 @@ Public Function getUSN(Optional ByVal opInitials As String) As String
 End Function
 
 Public Function createPath(ByVal Path As String) As Boolean
-On Error GoTo errTrap
+On Error GoTo errtrap
 If Right(Path, 1) = "\" Then Path = Left(Path, Len(Path) - 1)
 
 Dim strSlash, strFolder, strRSFolder As String
-Dim fs, cf, x
+Dim fs, cf, X
 Set fs = CreateObject("Scripting.FileSystemObject")
 strSlash = "\"
 intCurrPos = 4
@@ -198,54 +266,80 @@ If Left(Path, 2) = "\\" Then intCurrPos = InStr(InStr(3, Path, strSlash) + 1, Pa
 fExit:
     createPath = True
     Exit Function
-errTrap:
-    errHandler err, Error$, "Util.createPath"
+errtrap:
+    ErrHandler err, Error$, "Util.createPath"
 End Function
 
-Private Function testBackend(ByVal key As String, ByVal backend As String) As Boolean
-On Error GoTo fExit
+Public Function testBackend(ByVal key As String, ByVal backend As String) As Boolean
+On Error GoTo errtrap
 Dim rs As DAO.Recordset
 Dim db As DAO.Database
 Set db = CurrentDb
 
-    Set rs = db.OpenRecordset("SELECT key FROM settings IN '" & backend & "'", , dbFailOnError)
+    Set rs = db.OpenRecordset("SELECT key FROM tblSettings IN '" & backend & "'", , dbFailOnError)
     With rs
-        If .EOF Then
-            MsgBox "Invalid AeroStat Backend file.", vbCritical, "AeroStat"
-            Exit Function
-        ElseIf !key <> key Then
+        If Not .Fields("key").Name = "key" Then
             MsgBox "Invalid AeroStat Backend format. (Key mismatch)", vbCritical, "AeroStat"
+            log "Invalid AeroStat Backend file. (Key mismatch)", "Util.testBackend", "WARN"
             Exit Function
+'        ElseIf .EOF Then
+'            MsgBox "Invalid AeroStat Backend file.", vbCritical, "AeroStat"
+'            log "Invalid AeroStat Backend file.", "Util.testBackend", "FATAL"
+'            Exit Function
         End If
         .Close
     End With
     
-    testBackend = True
+    testBackend = Not Nz(backend) = ""
 fExit:
-errHandler err, Error$, "Util.testBackend"
+    Exit Function
+errtrap:
+    ErrHandler err, Error$, "Util.testBackend"
 End Function
 
-Public Function relinkTables() As Boolean
-On Error GoTo errTrap
-Dim dbs As DAO.Database
+Public Function relinkTables(Optional ByVal backend As String, Optional ByRef loading As Variant = Null) As Boolean
+On Error GoTo errtrap
+Dim db As DAO.Database
 Dim rs As DAO.Recordset
 Dim tdf As DAO.TableDef
+Dim ld As Boolean
 Dim strTable, lnkDatabase, newFile, key As String
-lnkDatabase = DLookup("backend", "lclver")
+Set db = CurrentDb
+
+If IsNull(loading) Then
+    DoCmd.OpenForm "frmLoading"
+    Set loading = Forms!frmLoading
+    loading!loadingText.Caption = "Validating data..."
+    DoEvents
+    ld = True
+End If
+DoEvents
+'lnkDatabase = Nz(backend, _
+'                Nz(DLookup("backend", "lclver"), _
+'                    Nz(DLookup("backend", "tblSettings")) _
+'                ) _
+'            )
+If IsMissing(backend) Or Nz(backend) = "" Then
+    lnkDatabase = Nz(DLookup("backend", "lclver"), _
+                        Nz(DLookup("backend", "tblSettings")) _
+                    )
+Else
+    lnkDatabase = backend
+End If
 key = DLookup("key", "lclver")
-Set dbs = CurrentDb()
-    
+
     'If dir(lnkDatabase) = "" Or dir(lnkDatabase, vbDirectory) = "." Then
-    If Not testBackend(key, Nz(lnkDatabase)) Then
+    If Not testBackend(key, lnkDatabase) Then
+        GoTo showErr
 show:
         Dim fd As Office.FileDialog
-        Set fd = Access.FileDialog(msoFileDialogFilePicker)
+        Set fd = Access.FileDialog(msoFileDialogOpen)
         With fd
-            .title = "Please select the backend file."
+            .title = "Select BACKEND file"
             .Filters.clear
-            .Filters.add "Access Databases", "*.accdb"
+            .Filters.add "All Files", "*.*"
 
-On Error GoTo showErr
+            On Error GoTo showErr
             If .show Then
 '                Dim objAccess As Object
 '                Dim objRecordset As Object
@@ -254,56 +348,83 @@ On Error GoTo showErr
                 For Each varfile In .SelectedItems
                     lnkDatabase = varfile
                 Next
-                If Not testBackend(key, Nz(lnkDatabase)) Then GoTo show
+                If Not testBackend(key, lnkDatabase) Then GoTo showErr
                 
+'                db.Execute "UPDATE settings, lclver SET settings.backend = '" & lnkDatabase & "', lclver.backend = '" & lnkDatabase & "'"
 '                objAccess.OpenCurrentDatabase lnkDatabase
-'                Set objRecordset = objAccess.CurrentProject.Connection.Execute("settings")
+'                Set objRecordset = objAccess.CurrentProject.Connection.Execute("tblSettings")
 '                If objRecordset.Fields("key") <> key Then
 '                    MsgBox "Invalid AeroStat Backend format. (Key mismatch)", vbCritical, "AeroStat"
 '                    GoTo show
 '                End If
             Else
                 log "Cancelled by user.", "Util.relinkTables"
-                Exit Function
+                GoTo fExit
             End If
         End With
+    Else
+        'GoTo funcExit
     End If
     
-On Error GoTo errTrap
-    For Each tdf In dbs.TableDefs
-        If Len(tdf.Connect) > 1 Then 'Only relink linked tables
-            If tdf.Connect <> ";DATABASE=" & lnkDatabase Then 'only relink tables if the are not linked right
-                If Left(tdf.Connect, 4) <> "ODBC" And Left(tdf.Connect, 3) <> "WSS" Then 'Don't want to relink any ODBC tables
-                    strTable = tdf.Name
-                    'dbs.TableDefs(strTable).Connect = "MS Access;PWD=" & DBPassword & ";DATABASE=" & LnkDataBase
-                    dbs.TableDefs(strTable).Connect = ";DATABASE=" & lnkDatabase
-                    dbs.TableDefs(strTable).RefreshLink
-                    log tdf.Name & " refreshed.", "Util.relinkTables"
-                End If
-            End If
-        End If
-    Next tdf
     
-    Set rs = dbs.OpenRecordset("lclver")
-    With rs
-        .edit
-        !backend = lnkDatabase
-        .update
-    End With
+On Error GoTo errtrap
+        If Not IsNull(loading) Then
+            With loading!pBar
+                loading!loadingText.Caption = "Updating tables..."
+                DoEvents
+                .Max = db.TableDefs.Count
+                .Value = 0
+            End With
+        End If
+        
+        For Each tdf In db.TableDefs
+            If Len(tdf.Connect) > 1 Then 'Only relink linked tables
+                If tdf.Connect <> ";DATABASE=" & lnkDatabase Then 'only relink tables if they are not linked correctly
+                    If Left(tdf.Connect, 4) <> "ODBC" And Left(tdf.Connect, 3) <> "WSS" Then 'Don't want to relink any ODBC tables
+                        strTable = tdf.Name
+                        'db.TableDefs(strTable).Connect = "MS Access;PWD=" & DBPassword & ";DATABASE=" & LnkDataBase
+                        db.TableDefs(strTable).Connect = ";DATABASE=" & lnkDatabase
+                        db.TableDefs(strTable).RefreshLink
+                        'log tdf.Name & " refreshed.", "Util.relinkTables"
+                    End If
+                End If
+'                If Nz(DLookup("sharepoint", "tblSettings"), False) And Left(tdf.Connect, 3) = "WSS" Then
+'
+'                    db.TableDefs(tdf.Name).RefreshLink
+'                    log "SP Table " & tdf.Name & " refreshed.", "Util.relinkTables"
+'                End If
+            End If
+            
+            If Not IsNull(loading) Then
+                With loading!pBar
+                    .Value = .Value + 1
+                End With
+            End If
+            DoEvents
+        Next tdf
+        
+    '    Set rs = db.OpenRecordset("lclver")
+    '    With rs
+    '        .edit
+    '        !backend = lnkDatabase
+    '        .update
+    '    End With
     
     DoEvents
-    
     log "Table links re-synced.", "Util.relinkTables"
-    
-funcExit:
+    db.Execute "UPDATE tblSettings SET backend = '" & lnkDatabase & "'"
+    db.Execute "UPDATE lclver SET backend = '" & lnkDatabase & "'"
     relinkTables = True
+    
+fExit:
+    If ld Then DoCmd.Close acForm, "frmLoading"
     Exit Function
-errTrap:
+errtrap:
     If err = 52 Then Resume Next
-    errHandler err, Error$, "Util.relinkTables"
+    ErrHandler err, Error$, "Util.relinkTables"
     Resume Next
 showErr:
-    errHandler err, Error$, "Util.relinkTables"
+    ErrHandler err, Error$, "Util.relinkTables"
     MsgBox "Invalid AeroStat Backend format.", vbCritical, "AeroStat"
     GoTo show
 End Function
@@ -312,16 +433,16 @@ Public Function serialDate(d As Date) As Date
     serialDate = DateSerial(Year(d), Month(d), Day(d))
 End Function
 
-Public Function noBreaks(ByVal s As String, Optional ByVal rpl As String) As String
+Public Function noBreaks(ByVal s As String, Optional ByVal separator As String) As String
     s = Trim(s)
-    noBreaks = Replace(s, vbCrLf, Nz(rpl, " "))
+    noBreaks = Replace(s, vbCrLf, Nz(separator, " "))
 End Function
 
 Public Function break() As String
 break = vbCrLf
 End Function
 
-Public Sub errHandler(err As Integer, msg As String, Optional frm As String)
+Public Sub ErrHandler(err As Integer, msg As String, Optional frm As String)
     Debug.Print Format(Now, "dd-mmm-yy hh:nnL ") & "(" & err & ") " & IIf(IsNull(frm), "", "[" & frm & "] ") & msg
     log "(" & err & ") " & msg, IIf(IsNull(frm), "", "[" & frm & "] "), "WARN"
 End Sub
@@ -354,30 +475,30 @@ Public Function convertFt(ByVal f As Variant, ByVal toDecimal As Boolean) As Var
 End Function
 
 Public Function setting(ByVal v As String) As Variant
-    setting = DLookup(v, "settings")
+    setting = DLookup(v, "tblSettings")
 End Function
 
 Public Function appendUser(ByVal usr As String, ByVal fld As String, ByVal v As Variant)
-On Error GoTo errTrap
+On Error GoTo errtrap
 Dim rs As DAO.Recordset
 Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & usr & "';")
 With rs
     If .EOF Then Exit Function
     .edit
     .Fields(fld) = v
-    .update
+    .Update
     .Close
 End With
 Set rs = Nothing
 
-sexit:
+sExit:
     Exit Function
-errTrap:
-    errHandler err, Error$, "Util.appendUser"
+errtrap:
+    ErrHandler err, Error$, "Util.appendUser"
 
 End Function
 
-Public Function syncTrafficLog(Optional ByVal recID As Integer, Optional ByVal tbl As String, Optional ByVal newrec As Boolean, Optional m As String)
+Public Function syncTrafficLog(Optional ByVal recID As Integer, Optional ByVal tbl As String, Optional ByVal newrec As Boolean, Optional M As String)
 On Error Resume Next
 Dim rs As DAO.Recordset
 Dim rsAlert As DAO.Recordset
@@ -402,10 +523,10 @@ Set rstbl = CurrentDb.OpenRecordset("SELECT * FROM " & tbl & " WHERE ID = " & re
                 
             Case "Custom"
                 rsAlert!alerttype = 3
-                rsAlert!msg = m
+                rsAlert!msg = M
             End Select
         End With
-        .update
+        .Update
         .Bookmark = .LastModified
     End With
     
@@ -417,15 +538,15 @@ Set rstbl = CurrentDb.OpenRecordset("SELECT * FROM " & tbl & " WHERE ID = " & re
 '    End With
 End If
 
-Set rs = CurrentDb.OpenRecordset("settings")
+Set rs = CurrentDb.OpenRecordset("tblSettings")
 
     rs.edit
     rs!frmTrafficLogSync = t
-    rs.update
+    rs.Update
     Set rs = CurrentDb.OpenRecordset("lclver")
     rs.edit
     rs!frmTrafficLogSync = t
-    rs.update
+    rs.Update
     rs.Close
 
 Set rs = Nothing
@@ -548,7 +669,7 @@ getAccessSP_err:
         getAccessSP = False
         Resume Next
     Else
-        MsgBox Error$
+        ErrHandler err, Error$, "Util.getAccessSP"
         getAccessSP = False
         Exit Function
     End If
@@ -586,7 +707,7 @@ With rs
                     cnlFlight = True
                 End If
         End Select
-        .update
+        .Update
         syncTrafficLog !ID, "Traffic", False
     Else
         MsgBox "Flight not found", vbInformation, "Error"
@@ -598,7 +719,7 @@ End Function
 'Public Function checkParking(ByVal Callsign As String, ByVal Tail As String) As Integer
 'Dim rs As DAO.Recordset
 'Dim stn As String
-'stn = DLookup("Station", "settings")
+'stn = DLookup("Station", "tblSettings")
 'Set rs = CurrentDb.OpenRecordset("qOnStation")
 '
 '    Do While Not rs.EOF

@@ -9,6 +9,13 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
 
+Private Sub btnAddToBaseAcft_Click()
+    If MsgBox("Add aircraft to inventory?", vbQuestion + vbYesNo, "Flight Plan") = vbYes Then
+        DoCmd.OpenForm "frmBaseAcftAdd", , , , acFormAdd, acDialog, Forms!quick_input!Type & ";" & Forms!quick_input!Tail
+        DoCmd.Close acForm, Me.Name
+    End If
+End Sub
+
 Private Sub custom_Click()
     With Forms!quick_input
         !PPR = InputBox("Please enter a PPR number:", "PPR", "-")

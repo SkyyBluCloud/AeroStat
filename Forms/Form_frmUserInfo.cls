@@ -53,7 +53,6 @@ errText.Visible = False
     ''''''exit access here and constantly check for verification before the main form loads...'''''''''''''''''
     '''For now, we will just continue'''''''''''
     
-    verified = True
     isLoggedIn = True
     DoCmd.Close acForm, "frmUserInfo", acSaveYes
     MsgBox "Your information has been saved.", vbInformation, "AeroStat"

@@ -11,13 +11,13 @@ Option Compare Database
 Dim shiftID As Integer
 
 Private Sub bParse_Click()
-Dim n As Integer
+Dim N As Integer
 Dim logTime As Date
 If Nz(parse) = "" Then Exit Sub
-n = NOTAMUtil.parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Environ$("username") & "'"), Date, DateAdd("d", 3, Date))
+N = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Environ$("username") & "'"), Date, DateAdd("d", 3, Date))
 
-    If n <> 0 Then
-        Me.filter = "ID = " & n
+    If N <> 0 Then
+        Me.filter = "ID = " & N
         Me.FilterOn = True
         
         Dim log As DAO.Recordset
@@ -39,12 +39,14 @@ n = NOTAMUtil.parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='
                 
                 Select Case nType
                     Case "N", "R"
-                        !entry = "NEW NOTAM: " & NOTAM & " - " & verbiage & ". VALID " & Format(startTime, "yymmddhhnn") & " - " & Format(endTime, "yymmddhhnn")
+                        !entry = "NEW NOTAM: " & NOTAM & " - " & verbiage & ". VALID " & Format(startTime, "yymmddhhnn") & " - " & Format(endTime, "yymmddhhnn") & ". " & _
+                            "NEW NOTAM COUNT: " & DCount("notam", "qNOTAMM") & "M, " & DCount("notam", "qNOTAML") & "L"
                     Case "C"
-                        !entry = "NOTAM " & Right(verbiage, 8) & " CANCELLED"
+                        !entry = "NOTAM " & NOTAM & " CANCELS " & Right(verbiage, 8) & ": " & DLookup("verbiage", "tblnotam", "notam = '" & Right(verbiage, 8) & "'") & ". " & _
+                            "NEW NOTAM COUNT: " & DCount("notam", "qNOTAMM") & "M, " & DCount("notam", "qNOTAML") & "L"
                 End Select
                 !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
-                .update
+                .Update
                 .Close
             End With
             Set log = Nothing

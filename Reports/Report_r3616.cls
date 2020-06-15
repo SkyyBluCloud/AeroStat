@@ -33,7 +33,7 @@ Attribute VB_Exposed = False
 'Dim f As String
 'Dim n As Integer
 '    DoCmd.SetWarnings False
-'    f = DLookup("drivePrefix", "settings") & "1. Events Logs\" & UCase(Format(rDate, "yyyy\\mm mmm yyyy\\d mmm yy ") & DLookup("shiftTitle", "tblShiftManager", Me.filter) & " db") & ".pdf"
+'    f = DLookup("drivePrefix", "tblSettings") & "1. Events Logs\" & UCase(Format(rDate, "yyyy\\mm mmm yyyy\\d mmm yy ") & DLookup("shiftTitle", "tblShiftManager", Me.filter) & " db") & ".pdf"
 '    Do While Len(dir(f)) > 0
 '        n = n + 1
 '        f = Replace(f, ".pdf", " (n).pdf")
