@@ -1,6 +1,32 @@
 Attribute VB_Name = "Util"
 Option Compare Database
 
+Public Function createRelations()
+    With CurrentDb
+        Set rel = .CreateRelation(Name:="[rel.Name]", Table:="[rel.Table]", ForeignTable:="[rel.FireignTable]", Attributes:="[rel.Attributes]")
+        rel.Fields.Append rel.CreateField("[fld.Name for relation]")
+        rel.Fields("[fld.Name for relation]").ForeignName = "[fld.Name for relation]"
+        .Relations.Append rel
+    End With
+End Function
+
+Public Function saveRelations()
+
+    For Each rel In CurrentDb.Relations
+        With rel
+            Debug.Print "Name: " & .Name
+            Debug.Print "Attributes: " & .Attributes
+            Debug.Print "Table: " & .Table
+            Debug.Print "ForeignTable: " & .ForeignTable
+
+            Debug.Print "Fields:"
+            For Each fld In .Fields
+                Debug.Print "Field: " & fld.Name
+            Next
+        End With
+    Next
+End Function
+
 Public Function fixCase(ByRef s As Control)
 On Error Resume Next
     s.Value = UCase(Left(s.Value, 1)) & Right(LCase(s.Value), Len(s.Value) - 1)
@@ -56,22 +82,37 @@ Private Function LastSun(D1 As Date) As Date
     LastSun = D1 - IIf(Weekday(D1) = 1, 7, Weekday(D1) - 1)
 End Function
 
-Public Sub exportSchema(Optional Path As String = "%USERPROFILE%\Documents\AeroStat\Schema\")
+Public Sub exportSchema(Optional Path As String = "%USERPROFILE%\Documents\GitHub\SCHEMA EXPORT\")
 Dim f As String
 Dim tdf As DAO.TableDef
-Path = Replace(Path, "%USERPROFILE%", Environ$("userprofile"))
+Path = Replace(Path, "%USERPROFILE%", Replace(Environ$("userprofile"), "C:\", "D:\"))
 
     log "Creating path...", "Util.exportSchema"
     log IIf(Util.createPath(Path), "Success!", "Failed to create path."), "Util.exportSchema"
     
+    Dim additionalData As New Collection
+    For Each r In CurrentDb.Relations
+    With r
+        log "Gathering relationship: " & .Name, "Util.eportSchema"
+        additionalData.add .Name, "Name"
+        additionalData.add .Attributes, "Attributes"
+        additionalData.add .Table, "Table"
+        additionalData.add .ForeignTable, "ForeignTable"
+        
+        For Each fld In .Fields
+            additionalData.add fld.Name, "fld_" & fld.Name
+        Next
+    End With: Next
+    
     For Each tdf In CurrentDb.TableDefs
         If Left(tdf.Name, 3) = "tbl" Then
             log "Exporting schema: " & tdf.Name, "Util.exportSchema"
-            Application.ExportXML acExportTable, tdf.Name, , Path & tdf.Name & ".xsd"
+            Application.ExportXML acExportTable, tdf.Name, , Path & tdf.Name & ".xsd", , , , , , cr
             DoEvents
         End If
     Next
     log "Done!", "Util.exportSchema"
+    
 End Sub
 
 Public Sub exportAllCode()
