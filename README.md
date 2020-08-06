@@ -1,6 +1,6 @@
 # AeroStat
 
-##Description
+### Description
 
 AeroStat is a Microsoft Access-based Airfield Management and Airfield Operations Data Management System. While it's primary function is Air Traffic Logging, there are currently 10 different modules planned for the program.
 
@@ -8,9 +8,9 @@ I rely very heavily on feedback, and GitHub is a fantastic place to centralize, 
 
 https://government.github.com/fedramp-faq
 
-##Stations currently using AeroStat:
--RJTY
--KHST
--OEPS
--MHSC
--PGUA
+## Stations currently using AeroStat:
+- RJTY
+- KHST
+- OEPS
+- MHSC
+- PGUA
