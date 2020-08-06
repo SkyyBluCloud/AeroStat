@@ -90,24 +90,25 @@ Path = Replace(Path, "%USERPROFILE%", Replace(Environ$("userprofile"), "C:\", "D
     log "Creating path...", "Util.exportSchema"
     log IIf(Util.createPath(Path), "Success!", "Failed to create path."), "Util.exportSchema"
     
-    Dim additionalData As New Collection
+    Dim ad As additionalData: Set ad = Application.CreateAdditionalData
     For Each r In CurrentDb.Relations
     With r
         log "Gathering relationship: " & .Name, "Util.eportSchema"
-        additionalData.add .Name, "Name"
-        additionalData.add .Attributes, "Attributes"
-        additionalData.add .Table, "Table"
-        additionalData.add .ForeignTable, "ForeignTable"
-        
+        ad.add .Name
+        ad.add .Attributes
+        ad.add .Table
+        ad.add .ForeignTable
+
         For Each fld In .Fields
-            additionalData.add fld.Name, "fld_" & fld.Name
+            ad.add fld.Name
         Next
     End With: Next
     
     For Each tdf In CurrentDb.TableDefs
         If Left(tdf.Name, 3) = "tbl" Then
             log "Exporting schema: " & tdf.Name, "Util.exportSchema"
-            Application.ExportXML acExportTable, tdf.Name, , Path & tdf.Name & ".xsd", , , , , , cr
+            Application.ExportXML acExportTable, tdf.Name, , Path & tdf.Name & ".xsd", , , , , , ad
+            
             DoEvents
         End If
     Next
