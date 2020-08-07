@@ -30,7 +30,7 @@ Private Sub addEntry_Click()
 On Error GoTo errtrap
 Dim ex As Boolean
 Dim RS As DAO.Recordset
-
+Dim oi As String: oi = getOpInitials
     For Each ctl In Controls
         If TypeOf ctl Is TextBox Then
             If Nz(ctl.Value) = "" Then
@@ -44,7 +44,10 @@ Dim RS As DAO.Recordset
     If ex Then Exit Sub
     
     If Left(Right(entry, 3), 1) = "…" Then entry = Left(entry, Len(entry) - 3)
-    If Left(Right(entry, 5), 3) = "..." Then entry = Left(entry, Len(entry) - 5)
+    If Left(Right(entry, 5), 3) = "..." Then
+        oi = IIf(Right(entry, 2) = getOpInitials, getOpInitials, Right(entry, 2) & "*")
+        entry = Left(entry, Len(entry) - 5)
+    End If
     If Right(entry, 1) = "." Then entry = Left(entry, Len(entry) - 1)
     entry = UCase(entry)
 
@@ -74,8 +77,14 @@ Dim RS As DAO.Recordset
 '    !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
 '    !entry = entry
 '    .update
+    Dim midFix As Date: midFix = edate
+    If LToZ(DateSerial(Year(edate), Month(edate), Day(edate)) & " " & TimeSerial(Left(entryTime, 2), Right(entryTime, 2), 1)) _
+            < DLookup("shiftstart", "tblshiftmanager", "shiftid = " & shiftID) Then
+        midFix = DateAdd("d", 1, edate)
+    End If
 
-    UtilForm3616.newEntry shiftID, LToZ(DateSerial(Year(edate), Month(edate), Day(edate)) & " " & TimeSerial(Left(entryTime, 2), Right(entryTime, 2), 0)), entry
+
+    UtilForm3616.newEntry shiftID, LToZ(DateSerial(Year(midFix), Month(midFix), Day(midFix)) & " " & TimeSerial(Left(entryTime, 2), Right(entryTime, 2), 0)), entry, oi
 
     
 'End With
@@ -99,11 +108,18 @@ Private Sub btnTemplateSettings_Click()
 'Open some edit for thingy
 End Sub
 
-Private Sub cboTemplate_Change()
-entryTime = Format(LToZ(Now), "hhnn")
+Private Sub cboTemplate_AfterUpdate()
+entryTime = IIf(Nz(entryTime) = "", Format(LToZ(Now), "hhnn"), entryTime)
 entry.SetFocus
 entry = DLookup("verbiage", "tbl3616template", "ID = " & cboTemplate)
 cboTemplate = ""
+End Sub
+
+Private Sub cboTemplate_Change()
+'entryTime = Format(LToZ(Now), "hhnn")
+'entry.SetFocus
+'entry = DLookup("verbiage", "tbl3616template", "ID = " & cboTemplate)
+'cboTemplate = ""
 End Sub
 
 Private Sub clear_Click()
@@ -198,16 +214,45 @@ Next
 End Sub
 
 Private Sub entry_KeyDown(KeyCode As Integer, Shift As Integer)
-    If KeyCode = 13 Then
+    Select Case KeyCode
+    Case VBA.vbKeyReturn 'Enter key
         Dirty = False
         addEntry_Click
         entryTime = ""
         entryTime.SetFocus
-    End If
+    
+'    Case VBA.vbKeyF8
+'        Dim s As Integer
+'        If InStr(1, entry.Text, "_") = 0 Then Exit Sub
+'        entry.SelStart = InStr(1, entry.Text, "_") - 1
+'
+'        s = 1
+'        Do While (Right(Mid(entry.Text, entry.SelStart + 1, s + 1), 1) = "_") And (s + entry.SelStart < Len(entry.Text))
+'            s = s + 1
+'        Loop
+'    entry.SelLength = s + 1
+'    DoEvents
+    End Select
+End Sub
+
+Private Sub entry_KeyUp(KeyCode As Integer, Shift As Integer)
+    Select Case KeyCode
+    Case VBA.vbKeyF8
+        Dim s As Integer
+        If InStr(1, entry.Text, "_") = 0 Then Exit Sub
+        entry.SelStart = InStr(1, entry.Text, "_") - 1
+
+        s = 1
+        Do While (Right(Mid(entry.Text, entry.SelStart + 1, s + 1), 1) = "_") And (s + entry.SelStart < Len(entry.Text))
+            s = s + 1
+        Loop
+    entry.SelLength = s
+    DoEvents
+    End Select
 End Sub
 
 Private Sub entryTime_KeyDown(KeyCode As Integer, Shift As Integer)
-If KeyCode = 78 Then '"N"
+If KeyCode = VBA.vbKeyN Then '"N"
     entryTime = Format(LToZ(Now), "hhnn")
     entry.SetFocus
 End If

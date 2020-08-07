@@ -10,6 +10,10 @@ Attribute VB_Exposed = False
 Option Compare Database
 Option Explicit
 
+Private Sub btnAirfield_Click()
+DoCmd.OpenForm "frmAirfieldEquipmentSurfaces"
+End Sub
+
 Private Sub btnBack_Click()
     Select Case tabCtl
     Case 0
@@ -20,6 +24,10 @@ Private Sub btnBack_Click()
     
     End Select
     tabCtl = tabCtl - 1
+End Sub
+
+Private Sub btnBaseAcft_Click()
+DoCmd.OpenForm "frmBaseAcft"
 End Sub
 
 Private Sub btnBrowse_Click()

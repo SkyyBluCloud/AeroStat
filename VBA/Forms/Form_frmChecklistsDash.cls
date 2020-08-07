@@ -38,7 +38,7 @@ Dim db As DAO.Database: Set db = CurrentDb
         .Recordset.AddNew
         !checklistID = lstChecklists
         !order = 1
-        !item = "New Item"
+        !Item = "New Item"
         .Recordset.Update
         
         .bClose = True
