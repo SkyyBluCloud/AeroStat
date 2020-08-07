@@ -83,7 +83,7 @@ End If
 End Sub
 
 Private Sub btnPPRToFltPlan_Click()
-If IsNull(ppr_list) Then Exit Sub
+If Nz(ppr_list) = "" Then Exit Sub
 Dim RS As DAO.Recordset: Set RS = CurrentDb.OpenRecordset("tblTraffic")
 Dim rs2 As DAO.Recordset: Set rs2 = CurrentDb.OpenRecordset("SELECT * FROM tblPPR WHERE ID = " & ppr_list.Column(0))
 Dim rs3 As DAO.Recordset: Set rs3 = CurrentDb.OpenRecordset("qInbound")
@@ -100,7 +100,7 @@ Dim initialized As Boolean
             .AddNew
             Dim i: For i = 0 To rs2.Fields.Count - 1
                 Select Case rs2.Fields(i).Name
-                Case "flightrule", "Callsign", "Type", "depPoint", "Tail", "Spot", "PPR", "arrDate", "depDate"
+                Case "flightrule", "Callsign", "acType", "depPoint", "Tail", "Spot", "PPR", "arrDate", "depDate"
                     .Fields(rs2.Fields(i).Name) = Nz(rs2.Fields(i).Value)
 '                Case "ETA"
 '                    !DOF = DateSerial(Year(rs2.Fields("arrDate")), Month(rs2.Fields("arrDate")), Day(rs2.Fields("arrDate")))

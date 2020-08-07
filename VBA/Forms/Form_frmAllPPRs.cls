@@ -107,7 +107,7 @@ End Sub
 Private Sub ppr_list_DblClick(cancel As Integer)
     If Not IsNull(Me.ppr_list.Column(0)) Then
         'DoCmd.OpenForm "new_ppr", , , "ID=" & ppr_list.Column(0), acFormEdit
-        DoCmd.OpenForm "new_ppr", , , "ID=" & ppr_list.Column(0), acFormEdit
+        DoCmd.OpenForm "new_ppr", , , "ID=" & ppr_list.Column(0), acFormEdit, acDialog
         onPPRFormClose
     End If
 End Sub
@@ -143,6 +143,14 @@ range = "WHERE serialDate(nz([" & dc & "],[" & IIf(dc = "arrDate", "depDate", II
 'range = "WHERE serialDate(nz([arrDate])) Between DateSerial(" & Year(date1) & "," & Month(date1) & "," & Day(date1) & ") And DateSerial(" & Year(date2) & "," & Month(date2) & "," & Day(date2) & ")"
 If dateCat = 0 Then range = "WHERE serialDate('" & date1 & "') Between serialDate(nz([arrDate])) and serialDate(nz([depDate])) OR serialDate('" & date2 & "') Between serialDate(nz([arrDate])) and serialDate(nz([depDate])) OR serialDate(nz([arrDate])) Between DateSerial(" & Year(date1) & "," & Month(date1) & "," & Day(date1) & ") And DateSerial(" & Year(date2) & "," & Month(date2) & "," & Day(date2) & ")"
 
+Dim idx As Integer
+Dim s() As String
+For Each i In ppr_list.ItemsSelected
+    ReDim Preserve s(0 To idx) As String
+    s(idx) = ppr_list.Column(0, i)
+    idx = idx + 1
+Next
+
 ppr_list.RowSource = "SELECT tblPPR.ID, tblPPR.PPR, tblPPR.Status, tblPPR.arrDate, tblPPR.depDate, tblPPR.Callsign, tblPPR.Type, tblPPR.Tail, tblPPR.issueDate, tblPPR.dvCode, tblPPR.Spot, tblPPR.Fuel, tblPPR.pocName, tblPPR.ctcInfo, tblPPR.Services, tblPPR.archive, tblPPR.depPoint, tblPPR.destination, tblPPR.remarks  " & _
         "FROM tblPPR " & range & qsearch & _
         " AND archive = " & (dateCat = 4) & IIf(dateCat = 4, " OR Status = 'Cancelled'", " AND Status <> 'Cancelled'") & " ORDER BY tblPPR.arrDate DESC , tblPPR.depDate;"
@@ -157,7 +165,11 @@ ppr_list.RowSource = "SELECT tblPPR.ID, tblPPR.PPR, tblPPR.Status, tblPPR.arrDat
 '        End If
         'DoCmd.OpenReport "rPPR", acViewReport, , Replace(range, "WHERE ", "") & qsearch
         
+        
         DoCmd.OpenReport "rPPR", acViewReport, , , , ppr_list.RowSource
+
+        Reports("rPPR").hLight = join(s, ",")
+        Reports("rppr").Requery
         
 '    ElseIf rs.RecordCount = 1 Then
 '        DoCmd.OpenForm "new_ppr", , , "PPR = '" & rs!PPR & "'", acFormEdit

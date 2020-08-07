@@ -85,7 +85,7 @@ Optional ByVal usr As String, _
 Optional ByVal start As String, _
 Optional ByVal expiry As String, _
 Optional ByVal proc As Boolean) As Integer
-'Parses NOTAM in *ICAO FORMAT* and adds data to database NOTAM table.
+'Parses NOTAM from *ICAO FORMAT* and adds data to database NOTAM table.
 
 On Error GoTo errtrap
 parseNOTAM = 0

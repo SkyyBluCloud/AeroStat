@@ -13,6 +13,14 @@ Private Sub btnBack_Click()
 Parent.SourceObject = "frmShiftBoard"
 End Sub
 
+Private Sub btnComment_Click()
+    Dim res As String
+    res = InputBox("Enter your comment for this shift:" & vbCrLf & vbCrLf & Format(shiftList.Column(1), "dd-mmm-yy hh:nnL") & " - " & Format(shiftList.Column(2), "dd-mmm-yy hh:nnL") & ": " & vbCrLf & shiftList.Column(3), _
+                "Reviewer Comments", Nz(DLookup("reviewerComments", "tblShiftManager", "shiftID=" & shiftList.Column(0))))
+    If Nz(res) <> "" Then CurrentDb.Execute "UPDATE tblShiftManager SET reviewerComments = '" & res & "' WHERE shiftID = " & shiftList.Column(0), dbFailOnError
+    AF3616.Requery
+End Sub
+
 Private Sub btnSign_Click()
 'Dim rs As DAO.Recordset
 'Set rs = CurrentDb.OpenRecordset(AF3616.Report.RecordSource)
@@ -73,7 +81,7 @@ Set qdf = CurrentDb.QueryDefs("qAFMDash")
             Exit Sub
         End If
         
-        reviewStatus = "***Reviewing as NAMO***"
+        reviewStatus = "***Reviewing as NAMO/AMOM***"
         qdf.Parameters("showForAMOS") = False
         qdf.Parameters("showForNAMO") = True
         qdf.Parameters("showForAFM") = False
@@ -94,6 +102,7 @@ Set qdf = CurrentDb.QueryDefs("qAFMDash")
     End Select
     
     btnSign.Enabled = reviewStatus <> ""
+    btnComment.Enabled = reviewStatus <> ""
     For Each ctl In Me.Controls
         If ctl.Tag = "review" Then
             ctl.Caption = reviewStatus

@@ -17,7 +17,7 @@ Private Sub btnCancel_Click()
 End Sub
 
 Private Sub lstAcType_DblClick(cancel As Integer)
-    response = lstAcType
+    response = Nz(lstAcType)
     Me.Visible = False
 End Sub
 

@@ -62,6 +62,10 @@ N = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Enviro
     End If
 End Sub
 
+Private Sub btnExample_Click()
+MsgBox "Example of an ICAO Format:" & vbCrLf & "M0380/20 NOTAMN Q) ZMA/QFAGD/IV/NBO/A/000/999/2529N08023W005 A) KHST B) 2006291549 C) 2009262359 E) AERODROME OFFICIAL BUSINESS ONLY"
+End Sub
+
 Private Sub Form_Load()
 If Nz(Me.OpenArgs) <> "" Then
     logentry.Visible = True

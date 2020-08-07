@@ -120,7 +120,7 @@ DoEvents
         End If
     Next
         
-    If Nz(Tail) < 4 And Me.Type = "C172" Then
+    If Nz(Tail) < 4 And Me.acType = "C172" Then
         Tail = Callsign
     End If
     
@@ -144,17 +144,17 @@ DoEvents
         GoTo done_fb
     End If
     
-    If IsNumeric(flightLvl) Then flightLvl = IIf(flightLvl <= 140, "A", "F") & flightLvl
+    If IsNumeric(altitude) Then altitude = IIf(altitude <= 140, "A", "F") & altitude
     
-    Me.Type = Replace(Me.Type, "-", "")
-    Me.Type = Replace(Me.Type, "/", "")
+    Me.acType = Replace(Me.acType, "-", "")
+    Me.acType = Replace(Me.acType, "/", "")
     Me.Tail = Replace(Me.Tail, "-", "")
     
-    If IsNull(DLookup("acType", "tblAircraft", "acType = '" & Me.Type & "'")) Then 'Type is not valid
+    If IsNull(DLookup("acType", "AIRCRAFT", "acType = '" & Me.acType & "'")) Then 'Type is not valid
     
-        If Not IsNull(DLookup("acType", "tblAircraft", "synonym = '" & Me.Type & "'")) Then 'A correction can be suggested
-            DoCmd.OpenForm "frmEnforceAcType", , , , , acDialog, Me.Type
-            Me.Type = Forms!frmEnforceAcType.response
+        If Not IsNull(DLookup("acType", "AIRCRAFT", "synonym = '" & Me.acType & "'")) Then 'A correction can be suggested
+            DoCmd.OpenForm "frmEnforceAcType", , , , , acDialog, Me.acType
+            Me.acType = Forms!frmEnforceAcType.response
             DoCmd.Close acForm, "frmEnforceAcType"
             
         Else 'DB has no clue what the type is.
@@ -163,7 +163,7 @@ DoEvents
         End If
     End If
     
-    transient = isT(Me.Tail, Me.Type)
+    transient = isT(Me.Tail, Me.acType)
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 15
@@ -282,7 +282,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                         spID = rsPPR!spID
                             !arrID = ID
                         If Destination = stn Then
-                            !Type = Me.Type
+                            !Type = Me.acType
                             !arrID = ID
                             spID = !spID
                             PPR = !PPR
@@ -294,7 +294,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                 !Spot = Spot
                             End If
                             
-                            'db.Execute "UPDATE tblPPR SET arrID = " & ID & ", tblPPR.type = '" & Me.Type & "', tail = '" & Tail & "' WHERE " & _
+                            'db.Execute "UPDATE tblPPR SET arrID = " & ID & ", tblPPR.acType = '" & Me.acType & "', tail = '" & Tail & "' WHERE " & _
                                         "(((Callsign = '" & Callsign & "' or tail = '" & Tail & "') or ppr = '" & PPR & "') And status <> 'Cancelled')" & _
                                         "AND ((Destination = '" & stn & "' And (arrID = 0 Or arrID = " & ID & ")) Xor depPoint = '" & stn & "')"
                             
@@ -313,7 +313,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '                            Select Case Status: Case Is <> "Closed", Is <> "Enroute"
 '                                Stationed = True
 '                            End Select
-                            !Type = Me.Type
+                            !Type = Me.acType
                         End If
                         
                         If PPR = !PPR And !Callsign <> Callsign Then
@@ -324,7 +324,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                             End If
                             If ans = vbYes Then
                                 spID = !spID
-                                !Type = Me.Type
+                                !Type = Me.acType
                                 !Remarks = !Remarks & IIf(Nz(!Remarks) = "", "", vbCrLf) & Format(Now, "dd mmm: ") & "Callsign change: " & vbCrLf & !Callsign & " -> " & Callsign
                                 !Callsign = Callsign
                             End If
@@ -355,13 +355,13 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
         'End If
     End If
   
-    If IsNumeric(Left(Me.Type, 1)) Then
-        Me.Number = Left(Me.Type, 1)
-        Me.Type = Right(Me.Type, Len(Me.Type) - 1)
+    If IsNumeric(Left(Me.acType, 1)) Then
+        Me.Number = Left(Me.acType, 1)
+        Me.acType = Right(Me.acType, Len(Me.acType) - 1)
     End If
     
-    'countType = ICAOToCount(Me.Type, Me.isMil)
-    countType = Me.Type
+    'countType = ICAOToCount(Me.acType, Me.isMil)
+    countType = Me.acType
     
     If Format(ETD, "hhnn") = "0000" Then ETD = "0:01"
     
@@ -403,7 +403,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 60  ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     '''''Sharepoint'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-    If spAccess And Not Me.Type = "C172" Then
+    If spAccess And Not Me.acType = "C172" Then
         Dim sprecord As Date
         Dim csnospace As String
         sending.Caption = "Connecting to SharePoint...."
@@ -431,7 +431,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                 Or ((Left(Callsign, 3) = Left(csnospace, 3) Or Len(csnospace) <= 3) And Me.Tail = Nz(rstSP![Tail Number])) _
                 Or spID Like rstSP!ID _
                 Or PPR Like Nz(rstSP![PPR #], "NOPPR") Then
-                'If (Left(Me.Callsign, 3) = Left(csnospace, 3) And Me.Tail = Nz(rstSP![Tail Number])) Or ((Not Me.Type = "C30J" Or Not Me.Type = "C130")) Or ((Me.Type = "C30J" Or Me.Type = "C130") And (Right(Me.Tail, 4) = Nz(rstSP![Tail Number]))) Then
+                'If (Left(Me.Callsign, 3) = Left(csnospace, 3) And Me.Tail = Nz(rstSP![Tail Number])) Or ((Not Me.acType = "C30J" Or Not Me.acType = "C130")) Or ((Me.acType = "C30J" Or Me.acType = "C130") And (Right(Me.Tail, 4) = Nz(rstSP![Tail Number]))) Then
                 'if csnospace = Me.Callsign Or spID = rstSP!ID Then
                     If Left(Callsign, 5) = "KANTO" Then Exit Do
                     
@@ -660,17 +660,17 @@ save_Click_Err:
     GoTo done_fb
 End Sub
 
-Private Sub flightLvl_LostFocus()
-    If IsNull(flightLvl) Then
+Private Sub altitude_LostFocus()
+    If IsNull(altitude) Then
         Select Case flightRule
         Case "V"
-            flightLvl = "VFR"
+            altitude = "VFR"
         Case Else
-            flightLvl.BorderColor = RGB(255, 0, 0)
-            flightLvl.SetFocus
+            altitude.BorderColor = RGB(255, 0, 0)
+            altitude.SetFocus
         End Select
     Else
-        flightLvl.BorderColor = RGB(166, 166, 166)
+        altitude.BorderColor = RGB(166, 166, 166)
     End If
 End Sub
 

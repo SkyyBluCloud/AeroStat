@@ -11,7 +11,7 @@ Option Compare Database
 Public bClose As Boolean
 
 Private Function getCheckType(ByVal idx As Integer) As String
-getCheckType = Array("EMERGENCY", "RSC/RCR", "WEATHER", "UNAUTHORIZED LANDING", "ADPM VIOLATION", "FOD", "CONSTRUCTION", "BASH", "OTHER")(idx - 1)
+getCheckType = Array("IFE/GE", "RSC/RCR", "SEVERE WX", "UNAUTHORIZED LANDING", "ADPM VIOLATION", "FOD", "CONSTRUCTION", "BASH", "OTHER")(idx - 1)
 End Function
 
 Private Sub add483_Click()
@@ -260,9 +260,18 @@ Private Sub Form_Error(DataErr As Integer, response As Integer)
 End Sub
 
 Private Sub specialCheck_Click()
-For Each ctl In Controls
-    If TypeOf ctl Is CheckBox And ctl.Tag = "ct" Then
-        ctl.Value = False
+Dim scName As String
+
+    If DCount("ID", "tblinspections", "specialCheck = " & specialCheck & " AND shiftID = " & shiftID) > 0 Then 'Special check was already logged
+        lblError.Caption = "Warning: An inspection/special check was already logged for this shift."
+        lblError.Visible = True
+    Else
+        lblError.Visible = False
     End If
-Next
+    
+    For Each ctl In Controls
+        If TypeOf ctl Is CheckBox And ctl.Tag = "ct" Then
+            ctl.Value = False
+        End If
+    Next
 End Sub
