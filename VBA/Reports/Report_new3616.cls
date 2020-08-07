@@ -11,7 +11,7 @@ Option Compare Database
 Option Explicit
 Public args As String
 
-Private Declare Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" ( _
+Private Declare PtrSafe Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" ( _
                     ByVal hwnd As Long, _
                     ByVal lpOperation As String, _
                     ByVal lpFile As String, _
@@ -66,7 +66,7 @@ Dim ctl
                 For Each ctl In .Controls
                     ctl.Visible = True
                 Next
-                .Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & UCase([tbluserauth].[rankID]) & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & RS!amosSigTime & "' AS sigTime FROM tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.amosSig = tblUserAuth.username WHERE tblShiftManager.shiftID = " & RS!shiftID & ";"
+                .Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & Replace(UCase([RANK].[rank]),'-','') & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & RS!amosSigTime & "' AS sigTime FROM RANK INNER JOIN (tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.amosSig = tblUserAuth.username) ON RANK.ID = tblUserAuth.rankID WHERE tblShiftManager.shiftID = " & RS!shiftID & ";"
             End If
         End With
         i = i + 1
@@ -79,7 +79,7 @@ Dim ctl
         For Each ctl In Me.namoSig.Report.Controls
             ctl.Visible = True
         Next
-        Me.namoSig.Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & UCase([tbluserauth].[rankID]) & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & RS!namoSigTime & "' AS sigTime FROM tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.namoSig = tblUserAuth.username WHERE tblShiftManager.shiftID = " & RS!shiftID & ";"
+        Me.namoSig.Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & Replace(UCase([RANK].[rank]),'-','') & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & RS!namoSigTime & "' AS sigTime FROM RANK INNER JOIN (tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.amosSig = tblUserAuth.username) ON RANK.ID = tblUserAuth.rankID WHERE tblShiftManager.shiftID = " & RS!shiftID & ";"
     End If
     
     If Not IsNull(RS!afmSig) Then
@@ -87,7 +87,7 @@ Dim ctl
         For Each ctl In Me.afmSig.Report.Controls
             ctl.Visible = True
         Next
-        Me.afmSig.Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & UCase([tbluserauth].[rankID]) & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & RS!afmSigTime & "' AS sigTime FROM tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.afmSig = tblUserAuth.username WHERE tblShiftManager.shiftID = " & RS!shiftID & ";"
+        Me.afmSig.Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & Replace(UCase([RANK].[rank]),'-','') & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & RS!afmSigTime & "' AS sigTime FROM RANK INNER JOIN (tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.amosSig = tblUserAuth.username) ON RANK.ID = tblUserAuth.rankID WHERE tblShiftManager.shiftID = " & RS!shiftID & ";"
     End If
     
 End Sub
@@ -152,11 +152,7 @@ Private Sub savePDF_Click()
 '            DoCmd.Close acReport, "new3616"
 '
 '    End Select
-    If Not UtilForm3616.savePDF(rDate) Then
-        MsgBox "The log could not be saved. (" & err & ")", vbCritical, "AF3616"
-    Else
-        MsgBox "Log saved.", vbInformation, "Save PDF"
-    End If
+    If Not UtilForm3616.savePDF(rDate) Then Exit Sub
 End Sub
 
 Private Sub savePDF2_Click()

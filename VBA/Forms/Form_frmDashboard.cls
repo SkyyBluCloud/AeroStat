@@ -10,8 +10,32 @@ Attribute VB_Exposed = False
 Option Compare Database
 Dim rst As DAO.Recordset
 
+Private Sub btnAddUser_Click()
+DoCmd.OpenForm "frmUserInfo", , , , acFormAdd, acDialog
+lstPending.Requery
+users.Requery
+End Sub
+
+Private Sub btnApprove_Click()
+If Nz(lstPending) = "" Then Exit Sub
+
+    CurrentDb.Execute "UPDATE tblUserAuth SET approved = True WHERE ID = " & lstPending
+    lstPending.Requery
+    users.Requery
+    
+End Sub
+
 Private Sub btnBOOT_Click()
 BOOT Nz(users)
+End Sub
+
+Private Sub btnDelete_Click()
+If Nz(lstPending) = "" Then Exit Sub
+
+    If MsgBox("This will remove the selected user." & vbCrLf & vbCrLf & _
+                "Information related to this user (signatures, log entries, etc) will be kept in the database.", vbOKCancel, "Remove User") = vbOK Then _
+        CurrentDb.Execute "DELETE FROM tblUserAuth WHERE ID = " & lstPending
+    
 End Sub
 
 Private Sub Detail_Click()
@@ -61,7 +85,9 @@ With rst
             MsgBox "User not found.", vbInformation, "AeroStat"
             Exit Function
         End If
+        
         If MsgBox(IIf(RS, "Force reset ", "Boot ") & !rankID & " " & !lastName & "?", vbInformation + vbYesNo, "AeroStat") = vbNo Then Exit Function
+        
         .edit
         IIf(RS, !RS, !BOOT) = True
         .Update

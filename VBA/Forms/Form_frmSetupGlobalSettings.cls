@@ -26,6 +26,41 @@ With fd
 End With
 End Sub
 
+Private Sub btnChecklists_Click()
+DoCmd.OpenForm "frmChecklistsDash"
+End Sub
+
+Private Sub btnLogTemplates_Click()
+DoCmd.OpenForm "frm3616Template"
+End Sub
+
+Private Sub btnRecipAdd_Click()
+Dim RS As DAO.Recordset: Set RS = CurrentDb.OpenRecordset("tblPPREmailRecipients")
+DoCmd.OpenForm "frmSetupGlobalSettingsPPREmailRecipients", , , , , acDialog
+'If Nz(result) = "" Then Exit Sub
+Dim result As String: result = Nz(Forms!frmSetupGlobalSettingsPPREmailRecipients!response)
+If result = "" Then GoTo sExit
+If Right(result, 1) = ";" Then result = Left(result, Len(result) - 1)
+
+
+If Nz(result) <> "" Then
+    Dim s: For Each s In Split(result, ";")
+        RS.AddNew
+        RS!Recipient = Trim(s)
+        RS.Update
+    Next
+End If
+sExit:
+    DoCmd.Close acForm, "frmSetupGlobalSettingsPPREmailRecipients"
+    lstRecip.Requery
+End Sub
+
+Private Sub btnRecipRemove_Click()
+On Error Resume Next
+CurrentDb.Execute "DELETE FROM tblPPREmailRecipients WHERE ID = " & lstRecip
+lstRecip.Requery
+End Sub
+
 Private Sub btnShiftDef_Click()
     DoCmd.OpenForm "frmShiftDef"
 End Sub
@@ -38,7 +73,13 @@ On Error Resume Next
 End Sub
 
 Private Sub Form_Dirty(cancel As Integer)
+On Error Resume Next
     If Parent.Name = "frmBackOffice" Then
         Parent.Form!lblSave.Visible = True
     End If
+End Sub
+
+Private Sub Form_Load()
+'lstRecip.RowSource = Nz(pprEmailRecipients)
+lstRecip = ""
 End Sub

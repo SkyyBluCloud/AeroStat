@@ -10,8 +10,7 @@ Attribute VB_Exposed = False
 '   AeroStat: Airfield Management(TM)
 '
 '
-'    Copyright 2017-2020 Shane J. DeSouza(SkyyBluCloud)
-'       skyyblucloud@gmail.com
+'    Copyright 2017-2020 Shane J. DeSouza
 '       sdesouza187@gmail.com
 '
 '   Licensed under the Apache License, Version 2.0 (the "License");
@@ -59,11 +58,11 @@ End Sub
 
 Private Sub log_Click()
 On Error Resume Next
-Dim isclosed As String
+Dim isClosed As String
 shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Environ$("username") & "'")
-isclosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
+isClosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
     
-    If isclosed Then
+    If isClosed Then
         DoCmd.OpenForm ("frmShiftSelect")
         Exit Sub
     End If
@@ -91,13 +90,13 @@ Private Sub shiftBrief_Click()
 'On Error Resume Next
 'Dim isClosed As String
 Dim shiftID As Integer: shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Environ$("username") & "'")
-Dim isclosed As Boolean: isclosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
+Dim isClosed As Boolean: isClosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
 Dim onShift As Boolean: onShift = DLookup("onShift", "tbluserauth", "username = '" & Environ$("username") & "'")
 
-    If Not onShift Or isclosed Then
+    If Not onShift Or isClosed Then
         DoCmd.OpenForm "frmShiftSelect"
         Exit Sub
-    ElseIf Not isclosed Then
+    ElseIf Not isClosed Then
         DoCmd.OpenForm "frmShiftBoard", , , "shiftid = " & shiftID, acFormEdit, , shiftID
     End If
 
@@ -139,7 +138,7 @@ On Error GoTo sperr
         !isLoggedIn = True
         !lastSystem = Environ$("computername")
         
-        DoCmd.RunCommand acCmdAppMaximize
+        
         Forms!frmLoading!loadingText.Caption = "Starting AeroStat..."
         
         view.SourceObject = "Traffic Log"
@@ -156,12 +155,24 @@ On Error GoTo sperr
     Set RS = Nothing
     
 Load_Exit:
+    If Date = DateSerial(Year(Date), 7, 12) Then
+        lblEE.Caption = "Happy Birthday SD!!!"
+        lblEE.ForeColor = RGB(0, 200, 255)
+        lblEE.FontBold = True
+        lblEE.Visible = True
+    End If
+    
+    DoCmd.RunCommand acCmdAppMaximize
     Exit Sub
     
 sperr:
     MsgBox Error$
     Resume Next
 End Sub
+
+Public Function getProjName()
+    getProjName = Replace(CurrentProject.Name, ".accdb", "")
+End Function
 
 Private Sub Form_Open(cancel As Integer)
 On Error GoTo open_err
@@ -184,16 +195,17 @@ Dim salute As String, lv As Double
         
         'If Left(CurrentProject.Path, "2") = "\\" Then CurrentDb.Execute "UPDATE lclver SET frontEndLocation = " & CurrentProject.fullName
         
-        dbFrom = DLookup("frontEndSource", "tblSettings")
+        'dbFrom = DLookup("frontEndSource", "tblSettings")
         dbTo = Environ$("userprofile") & "\Documents\AeroStat\"
         'If dir(dbTo, vbNormal) = "" Then createPath dbTo
         If dir(dbTo, vbNormal) = "" Then fso.CreateFolder dbTo
-        fso.CopyFile dbFrom, dbTo
+        fso.CopyFile CurrentProject.fullName, dbTo
         Application.FollowHyperlink dbTo & CurrentProject.Name
         cancel = True
         Application.Quit
         Exit Sub
     End If
+    
     
     DoCmd.OpenForm "frmLoading"
     Forms!frmLoading!loadingText.Caption = "Loading global settings..."
@@ -210,7 +222,7 @@ Dim salute As String, lv As Double
         GoTo open_err
     End If
     
-    
+    DoCmd.Maximize
     
     
     
@@ -223,7 +235,7 @@ Dim salute As String, lv As Double
 '        'If Left(CurrentProject.Path, "2") = "\\" Then CurrentDb.Execute "UPDATE lclver SET frontEndLocation = " & CurrentProject.fullName
 '
 '        dbFrom = DLookup("frontEndSource", "tblSettings")
-'        dbTo = Environ$("userprofile") & DLookup("frontEndRuntime", "tblSettings")
+'        dbTo = Environ$("userprofile") & DLookup("frontEndSource", "tblSettings")
 '        If dir(dbTo, vbDirectory) = "" Then createPath dbTo
 '        fso.CopyFile dbFrom, dbTo
 '        Application.FollowHyperlink dbTo
@@ -310,11 +322,11 @@ qusn = "SELECT * FROM tblUserAuth WHERE username = '" & usn & "'"
         
         'If Left(CurrentProject.Path, "2") = "\\" Then CurrentDb.Execute "UPDATE lclver SET frontEndLocation = " & CurrentProject.fullName
         
-        dbFrom = DLookup("frontEndSource", "tblSettings")
-        dbTo = Environ$("userprofile") & DLookup("frontEndRuntime", "tblSettings")
+        dbFrom = DLookup("dbRoot", "tblSettings")
+        dbTo = Environ$("userprofile") & "\"
         'If dir(dbTo, vbNormal) = "" Then createPath dbTo
         If dir(dbTo, vbNormal) = "" Then fso.CreateFolder dbTo
-        fso.CopyFile dbFrom, dbTo
+        fso.CopyFile dbFrom, dbTo & CurrentProject.Name
         Application.FollowHyperlink dbTo & CurrentProject.Name
         Application.Quit
         Exit Sub

@@ -213,18 +213,18 @@ DoEvents
 '    End If
     
 '    'Set ICAO name to be recognized by counter
-'    If fieldExists(ICAOToCount(Me.Type, Me.isMil) & "arr", "tblAnalytics") Or fieldExists(ICAOToCount(Me.Type, Me.isMil) & "dep", "tblAnalytics") Then
-'        countType = ICAOToCount(Me.Type, Me.isMil)
+'    If fieldExists(ICAOToCount(Me.acType, Me.isMil) & "arr", "tblAnalytics") Or fieldExists(ICAOToCount(Me.acType, Me.isMil) & "dep", "tblAnalytics") Then
+'        countType = ICAOToCount(Me.acType, Me.isMil)
 '    Else
 '        Select Case isMil
 '            Case 0 'US Mil
-'                countType = IIf((Mid(Me.Type, 1, 1) = "H") Or (Mid(Me.Type, 2, 1) = "H"), "otherMilHeli", "otherMil")
+'                countType = IIf((Mid(Me.acType, 1, 1) = "H") Or (Mid(Me.acType, 2, 1) = "H"), "otherMilHeli", "otherMil")
 '
 '            Case 1 'Commercial
 '                If Mid(Me.Tail, 1, 1) = "N" Then
-'                    countType = IIf((Mid(Me.Type, 1, 1) = "H") Or (Mid(Me.Type, 2, 1) = "H"), "otherUSHeli", "otherUSFixed")
+'                    countType = IIf((Mid(Me.acType, 1, 1) = "H") Or (Mid(Me.acType, 2, 1) = "H"), "otherUSHeli", "otherUSFixed")
 '                Else
-'                    countType = IIf((Mid(Me.Type, 1, 1) = "H") Or (Mid(Me.Type, 2, 1) = "H"), "otherHeli", "otherFixed")
+'                    countType = IIf((Mid(Me.acType, 1, 1) = "H") Or (Mid(Me.acType, 2, 1) = "H"), "otherHeli", "otherFixed")
 '                End If
 '
 '            Case 2 'JSDF
@@ -236,7 +236,7 @@ DoEvents
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     
     '''''Initialize Share Point Record''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-    If Not Me.Type = "C172" And spAccess Then
+    If Not Me.acType = "C172" And spAccess Then
         sending.Caption = "Conecting to SharePoint...."
         DoEvents
         

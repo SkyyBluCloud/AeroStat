@@ -40,7 +40,7 @@ On Error GoTo errtrap
             param = Mid(search, idx + 1)
             bs = "AND (((tblTraffic." & fld & ") Like '*" & param & "*'))"
         Else
-            bs = "AND ((((tblTraffic.PPR) Like '*" & search & "*')) OR (((tblTraffic.Callsign) Like '*" & search & "*')) OR (((tblTraffic.Type) Like '*" & search & "*')) OR (((tblTraffic.Tail) Like '*" & search & "*')) OR (((tblTraffic.Requester) Like '*" & search & "*')) OR (((tblTraffic.ctcInfo) Like '*" & search & "*')) OR (((tblTraffic.Remarks) Like '*" & search & "*')))"
+            bs = "AND ((((tblTraffic.PPR) Like '*" & search & "*')) OR (((tblTraffic.Callsign) Like '*" & search & "*')) OR (((tblTraffic.acType) Like '*" & search & "*')) OR (((tblTraffic.Tail) Like '*" & search & "*')) OR (((tblTraffic.Requester) Like '*" & search & "*')) OR (((tblTraffic.ctcInfo) Like '*" & search & "*')) OR (((tblTraffic.Remarks) Like '*" & search & "*')))"
         End If
     Else
         bs = ""
@@ -98,7 +98,7 @@ End Sub
 Private Sub Form_Load()
 Dim RS As DAO.Recordset
 Direction = "Is Not Null"
-bs = "AND (((tblTraffic.PPR) Like '*" & search & "*')) OR (((tblTraffic.Callsign) Like '*" & search & "*')) OR (((tblTraffic.Type) Like '*" & search & "*')) OR (((tblTraffic.Tail) Like '*" & search & "*')) OR (((tblTraffic.Requester) Like '*" & search & "*')) OR (((tblTraffic.ctcInfo) Like '*" & search & "*')) OR (((tblTraffic.Remarks) Like '*" & search & "*')) "
+bs = "AND (((tblTraffic.PPR) Like '*" & search & "*')) OR (((tblTraffic.Callsign) Like '*" & search & "*')) OR (((tblTraffic.acType) Like '*" & search & "*')) OR (((tblTraffic.Tail) Like '*" & search & "*')) OR (((tblTraffic.Requester) Like '*" & search & "*')) OR (((tblTraffic.ctcInfo) Like '*" & search & "*')) OR (((tblTraffic.Remarks) Like '*" & search & "*')) "
 populate
 '    Set rs = CurrentDb.OpenRecordset("SELECT tblTraffic.Callsign, tblTraffic.Status, tblTraffic.depPoint, tblTraffic.Destination, tblTraffic.ATD FROM tblTraffic WHERE tblTraffic.Status Like 'Enroute' AND tblTraffic.depPoint Not Like tblTraffic.Destination AND tblTraffic.Destination not Like DLookUp('Station','settings')")
 '    If Not rs.EOF Then rs.MoveLast
@@ -135,7 +135,7 @@ Dim RS As DAO.Recordset
     
     qsearch = IIf(qsearch = "", IIf(Nz(search) = "", "", bs), qsearch)
 
-    qaf = "SELECT tblTraffic.ID, IIf([depPoint]=DLookUp('Station','tblSettings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival') AS Direction, tblTraffic.DOF, tblTraffic.flightRule, tblTraffic.Callsign, tblTraffic.Type, tblTraffic.Tail, tblTraffic.depPoint, tblTraffic.flightLvl, tblTraffic.ETD, tblTraffic.ATD, tblTraffic.ETE, tblTraffic.Destination, format(IIf(IsNull(ATD),IIf(Not ETA=0,ETA,ETD+ETE),ATD+ETE),'hh:nn') AS cETA, tblTraffic.ATA, tblTraffic.Status, tblTraffic.TWR_In, tblTraffic.TWR_Out " & _
+    qaf = "SELECT tblTraffic.ID, IIf([depPoint]=DLookUp('Station','tblSettings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival') AS Direction, tblTraffic.DOF, tblTraffic.flightRule, tblTraffic.Callsign, IIf([number]>1,[number] & '/','') & [acType] AS Type, tblTraffic.Tail, tblTraffic.depPoint, tblTraffic.altitude, tblTraffic.ETD, tblTraffic.ATD, tblTraffic.ETE, tblTraffic.Destination, format(IIf(IsNull(ATD),IIf(Not ETA=0,ETA,ETD+ETE),ATD+ETE),'hh:nn') AS cETA, tblTraffic.ATA, tblTraffic.Status, tblTraffic.TWR_In, tblTraffic.TWR_Out " & _
     "FROM tblTraffic " & _
     "WHERE (((IIf([depPoint]=DLookUp('Station','tblSettings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival')) " & Direction & ") " & _
     qstatus & _
