@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Option Compare Database
 
 Private Sub cboAgency_AfterUpdate()
-    With rank
+    With rankID
         .Value = ""
         .Requery
         .SetFocus
@@ -26,15 +26,15 @@ errText.Visible = False
     Dim ctl As Control
     For Each ctl In Controls
         If TypeOf ctl Is TextBox Then
-            ctl.BorderColor = RGB(255, 255, 255)
-            rank.BorderColor = RGB(255, 255, 255)
+            ctl.BorderColor = RGB(166, 166, 166)
+            rankID.BorderColor = RGB(166, 166, 166)
         End If
     Next
     
     For Each ctl In Controls
-        If TypeOf ctl Is TextBox Then
+        If TypeOf ctl Is TextBox Or TypeOf ctl Is ComboBox Then
             If IsNull(ctl) Then
-                If rank = "-" Then rank.BorderColor = RGB(255, 0, 0)
+                'If Nz(rankID, 0) = 0 Then rank.BorderColor = RGB(255, 0, 0)
                 ctl.BorderColor = RGB(255, 0, 0)
                 errText.Caption = "Please enter a value."
                 errText.Visible = True

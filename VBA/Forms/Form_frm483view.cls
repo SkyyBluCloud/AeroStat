@@ -46,6 +46,7 @@ Parent.Detail_Click
 End Sub
 
 Private Sub Form_Load()
+On Error Resume Next
     If Parent.srs = "" Then Parent.srs = "18"
     series = Parent.srs
     list483.Requery

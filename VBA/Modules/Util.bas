@@ -1,31 +1,92 @@
 Attribute VB_Name = "Util"
 Option Compare Database
 
-Public Function createRelations()
-    With CurrentDb
-        Set rel = .CreateRelation(Name:="[rel.Name]", Table:="[rel.Table]", ForeignTable:="[rel.FireignTable]", Attributes:="[rel.Attributes]")
-        rel.Fields.Append rel.CreateField("[fld.Name for relation]")
-        rel.Fields("[fld.Name for relation]").ForeignName = "[fld.Name for relation]"
-        .Relations.Append rel
-    End With
-End Function
+Public Sub lclver()
+    DoCmd.OpenTable "lclver"
+End Sub
 
-Public Function saveRelations()
-
-    For Each rel In CurrentDb.Relations
-        With rel
-            Debug.Print "Name: " & .Name
-            Debug.Print "Attributes: " & .Attributes
-            Debug.Print "Table: " & .Table
-            Debug.Print "ForeignTable: " & .ForeignTable
-
-            Debug.Print "Fields:"
-            For Each fld In .Fields
-                Debug.Print "Field: " & fld.Name
-            Next
+Public Function saveRelations(Optional ByVal dbPath As String)
+If Nz(dbPath) = "" Then dbPath = DLookup("backend", "tblsettings")
+Dim acc As New Access.Application
+Dim db As DAO.Database: Set db = CurrentDb
+Dim RS As DAO.Recordset: Set RS = db.OpenRecordset("SELECT * FROM RELATIONS IN '" & dbPath & "'", , dbFailOnError)
+    
+    log "Clearing old relations...", "Util.saveRelations"
+    db.Execute "DELETE * FROM RELATIONS IN '" & dbPath & "'", dbFailOnError
+    
+    For Each r In db.Relations
+        With r
+            sName = Mid(.Name, InStr(1, .Name, "].") + 2)
+            log "Saving relationship: " & sName, "Util.saveRelations"
+            
+            sfields = ""
+            Dim f: For Each f In .Fields
+                If Nz(sfields) = "" Then
+                    sfields = f.Name
+                Else
+                    sfields = sfields & ";" & f.Name
+                End If
+                
+            Next: With RS
+                .AddNew
+                !rName = sName
+                !Attributes = r.Attributes
+                !ptable = r.Table
+                !ftable = r.ForeignTable
+                !Fields = sfields
+                .Update
+            End With
+            
+            'CurrentDb.Execute "INSERT INTO [" & DLookup("backend", "tblsettings") & "].RELATIONS (name, attributes, pTable, fTable, fields) SELECT '" & _
+                                sName & "' AS newName, '" & .Attributes & "' AS newAttributes, '" & .Table & "' AS newTable, '" & _
+                                .ForeignTable & "' AS newForeignTable, '" & sfields & "' AS newFieldString IN;", dbFailOnError
+            
         End With
     Next
+    
+db.Close
+Set db = Nothing
 End Function
+
+Public Function truncAll()
+    Dim tdf: For Each tdf In CurrentDb.TableDefs
+        If Left(tdf.Name, 3) = "tbl" Then
+            CurrentDb.Execute "DELETE * FROM " & tdf.Name, dbFailOnError
+        End If
+    Next
+End Function
+
+Public Function trunc(ByVal tbl As String)
+    CurrentDb.Execute "DELETE * FROM " & tbl, dbFailOnError
+End Function
+
+Public Sub exportSchema(Optional hostDB As String, Optional Path As String = "%USERPROFILE%\Documents\AeroStat\DB EXPORT\Schema\")
+Dim tdf As DAO.TableDef
+Path = Replace(Path, "%USERPROFILE%", Environ$("userprofile"))
+'Path = Replace(Path, "%USERPROFILE%", Replace(Environ$("userprofile"), "C:\", "D:\"))
+
+    relinkTables
+
+    log "Creating path...", "Util.exportSchema"
+    log IIf(Util.createPath(Path), "Success!", "Failed to create path."), "Util.exportSchema"
+
+    saveRelations
+    
+    For Each tdf In CurrentDb.TableDefs
+        If Left(tdf.Name, 3) = "tbl" Then
+            log "Exporting schema: " & tdf.Name, "Util.exportSchema"
+            'Application.ExportXML acExportTable, tdf.Name, , Path & tdf.Name & ".xsd"
+            Application.ExportXML acExportTable, tdf.Name, , Path & tdf.Name & ".xsd", , , , , , additionalData
+            DoEvents
+        ElseIf tdf.Name = "RELATIONS" Then
+            log "Exporting table: " & tdf.Name, "Util.exportSchema"
+            Application.ExportXML acExportTable, tdf.Name, Path & tdf.Name & ".xml"
+            DoEvents
+        End If
+    Next
+    log "Done!", "Util.exportSchema"
+
+End Sub
 
 Public Function fixCase(ByRef s As Control)
 On Error Resume Next
@@ -82,39 +143,23 @@ Private Function LastSun(D1 As Date) As Date
     LastSun = D1 - IIf(Weekday(D1) = 1, 7, Weekday(D1) - 1)
 End Function
 
-Public Sub exportSchema(Optional Path As String = "%USERPROFILE%\Documents\GitHub\SCHEMA EXPORT\")
-Dim f As String
-Dim tdf As DAO.TableDef
-Path = Replace(Path, "%USERPROFILE%", Replace(Environ$("userprofile"), "C:\", "D:\"))
-
-    log "Creating path...", "Util.exportSchema"
-    log IIf(Util.createPath(Path), "Success!", "Failed to create path."), "Util.exportSchema"
-    
-    Dim ad As additionalData: Set ad = Application.CreateAdditionalData
-    For Each r In CurrentDb.Relations
-    With r
-        log "Gathering relationship: " & .Name, "Util.eportSchema"
-        ad.add .Name
-        ad.add .Attributes
-        ad.add .Table
-        ad.add .ForeignTable
-
-        For Each fld In .Fields
-            ad.add fld.Name
-        Next
-    End With: Next
-    
-    For Each tdf In CurrentDb.TableDefs
-        If Left(tdf.Name, 3) = "tbl" Then
-            log "Exporting schema: " & tdf.Name, "Util.exportSchema"
-            Application.ExportXML acExportTable, tdf.Name, , Path & tdf.Name & ".xsd", , , , , , ad
-            
-            DoEvents
-        End If
-    Next
-    log "Done!", "Util.exportSchema"
-    
-End Sub
+'Public Sub exportSchema(Optional Path As String = "%USERPROFILE%\Documents\AeroStat\Schema\")
+'Dim f As String
+'Dim tdf As DAO.TableDef
+'Path = Replace(Path, "%USERPROFILE%", Environ$("userprofile"))
+'
+'    log "Creating path...", "Util.exportSchema"
+'    log IIf(Util.createPath(Path), "Success!", "Failed to create path."), "Util.exportSchema"
+'
+'    For Each tdf In CurrentDb.TableDefs
+'        If Left(tdf.Name, 3) = "tbl" Then
+'            log "Exporting schema: " & tdf.Name, "Util.exportSchema"
+'            Application.ExportXML acExportTable, tdf.Name, , Path & tdf.Name & ".xsd"
+'            DoEvents
+'        End If
+'    Next
+'    log "Done!", "Util.exportSchema"
+'End Sub
 
 Public Sub exportAllCode()
 Dim c As VBComponent
@@ -351,7 +396,7 @@ errtrap:
     ErrHandler err, Error$, "Util.testBackend"
 End Function
 
-Public Function relinkTables(Optional ByVal backend As String, Optional ByRef loading As Variant = Null) As Boolean
+Public Function relinkTables(Optional ByVal backend As Variant = Null, Optional ByRef loading As Variant = Null) As Boolean
 On Error GoTo errtrap
 Dim db As DAO.Database
 Dim RS As DAO.Recordset
@@ -466,6 +511,8 @@ On Error GoTo errtrap
     
     DoEvents
     log "Table links re-synced.", "Util.relinkTables"
+    loading!loadingText.Caption = "Tables Updated."
+    DoEvents
     db.Execute "UPDATE tblSettings SET backend = '" & lnkDatabase & "'"
     db.Execute "UPDATE lclver SET backend = '" & lnkDatabase & "'"
     relinkTables = True
@@ -492,12 +539,12 @@ Public Function noBreaks(ByVal s As String, Optional ByVal separator As String) 
     noBreaks = Replace(s, vbCrLf, Nz(separator, " "))
 End Function
 
-Public Function break() As String
+Public Function strBreak() As String
 break = vbCrLf
 End Function
 
 Public Sub ErrHandler(err As Integer, msg As String, Optional frm As String)
-    Debug.Print Format(Now, "dd-mmm-yy hh:nnL ") & "(" & err & ") " & IIf(IsNull(frm), "", "[" & frm & "] ") & msg
+'    Debug.Print Format(Now, "dd-mmm-yy hh:nnL ") & "(" & err & ") " & IIf(IsNull(frm), "", "[" & frm & "] ") & msg
     log "(" & err & ") " & msg, IIf(IsNull(frm), "", "[" & frm & "] "), "WARN"
 End Sub
 

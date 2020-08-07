@@ -282,7 +282,7 @@ Private Sub Form_Load()
         End With
     End If
     
-    If NewRecord Then MsgBox "Do not issue PPRs without a valid callsign or a tail number.", vbInformation, "Do not issue PPRs without a valid callsign or a tail number."
+    'If NewRecord Then MsgBox "Do not issue PPRs without a valid callsign or a tail number.", vbInformation, "Do not issue PPRs without a valid callsign or a tail number."
     
 End Sub
 
@@ -338,19 +338,25 @@ On Error GoTo save_err
     syncTrafficLog ID, "tblPPR", NewRecord
     Me.Visible = False
     
-    If MsgBox("Email request?", vbQuestion + vbYesNo, "PPR") = vbYes Then
-        Dim subj, body As String
-    
-        subj = DLookup("pprEmailSubject", "tblsettings")
-        subj = Replace(subj, "[ppr]", PPR)
-        subj = Replace(subj, "[callsign]", UCase(Callsign))
-        subj = Replace(subj, "[type]", UCase(Me.Type))
-        subj = Replace(subj, "[arrdate]", UCase(Format(arrDate, "d mmm yy")))
-        
-        body = DLookup("pprEmailBody", "tblsettings")
-        
-        DoCmd.SendObject acSendReport, "rPPR", acFormatPDF, , , , subj, body, True
-    End If
+'    If MsgBox("Email request?", vbQuestion + vbYesNo, "PPR") = vbYes Then
+'        Dim subj, body As String
+'
+'        subj = DLookup("pprEmailSubject", "tblsettings")
+'        subj = Replace(subj, "[ppr]", PPR)
+'        subj = Replace(subj, "[callsign]", UCase(Callsign))
+'        subj = Replace(subj, "[type]", UCase(Me.Type))
+'        subj = Replace(subj, "[arrdate]", UCase(Format(arrDate, "d mmm yy")))
+'
+'        body = DLookup("pprEmailBody", "tblsettings")
+'        body = Replace(body, "[ppr]", PPR)
+'        body = Replace(body, "[callsign]", UCase(Callsign))
+'        body = Replace(body, "[type]", UCase(Me.Type))
+'        body = Replace(body, "[arrdate]", UCase(Format(arrDate, "d mmm yy")))
+'
+'        DoCmd.OpenReport "rPPR", acViewPreview, , "arrDate = #" & arrDate & "#", acHidden, Me.ID
+'        DoCmd.SendObject acSendReport, "rPPR", acFormatPDF, , , , subj, body, True
+'        DoCmd.Close acReport, "rPPR"
+'    End If
     
     'DoCmd.RunCommand acCmdRefresh
         
@@ -435,7 +441,13 @@ unArchive.Visible = archive
 End Sub
 
 Private Sub Form_Error(DataErr As Integer, response As Integer)
-    If DataErr = 2169 Then response = True
+    Select Case DataErr
+    Case 2169
+        response = True
+    Case 2501
+        DoCmd.Close acForm, Me.Name, acSaveYes
+    End Select
+    
 End Sub
 
 Private Function savePPR(Optional cancelled As Boolean) As Boolean

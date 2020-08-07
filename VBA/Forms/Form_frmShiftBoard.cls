@@ -19,6 +19,7 @@ End Sub
 
 Private Function dirtyCheck()
 btnSave = Me.Dirty
+lblSave.Visible = Me.Dirty
 End Function
 
 Private Sub btnRemoveAmoc_Click()
@@ -92,6 +93,8 @@ Private Sub btnSave_Click()
     If Me.Dirty Then Me.Dirty = False
     btnSave = Me.Dirty
     Set lstOnShiftChange = New Collection
+    dirtyCheck
+    
 End Sub
 
 Private Sub btnStartStop_AfterUpdate()
@@ -108,11 +111,16 @@ Private Sub btnStartStop_Click()
 Dim recsrc As String
 Dim RS As DAO.Recordset
 Dim inc As Boolean
-bClose = True
+
 recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
 
     Select Case btnStartStop
     Case True 'Shift start
+        If Nz(superLead) = "" Then
+            btnStartStop = False
+            btnStartStop_AfterUpdate
+            Exit Sub
+        End If
         
         btnReloadNOTAMs_Click
         If Nz(shiftTitle) = "" Then
@@ -142,6 +150,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
     '        End If
     '    Next
         '''''
+        
         '''''Null check
         For Each ctl In Controls
             If TypeOf ctl Is TextBox Then
@@ -163,7 +172,9 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
             btnStartStop_AfterUpdate
             Exit Sub
         End If
-        
+
+
+
         Dim msg As String
         Dim idx As Integer
         Dim onShift() As String
@@ -194,7 +205,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
 '                If Not i = UBound(arrJoined) Then msg = msg & ","
 '            Next
             
-            'Gather all args in the openStatement
+            'Gather all args from the openStatement
             Dim entry As String
             Dim args As New Collection
             entry = Nz(DLookup("openstatement", "tblshiftdef", "shifttitle = '" & shiftTitle & "'"))
@@ -206,79 +217,99 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
             Loop
             
             'Iterate through args and replace with relevant data
-            Dim result As String
-            Dim authLevel As Integer
-            authLevel = DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(superLead, 2) & "'")
-            For Each arg In args
             
+            For Each arg In args
+                Dim result As String
                 Select Case arg
                 Case "[ON DUTY]"
+                    Dim authLevel As Integer: authLevel = DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(superLead, 2) & "'")
+                    
                     'result = superLead & " " & getPos(DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(superLead, 2) & "'"))
                     result = superLead & " " & IIf(authLevel < 6, "(AMOS)", "(AMSL)")
+                    
                     For Each c In Split(lstOnShift.RowSource, ";")
                         authLevel = DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(c, 2) & "'")
-                        result = result & ", " & c & " " & IIf(authLevel = 8, "(TRAINEE)", "(AMOC)")
+                        'result = result & ", " & Right(c, 2) & "/" & IIf(authLevel = 8, "TRAINEE", "AMOC")
+                        result = result & ", " & Right(c, 2) & " " & IIf(authLevel = 8, "(TRAINEE)", "(AMOC)")
                     Next
-                    entry = Replace(entry, arg, result) & " ON DUTY"
+                    
+                    result = result & " ON DUTY"
+                    'entry = Replace(entry, arg, result)
                     
                 Case "[OFF DUTY]"
                     Dim rsOld As DAO.Recordset
                     Dim oldSuperLead, oldAmoc As String
-                    Set rsOld = CurrentDb.OpenRecordset("SELECT FROM tblShiftManager WHERE '" & DateAdd("s", -2, shiftStart) & "' Between shiftStart and shiftEnd")
-                    With rsOld: Do While Not .EOF
-                        .MoveLast
-                        .MoveFirst
-                        oldSuperLead = Replace(!superLead, Right(!superLead, 3), "")
-                        For Each a In Split(!amoc, ";")
-                            oldAmoc = oldAmoc & ", " & Right(a, 2)
-                        Next
-                    Loop
-                    If Not .EOF Then
-                        result = oldSuperLead & Nz(join(oldAmoc, ", ")) & " OFF DUTY"
-                    Else
-                        result = "___ OFF DUTY"
-                    End If: End With
+                    Set rsOld = CurrentDb.OpenRecordset("SELECT * FROM tblShiftManager WHERE #" & DateAdd("s", -2, shiftStart) & "# Between shiftStart and shiftEnd")
+                    With rsOld
+                        If .RecordCount <> 0 Then
+                            .MoveLast
+                            .MoveFirst
+                        End If
+                        
+                        If .RecordCount = 1 Then
+                            'oldSuperLead = Replace(!superLead, Right(!superLead, 3), "")
+                            oldSuperLead = !superLead
+                            For Each a In Split(Nz(!amoc), ";")
+                                oldAmoc = IIf(Nz(oldAmoc) = "", Right(a, 2), oldAmoc & ", " & Right(a, 2))
+                            Next
+                        End If
+                        
+                        If Not .EOF Then
+                            result = UCase(oldSuperLead) & ", " & oldAmoc & " OFF DUTY"
+                        Else
+                            result = "__/__ OFF DUTY"
+                        End If
+                    End With
                     
-                    entry = Replace(entry, arg, result)
+                    'entry = Replace(entry, arg, result)
                     
                     
                 Case "[AFLDSTATUS]"
                     If rwy Like "*CLSD" Then
                         result = ""
-                        entry = Replace(entry, ";", "", InStr(1, entry, arg), 1)
+                        'entry = Replace(entry, ";", "", InStr(1, entry, arg), 1)
                     Else
-                        result = "RWY " & rwy & " IN USE. RSC " & rsc & "; BWC " & bwc
+                        result = "RWY " & rwy & " IN USE; RSC " & rsc & "; BWC " & bwc
                     End If
-                    entry = Replace(entry, arg, result)
+                    'entry = Replace(entry, arg, result)
                 
                 Case "[NOTAMS]"
                     result = "NOTAMS: " & notamM & "M, " & notamL & "L"
-                    entry = Replace(entry, arg, result)
+                    'entry = Replace(entry, arg, result)
                 
                 Case "[NAVAIDS]"
                     result = "NAVAIDS: DASR(" & dasr & "), ILS(" & ils & "), TACAN(" & tacan & ")"
-                    entry = Replace(entry, arg, result)
+                    'entry = Replace(entry, arg, result)
                 
-                Case "[AARF]"
-                    entry = Replace(entry, arg, "CRASH STATUS " & aarf)
+                Case "[ARFF]"
+                    result = "CRASH STATUS " & Me.aarf
+                    'entry = Replace(entry, arg, "CRASH STATUS " & aarf)
                     
                 Case "[OPENCALL]"
                     Dim ocInitials As String
                     Dim openCall() As String
                     
                     If IsNull(DLookup("opencall", "tblshiftdef", "shifttitle = '" & shiftTitle & "'")) Then
-                        entry = Replace(entry, arg, "")
+                        'entry = Replace(entry, arg, "")
                     Else
                         openCall = Split(DLookup("opencall", "tblshiftdef", "shifttitle = '" & shiftTitle & "'"), ",")
                         For Each oc In openCall
                             ocInitials = Nz(ocInitials) & IIf(Nz(ocInitials) = "", "", ", ") & oc & "/" & InputBox("Call/notify and enter initials for " & oc, "Coordination Required")
                         Next
                         result = ocInitials & " NOTIFIED."
-                        entry = Replace(entry, arg, result)
+                        'entry = Replace(entry, arg, result)
                     End If
+                
+                
+                Case Else 'Argument not found
+                    log "Argument not found: " & arg, "frmShiftBoard.btnStartStop_Click", "WARN"
+                    result = ""
+                
                 End Select
+                entry = Replace(entry, arg, result)
             Next
             
+            bClose = True
             If Dirty Then Dirty = False
             
             'Send it.
@@ -373,6 +404,7 @@ Private Sub Form_Current()
 bClose = False
 btnStartStop = Not NewRecord
 btnSave = Me.Dirty
+lblSave.Visible = Me.Dirty
 
 Dim RS As DAO.Recordset
 Dim rsAmoc As DAO.Recordset

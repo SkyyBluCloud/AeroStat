@@ -45,7 +45,7 @@ Dim ans As VbMsgBoxResult
 
     DoCmd.SetWarnings False
     
-    fp = DLookup("drivePrefix", "tblSettings") & UCase(Format(rDate, "yyyy\\mm mmm yy\\d mmm yy\\"))
+    fp = DLookup("dbroot", "tblSettings") & "\Daily Operations\" & UCase(Format(rDate, "yyyy\\mm mmm yy\\d mmm yy\\"))
     If dir(fp, vbDirectory) = "" Then createPath fp
     f = fp & UCase(Format(rDate, "d mmm yy ")) & "EVENTS LOG DB.PDF"
     Do While Len(dir(f)) > 0
@@ -89,10 +89,15 @@ Dim ans As VbMsgBoxResult
         End Select
     End If
 fExit:
+        
+
+    
     log "Successfully saved log as " & f, "UtilForm3616.savePDF"
     savePDF = True
+    MsgBox "Log saved.", vbInformation, "Save PDF"
     Exit Function
 errtrap:
+    MsgBox "The log could not be saved. (" & err & ").", vbCritical, "AF3616"
     ErrHandler err, Error$, "UtilForm3616.savePDF"
 End Function
 
@@ -158,6 +163,10 @@ If RS.RecordCount = 0 Then Exit Function
         "that all abnormal occurences or conditions and all significant incidents/events have been recorded.", vbOKCancel + vbInformation, "Events Log") = vbCancel _
     Then Exit Function
     
+    If Not IsNull(DLookup("initials", "tbl3616", "shiftID = " & shiftID & " AND right(initials,1) <> '*'")) Then
+        CurrentDb.Execute "UPDATE tblShiftManager SET reviewerComments = '* = Denotes entry re-accomplished. " & reviewerComments & "' WHERE shiftID = " & shiftID, dbFailOnError
+    End If
+    
     With RS
         If role = 2 Then
             .edit
@@ -166,6 +175,7 @@ If RS.RecordCount = 0 Then Exit Function
             .Fields(LCase(roleStr) & "SigTime") = Now
             .Update
         Else
+        
             CurrentDb.Execute "UPDATE tblShiftManager SET " & LCase(roleStr) & "Sig = '" & getUSN & "', " & _
                                                                 LCase(roleStr) & "SigTime = Now() " & _
                                                                 Mid(eLogRecSrc, InStr(1, eLogRecSrc, "WHERE"), Len(eLogRecSrc))

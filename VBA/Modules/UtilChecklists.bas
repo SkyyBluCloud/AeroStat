@@ -2,17 +2,17 @@ Attribute VB_Name = "UtilChecklists"
 Option Compare Database
 Const mName As String = "UtilChecklists"
 
-Public Function isComplete(ByVal checklist As Integer, ByVal instance As Integer) As Boolean
+Public Function isComplete(ByVal instance As Integer, ByVal checklistID As Integer) As Boolean
 Dim rCount, cCount As Integer
 Dim criteria As String
-criteria = "checklistID = " & checklist & " AND instance = " & instance
+criteria = "checklistID = " & checklistID & " AND instance = " & instance
 rCount = DCount("ID", "tblChecklistCompletionData", criteria)
-cCount = DCount("opinitials", "tblChecklistCompletionData", criteria)
+cCount = DCount("opInitials", "tblChecklistCompletionData", criteria & " AND nz(opInitials) <> ''")
 isComplete = (rCount <> 0) And (rCount = cCount)
 End Function
 
-Public Function isclosed(ByVal checklistID As Integer, ByVal instance As Integer) As Boolean
-isclosed = Not IsNull(DLookup("opSig", "tblChecklistCompletionData", "checklistID = " & checklistID & " AND instance = " & instance))
+Public Function isClosed(ByVal checklistID As Integer, ByVal instance As Integer) As Boolean
+isClosed = Not IsNull(DLookup("opSig", "tblChecklistCompletionData", "checklistID = " & checklistID & " AND instance = " & instance))
 End Function
 
 Public Function startChecklist(ByVal checklistID As Integer, ByVal shiftID As Integer) As Integer
@@ -58,7 +58,7 @@ Dim db As DAO.Database
 Set db = CurrentDb
 
     opSig = Util.getUSN(opInitials)
-    db.Execute "UPDATE tblChecklistCompletionData SET opSig = '" & opSig & "' WHERE checklistID = " & checklistID & " AND instance = " & instance
+    db.Execute "UPDATE tblChecklistCompletionData SET opSig = '" & opSig & "' WHERE checklistID = " & checklistID & " AND instance = " & instance, dbFailOnError
     closeChecklist = db.RecordsAffected <> 0
     
 End Function

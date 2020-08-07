@@ -56,10 +56,10 @@ Public Sub Initialize(BackLabel As Access.Label, FrontLabel As Access.Label, Cap
 
     ' set properties for front label
     With mlblFront
-        mdblFullWidth = mlblBack.Width - (sngOffset * 2)
+        mdblFullWidth = mlblBack.width - (sngOffset * 2)
         .Left = mlblBack.Left + sngOffset
         .Top = mlblBack.Top + sngOffset
-        .Width = 0
+        .width = 0
         .Height = mlblBack.Height - (sngOffset * 2)
         .Caption = ""
         .BackColor = 8388608
@@ -71,7 +71,7 @@ Public Sub Initialize(BackLabel As Access.Label, FrontLabel As Access.Label, Cap
     With mlblCaption
         .Left = mlblBack.Left + 2
         .Top = mlblBack.Top + 2
-        .Width = mlblBack.Width - 4
+        .width = mlblBack.width - 4
         .Height = mlblBack.Height - 4
         .TextAlign = 2 'fmTextAlignCenter
         .BackStyle = 0 'fmBackStyleTransparent
@@ -273,7 +273,7 @@ Private Sub Update()
     'On Error Resume Next
     intPercent = mdblVal * (100 / mdblMax)
     dblWidth = mdblVal * (mdblFullWidth / mdblMax)
-    mlblFront.Width = dblWidth
+    mlblFront.width = dblWidth
     mlblCaption.Caption = intPercent & "%"
     'mlblFront.Parent.Repaint    ' may not be needed
 
