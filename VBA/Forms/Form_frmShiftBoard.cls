@@ -115,6 +115,7 @@ Dim inc As Boolean
 recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
 
     Select Case btnStartStop
+    
     Case True 'Shift start
         If Nz(superLead) = "" Then
             btnStartStop = False
@@ -167,13 +168,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
                 End If
             End If
         Next
-        If inc Then
-            btnStartStop = False
-            btnStartStop_AfterUpdate
-            Exit Sub
-        End If
-
-
+        If inc Then GoTo fallback
 
         Dim msg As String
         Dim idx As Integer
@@ -217,7 +212,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
             Loop
             
             'Iterate through args and replace with relevant data
-            
+            'TODO: Shouldn't be hard-coded
             For Each arg In args
                 Dim result As String
                 Select Case arg
@@ -255,7 +250,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
                         End If
                         
                         If Not .EOF Then
-                            result = UCase(oldSuperLead) & ", " & oldAmoc & " OFF DUTY"
+                            result = UCase(oldSuperLead) & IIf(Nz(oldAmoc) = "", "", ", " & oldAmoc) & " OFF DUTY"
                         Else
                             result = "__/__ OFF DUTY"
                         End If
@@ -294,7 +289,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
                     Else
                         openCall = Split(DLookup("opencall", "tblshiftdef", "shifttitle = '" & shiftTitle & "'"), ",")
                         For Each oc In openCall
-                            ocInitials = Nz(ocInitials) & IIf(Nz(ocInitials) = "", "", ", ") & oc & "/" & InputBox("Call/notify and enter initials for " & oc, "Coordination Required")
+                            ocInitials = Nz(ocInitials) & IIf(Nz(ocInitials) = "", "", ", ") & oc & "/" & InputBox("Call/notify and enter initials for " & oc, "Coordination Required") ' TODO: Don't hard-code
                         Next
                         result = ocInitials & " NOTIFIED."
                         'entry = Replace(entry, arg, result)
@@ -302,7 +297,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
                 
                 
                 Case Else 'Argument not found
-                    log "Argument not found: " & arg, "frmShiftBoard.btnStartStop_Click", "WARN"
+                    log "Argument <" & arg & "> not found when starting " & shiftTitle & " #" & shiftID, "frmShiftBoard.btnStartStop_Click (Start)", "WARN"
                     result = ""
                 
                 End Select
@@ -344,7 +339,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
 '            End With
 '            End If
            
-            MsgBox msg & vbCrLf & vbCrLf & "Created successfully!", , "New Shift"
+            MsgBox msg & vbCrLf & vbCrLf & "Created successfully!", vbInformation, "New Shift"
             'Me.AF3616.SourceObject = "frm3616"
             Dim sid As Integer
             sid = shiftID
@@ -357,9 +352,9 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
 '----------------------------------------------------------------------------------------------------
 
     Case False 'Shift end
-        If shiftTitle Like "*swingshift*" Then
-            If MsgBox("Close the aerodrome?", vbQuestion + vbYesNo, "Shift Board") = vbYes Then rwy = "AD CLSD"
-        End If
+'        If shiftTitle Like "*swingshift*" Then
+'            If MsgBox("Close the aerodrome?", vbQuestion + vbYesNo, "Shift Board") = vbYes Then rwy = "AD CLSD"
+'        End If
         If MsgBox("This will apply your digital signature to all paperwork regarding this shift. Continue?", vbInformation + vbYesNo, "Shift Board") = vbNo Then
             btnStartStop = True
             btnStartStop_AfterUpdate
@@ -374,9 +369,16 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
         End If
         
         Me.closed = True
+        bClose = True
         If Dirty Then Dirty = False
         DoCmd.Close acForm, "frmShiftBoard"
     End Select
+    
+sexit:
+    Exit Sub
+fallback:
+    btnStartStop = True
+    btnStartStop_AfterUpdate
 End Sub
 
 Private Sub Detail_Click()
@@ -434,6 +436,7 @@ Dim offshift() As String
     End If
     shiftTitle.Enabled = NewRecord
     tcMain.Visible = Not NewRecord
+    btnSave.Visible = Not NewRecord
     
 Set RS = Nothing
 End Sub
@@ -515,7 +518,7 @@ Dim offshift() As String
 
     If Not IsNull(Me.amoc) Then lstOnShift.RowSource = Me.amoc
     
-    Set rsAmoc = CurrentDb.OpenRecordset("SELECT RANK.rank & ' ' & Left(tblUserAuth.firstname,1) & '. ' & tblUserAuth.lastname & '/' & tblUserAuth.opinitials AS Expr1 FROM RANK INNER JOIN tblUserAuth ON RANK.ID = tblUserAuth.rankID WHERE (((tblUserAuth.authLevel)<=8)) ORDER BY RANK.order DESC, tblUserAuth.lastName;")
+    Set rsAmoc = CurrentDb.OpenRecordset("SELECT [@RANK].rank & ' ' & Left(tblUserAuth.firstname,1) & '. ' & tblUserAuth.lastname & '/' & tblUserAuth.opinitials AS Expr1 FROM [@RANK] INNER JOIN tblUserAuth ON [@RANK].ID = tblUserAuth.rankID WHERE (((tblUserAuth.authLevel)<=8)) ORDER BY [@RANK].order DESC, tblUserAuth.lastName;")
     With rsAmoc: Do While Not .EOF
     'For Each a In Split(lstOnShift.RowSource, ";")
     If !Expr1 <> Nz(superLead) Then
