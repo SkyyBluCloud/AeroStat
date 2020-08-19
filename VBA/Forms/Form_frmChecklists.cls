@@ -46,7 +46,7 @@ End If
         'suppInitials = InputBox("Coordination is required. Enter the initials below:" & vbCrLf & si, "Coordination", join(siArray, "/__, ") & "/__")
         
         For Each s In siarray
-            suppInitials = Nz(suppInitials) & IIf(IsNull(suppInitials), "", ", ") & InputBox("The following information is required: " & vbCrLf & vbCrLf & s, Item)
+            suppInitials = Nz(suppInitials) & IIf(IsNull(suppInitials), "", ", ") & InputBox("The following information is required: " & vbCrLf & vbCrLf & s, item)
         Next
     End If
     
@@ -63,6 +63,7 @@ End If
     opInitials = Nz(opInitials, Util.getOpInitials)
     completeDate = Format(Now, "dd-mmm-yy hh:nn")
                         
+    bClose = True
     If Dirty Then Dirty = False
     
     'On to the next item
@@ -158,6 +159,20 @@ Dim inst As Integer
 
 End Sub
 
+Private Sub cboInitials_KeyDown(KeyCode As Integer, Shift As Integer)
+Select Case KeyCode
+Case vbKeyReturn
+    btnCheck_Click
+End Select
+End Sub
+
+Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
+Select Case KeyCode
+Case vbKeyReturn
+    btnCheck_Click
+End Select
+End Sub
+
 Private Sub Form_Load()
 shiftID = Nz(Me.OpenArgs, 0)
 If Parent.Name = "frmShiftBoard" Then shiftID = Nz(Parent.shiftID, Parent.OpenArgs)
@@ -211,3 +226,9 @@ Private Sub rmkSave_Click()
 If Dirty Then Dirty = False
 End Sub
 
+Private Sub remarks_KeyDown(KeyCode As Integer, Shift As Integer)
+Select Case KeyCode
+Case vbKeyReturn
+    btnCheck_Click
+End Select
+End Sub
