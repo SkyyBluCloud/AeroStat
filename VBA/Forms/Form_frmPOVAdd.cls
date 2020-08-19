@@ -119,7 +119,7 @@ sending.Visible = True
 DoEvents
 If Me.Dirty Then Me.Dirty = False
 
-sExit:
+sexit:
     sending.Caption = "Success!"
     DoEvents
     DoCmd.Close acForm, "frmPOVAdd", acSaveYes

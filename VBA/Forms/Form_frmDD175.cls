@@ -329,7 +329,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                 !Callsign = Callsign
                             End If
                         End If
-                        .Update
+                        .update
                         Exit Do
                     Else
                         .MoveNext
@@ -487,7 +487,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                 .edit
                                 rstSP![Tail Number] = Me.Tail
                                 !Tail = Me.Tail
-                                .Update
+                                .update
                                 .Bookmark = .LastModified
                             End With
                         End If
@@ -498,7 +498,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                 .edit
                                 Me.Tail = rstSP![Tail Number]
                                 !Tail = Me.Tail
-                                .Update
+                                .update
                                 .Bookmark = .LastModified
                             End With
                         End If
@@ -571,7 +571,7 @@ els:
                             '.Bookmark = .LastModified
                             .edit
                             !Spot = Spot
-                            .Update
+                            .update
                             .Bookmark = .LastModified
                         End With
                     End If
@@ -600,7 +600,7 @@ els:
                             '.Bookmark = .LastModified
                             .edit
                             !depDate = depDate
-                            .Update
+                            .update
                             .Bookmark = .LastModified
                         End With
                     End If
@@ -608,7 +608,7 @@ els:
                 rstSP![AM Initials] = AMOPS
                 If IsNull(rstSP![Start Time]) Then rstSP![Start Time] = Date
                 If IsNull(rstSP![End Time]) Then rstSP![End Time] = Date
-                rstSP.Update
+                rstSP.update
                 sending.Caption = "Success!"
                 DoEvents
             Else
@@ -839,7 +839,7 @@ If Number > 1 And NewRecord Then
     longTail = Tail.RowSource
 End If
 
-sExit:
+sexit:
     Exit Sub
 errtrap:
     Debug.Print "(" & err & "): " & Error$

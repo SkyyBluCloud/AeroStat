@@ -71,7 +71,7 @@ Private Sub Command11_Click()
         Next
         DoCmd.Close acForm, "frmAMC", acSaveYes
     End With
-sExit:
+sexit:
     Exit Sub
 fb:
     Exit Sub

@@ -103,7 +103,7 @@ With RS: Do While Not .EOF
     If Not rsSP.EOF Then
         .edit
         !spID = rsSP!ID
-        .Update
+        .update
     End If
     rsSP.Close
     Set rsSP = Nothing

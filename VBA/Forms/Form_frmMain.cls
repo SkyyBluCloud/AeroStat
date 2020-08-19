@@ -149,7 +149,7 @@ On Error GoTo sperr
 '            DoCmd.OpenForm "frmChangeLogDisplay", , , "version = '" & lv & "'"
 '        End If
             
-        .Update
+        .update
         .Close
     End With
     Set RS = Nothing
@@ -331,7 +331,7 @@ qusn = "SELECT * FROM tblUserAuth WHERE username = '" & usn & "'"
         Application.Quit
         Exit Sub
     End If
-sExit:
+sexit:
     Exit Sub
 errtrap:
     MsgBox Error$
@@ -367,7 +367,7 @@ Set rsShift = CurrentDb.OpenRecordset("SELECT * FROM tblShiftManager WHERE shift
         With RS
             .edit
             !isLoggedIn = False
-            .Update
+            .update
             .Close
         End With
         Set RS = Nothing

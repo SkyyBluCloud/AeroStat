@@ -133,7 +133,7 @@ reload:
         
         Exit Sub
     End If
-sExit:
+sexit:
     Exit Sub
 errtrap:
     ErrHandler err, Error$, Me.Name & ".Form_Load"
@@ -292,7 +292,7 @@ DoEvents
                     If Not .EOF Then
                         .edit
                         !Stationed = True
-                        .Update
+                        .update
                         .Close
                     End If
                     End With
@@ -363,7 +363,7 @@ els:
                 If Not .EOF Then
                     .edit
                     !Stationed = False
-                    .Update
+                    .update
                     .Close
                 End If
                 End With
@@ -388,7 +388,7 @@ els:
     
     'rstCount.Update
     If spfound Then
-        rstSP.Update
+        rstSP.update
         sending.Caption = "Success!"
     Else
         sending.Caption = "Not Found"
@@ -416,7 +416,7 @@ els:
                 Else
                     RS!Spot = Spot
                 End If
-                RS.Update
+                RS.update
 '                Set rs = CurrentDb.OpenRecordset("SELECT tblTraffic.ID, tblTraffic.Stationed, tblTraffic.Status FROM tblTraffic WHERE tblTraffic.ID = " & rs!ParentID)
 '                rs.edit
 '                If rs!Stationed Then rs!Stationed = False
@@ -478,7 +478,7 @@ reopen = ID
         Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblTraffic WHERE tblTraffic.ID = " & ParentID)
         RS.edit
         'rs!Status = "Pending"
-        RS.Update
+        RS.update
     End If
 
     DoCmd.Close acForm, "check_in_out", acSaveYes

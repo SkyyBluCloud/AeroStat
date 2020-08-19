@@ -89,7 +89,7 @@ If Dirty Then Dirty = False
                     !entry = "NOTAM " & Right(verbiage, 8) & " CANCELLED"
             End Select
             !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
-            .Update
+            .update
             .Close
         End With
         Set log = Nothing

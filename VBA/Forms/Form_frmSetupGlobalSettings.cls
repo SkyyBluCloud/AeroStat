@@ -39,7 +39,7 @@ Dim RS As DAO.Recordset: Set RS = CurrentDb.OpenRecordset("tblPPREmailRecipients
 DoCmd.OpenForm "frmSetupGlobalSettingsPPREmailRecipients", , , , , acDialog
 'If Nz(result) = "" Then Exit Sub
 Dim result As String: result = Nz(Forms!frmSetupGlobalSettingsPPREmailRecipients!response)
-If result = "" Then GoTo sExit
+If result = "" Then GoTo sexit
 If Right(result, 1) = ";" Then result = Left(result, Len(result) - 1)
 
 
@@ -47,10 +47,10 @@ If Nz(result) <> "" Then
     Dim s: For Each s In Split(result, ";")
         RS.AddNew
         RS!Recipient = Trim(s)
-        RS.Update
+        RS.update
     Next
 End If
-sExit:
+sexit:
     DoCmd.Close acForm, "frmSetupGlobalSettingsPPREmailRecipients"
     lstRecip.Requery
 End Sub

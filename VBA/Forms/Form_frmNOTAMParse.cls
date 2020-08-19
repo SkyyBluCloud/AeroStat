@@ -46,7 +46,7 @@ N = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Enviro
                             "NEW NOTAM COUNT: " & DCount("notam", "qNOTAMM") & "M, " & DCount("notam", "qNOTAML") & "L"
                 End Select
                 !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
-                .Update
+                .update
                 .Close
             End With
             Set log = Nothing

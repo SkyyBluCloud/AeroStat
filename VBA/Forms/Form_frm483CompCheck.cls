@@ -124,13 +124,13 @@ Dim rsLog As DAO.Recordset
                     !entryTime = LToZ(checkDate)
                     !entry = "483 CK LOGGED " & IIf(compliant, "IN COMPLIANCE", "NOT IN COMPLIANCE")
                     !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
-                    .Update
+                    .update
                 End With
             End If
         End If
     End If
     
-sExit:
+sexit:
     DoCmd.Close acForm, "frm483CompCheck", acSaveYes
     Exit Sub
 errtrap:

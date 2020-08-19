@@ -41,7 +41,7 @@ On Error GoTo errtrap
             tabCtl = 0
         End If
     End If
-sExit:
+sexit:
     Exit Sub
 errtrap:
     

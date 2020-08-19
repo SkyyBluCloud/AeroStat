@@ -16,7 +16,7 @@ Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" 
 With RS
     .edit
     !frmtrafficlogalert = alert.ItemData(alert.ListCount - 1)
-    .Update
+    .update
     refreshAlert
 End With
 End Sub
@@ -115,7 +115,7 @@ Dim initialized As Boolean
             !AMOPS = Util.getOpInitials
             !Status = "Pending"
             !Destination = DLookup("station", "tblSettings")
-            .Update
+            .update
         End With
         Me.inbound_aircraft.Requery
         CurrentDb.Execute "UPDATE tblSettings SET frmTrafficLogSync = Now()", dbFailOnError
@@ -178,7 +178,7 @@ Set db = CurrentDb
             RS.edit
             RS!Status = "Cancelled"
             RS!approval = 0
-            RS.Update
+            RS.update
             If DLookup("spAccess", "tblUserAuth", "username = '" & Environ$("username") & "'") And Not IsNull(RS!spID) Then
                 Set qdf = db.QueryDefs("qMissionTrackerByID")
                 qdf.Parameters("mtbid") = RS!spID
@@ -186,7 +186,7 @@ Set db = CurrentDb
                 With rstSP
                     .edit
                     ![Mission/Event Type] = "Cancelled"
-                    .Update
+                    .update
                 End With
             End If
         Else
@@ -198,7 +198,7 @@ Set db = CurrentDb
                 RS.edit
                 RS!Status = IIf(RS!approach, "Approach", "Approved")
                 RS!approval = 1
-                RS.Update
+                RS.update
                 If DLookup("spAccess", "tblUserAuth", "username='" & Environ$("username") & "'") And Not IsNull(RS!spID) Then
                     Set qdf = db.QueryDefs("qMissionTrackerByID")
                     qdf.Parameters("mtbid") = RS!spID
@@ -206,7 +206,7 @@ Set db = CurrentDb
                     With rstSP
                         .edit
                         ![Mission/Event Type] = "PPR"
-                        .Update
+                        .update
                     End With
                     rstSP.Close
                     Set rstSP = Nothing
@@ -276,17 +276,17 @@ End Sub
 'End Sub
 
 Private Sub Form_Load()
-Dim Update As DAO.Recordset
-Set Update = CurrentDb.OpenRecordset("lclver")
+Dim update As DAO.Recordset
+Set update = CurrentDb.OpenRecordset("lclver")
 
     'If Not DLookup("spAccess", "tblUserAuth", "username='" & Environ$("username") & "'") Then sperr.Visible = True
     osReload
     pprlogReload
     refreshAlert
-    With Update
+    With update
         .edit
         !frmTrafficLogSync = DLookup("frmTrafficLogSync", "tblsettings")
-        .Update
+        .update
     End With
     
 '    For Each ctl In Me.Controls
@@ -299,15 +299,15 @@ End Sub
 Private Sub Form_Timer()
 On Error Resume Next
 If isSubFormOpen Then Exit Sub
-Dim Update As DAO.Recordset
-Set Update = CurrentDb.OpenRecordset("lclver")
+Dim update As DAO.Recordset
+Set update = CurrentDb.OpenRecordset("lclver")
 
-With Update
+With update
     lclClock.Requery
     If !frmTrafficLogSync <> DLookup("frmTrafficLogSync", "tblSettings") Then
         .edit
         !frmTrafficLogSync = DLookup("frmTrafficLogSync", "tblSettings")
-        .Update
+        .update
         
         CurrentDb.Execute "qTrafficFlightStatusUpdate"
 '        For Each ctl In Controls
@@ -321,7 +321,7 @@ With Update
     End If
     .Close
 End With
-Set Update = Nothing
+Set update = Nothing
 End Sub
 
 Public Function refreshAlert(Optional All As Boolean)
@@ -362,7 +362,7 @@ With RS
     If alert.Visible Then
         .edit
         !frmtrafficlogalert = DMax("ID", "tblTrafficLogAlert")
-        .Update
+        .update
     End If
     refreshAlert (!frmtrafficlogalert = DMax("ID", "tblTrafficLogAlert"))
 End With
@@ -670,7 +670,7 @@ tCount = 0
             If !spID = rsSP!ID Then
                 .edit
                 !Spot = rsSP![Parking Spot/Location]
-                .Update
+                .update
                 rsSP.MoveNext
             End If
             .MoveNext
@@ -682,7 +682,7 @@ tCount = 0
     DoEvents
     syncTrafficLog
     
-sExit:
+sexit:
     Exit Sub
 errtrap:
     ErrHandler err, Error$, Name
@@ -694,6 +694,6 @@ Dim RS As DAO.Recordset
 Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & Environ$("username") & "'")
 RS.edit
 RS!spAccess = getAccessSP
-RS.Update
+RS.update
 If RS!spAccess = True Then sperr.Visible = False
 End Sub

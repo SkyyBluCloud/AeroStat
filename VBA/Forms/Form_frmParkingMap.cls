@@ -49,7 +49,7 @@ Do While Not .EOF
 Loop
 End With
 
-sExit:
+sexit:
     Exit Sub
 errtrap:
     ErrHandler err, Error$, Me.Name & ".onLoad"

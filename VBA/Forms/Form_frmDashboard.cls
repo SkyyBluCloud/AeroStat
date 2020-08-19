@@ -53,7 +53,7 @@ Private Sub Form_Load()
                 !BOOT = False
                 !isLoggedIn = False
             End If
-            .Update
+            .update
             .MoveNext
         Loop
     .Close
@@ -75,7 +75,7 @@ With rst
         Do While Not .EOF
             .edit
             IIf(RS, !RS, !BOOT) = True
-            .Update
+            .update
             .MoveNext
         Loop
         MsgBox "Booted!", vbInformation, "AeroStat"
@@ -90,7 +90,7 @@ With rst
         
         .edit
         IIf(RS, !RS, !BOOT) = True
-        .Update
+        .update
         MsgBox "Done!", vbInformation, "AeroStat"
     End If
     .Close

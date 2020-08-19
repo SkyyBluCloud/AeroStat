@@ -21,7 +21,7 @@ Dim db As DAO.Database: Set db = CurrentDb
     End If
     lstChecklists = ""
     
-sExit:
+sexit:
     Exit Sub
 errtrap:
     ErrHandler err, Error$, Me.Name & ".btnDelete_Click"
@@ -38,8 +38,8 @@ Dim db As DAO.Database: Set db = CurrentDb
         .Recordset.AddNew
         !checklistID = lstChecklists
         !order = 1
-        !Item = "New Item"
-        .Recordset.Update
+        !item = "New Item"
+        .Recordset.update
         
         .bClose = True
         .filter = "checklistID = " & Me.lstChecklists
@@ -69,7 +69,7 @@ On Error GoTo errtrap
         End With
     End If
     
-sExit:
+sexit:
     Exit Function
 errtrap:
     ErrHandler err, Error$, Me.Name & ".refreshChecklistEditor"
