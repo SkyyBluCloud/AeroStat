@@ -150,9 +150,9 @@ DoEvents
     Me.acType = Replace(Me.acType, "/", "")
     Me.Tail = Replace(Me.Tail, "-", "")
     
-    If IsNull(DLookup("acType", "AIRCRAFT", "acType = '" & Me.acType & "'")) Then 'Type is not valid
+    If IsNull(DLookup("acType", "[@AIRCRAFT]", "acType = '" & Me.acType & "'")) Then 'Type is not valid
     
-        If Not IsNull(DLookup("acType", "AIRCRAFT", "synonym = '" & Me.acType & "'")) Then 'A correction can be suggested
+        If Not IsNull(DLookup("acType", "[@AIRCRAFT]", "synonym = '" & Me.acType & "'")) Then 'A correction can be suggested
             DoCmd.OpenForm "frmEnforceAcType", , , , , acDialog, Me.acType
             Me.acType = Forms!frmEnforceAcType.response
             DoCmd.Close acForm, "frmEnforceAcType"
