@@ -1,0 +1,128 @@
+"Name","SQL"
+"qAFMDash","SELECT tblShiftManager.shiftID, tblShiftManager.shiftStart AS [Start Time (L)], tblShiftManager.shiftEnd AS [End Time (L)], tblShiftManager.superlead AS AMOS, IIf([amosSig] Is Not Null,'YES','NO') AS [AMOS Signed], IIf([namoSig] Is Not Null,'YES','NO') AS [NAMO Signed], IIf([afmSig] Is Not Null,'YES','NO') AS [AFM Signed]
+FROM tblShiftManager
+WHERE ((([amosSig] Is Not Null)=False) AND (([namoSig] Is Not Null)=False) AND (([afmSig] Is Not Null)=False) AND (([showForAMOS])=True) AND (([showForNAMO])=False) AND (([showForAFM])=False)) OR ((([amosSig] Is Not Null)=True) AND (([namoSig] Is Not Null)=False) AND (([afmSig] Is Not Null)=False) AND (([showForAMOS])=False) AND (([showForNAMO])=True) AND (([showForAFM])=False)) OR ((([amosSig] Is Not Null)=True) AND (([namoSig] Is Not Null)=True) AND (([afmSig] Is Not Null)=False) AND (([showForAMOS])=False) AND (([showForNAMO])=False) AND (([showForAFM])=True))
+ORDER BY tblShiftManager.shiftStart DESC;
+"
+"qAllFlights","SELECT tblTraffic.ID, IIf([depPoint]=DLookUp('Station','tblsettings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival') AS Direction, tblTraffic.DOF, tblTraffic.flightRule, tblTraffic.Callsign, tblTraffic.acType, tblTraffic.Tail, tblTraffic.depPoint, tblTraffic.altitude, tblTraffic.ETD, tblTraffic.ATD, tblTraffic.ETE, tblTraffic.Destination, [dof]+IIf([atd] Is Null,[etd],[atd])+[ete] AS cETA, tblTraffic.ATA, tblTraffic.Status
+FROM tblTraffic
+WHERE (((tblTraffic.depPoint) Not Like DLookUp('Station','tblsettings')) AND ((tblTraffic.Destination) Like DLookUp('Station','tblsettings')) AND ((Format((DateAdd('h',DLookUp('Timezone','tblsettings'),[dof]+IIf([atd] Is Null,[etd],[atd]))+[ete]),'mmddyy')) Between Format([thedate],'mmddyy') And Format([thedate2],'mmddyy'))) OR (((tblTraffic.depPoint) Like DLookUp('Station','tblsettings')) AND ((tblTraffic.Destination) Not Like DLookUp('Station','tblsettings')) AND ((Format(DateAdd('h',DLookUp('Timezone','tblsettings'),[dof]+[etd]),'mmddyy')) Between Format([thedate],'mmddyy') And Format([thedate2],'mmddyy'))) OR (((tblTraffic.depPoint) Like DLookUp('Station','tblsettings')) AND ((tblTraffic.Destination) Like DLookUp('Station','tblsettings')) AND ((Format((DateAdd('h',DLookUp('Timezone','tblsettings'),[dof]+IIf([atd] Is Null,[etd],[atd]))+[ete]),'mmddyy')) Between Format([thedate],'mmddyy') And Format([thedate2],'mmddyy')))
+ORDER BY tblTraffic.DOF DESC , tblTraffic.ATD DESC , tblTraffic.ATA DESC;
+"
+"qArr","SELECT [@AIRCRAFT].gearType, Sum(tblTraffic.number) AS Arrivals, tblTraffic.callsign, tblTraffic.actype
+FROM [@AIRCRAFT] INNER JOIN tblTraffic ON [@AIRCRAFT].acType = tblTraffic.actype
+WHERE (((tblTraffic.acType) Is Not Null) AND ((IIf(IsDate([arrDate]),DateValue([arrDate]),Null)) Between CDate([date1]) And CDate([date2])) AND ((tblTraffic.Status) Like 'Closed') AND ((tblTraffic.Destination) Like DLookUp('station','tblsettings')))
+GROUP BY [@AIRCRAFT].gearType, tblTraffic.callsign, tblTraffic.actype
+ORDER BY [@AIRCRAFT].gearType;
+"
+"qChecklistItems","SELECT tblChecklistItems.itemID, tblChecklistItems.checklistID, tblChecklistItems.order, tblChecklistItems.item, tblChecklistItems.suppInitials
+FROM tblChecklistIndex INNER JOIN tblChecklistItems ON tblChecklistIndex.checklistID = tblChecklistItems.checklistID
+WHERE (((tblChecklistItems.checklistID)=[checklist]))
+ORDER BY tblChecklistItems.order;
+"
+"qDep","SELECT [@AIRCRAFT].gearType, Sum(tblTraffic.number) AS Departures, tblTraffic.callsign, tblTraffic.acType
+FROM [@AIRCRAFT] INNER JOIN tblTraffic ON [@AIRCRAFT].acType = tblTraffic.acType
+WHERE ( ( (
+tblTraffic.acType
+) IS NOT NULL )
+AND (
+(
+IIf(
+IsDate(
+[depDate]
+), DateValue(
+[depDate]
+), NULL )
+)
+BETWEEN CDate(
+[date1]
+)
+AND CDate(
+[date2]
+)
+)
+AND (
+(
+tblTraffic.Status
+) LIKE 'Closed'
+OR (
+tblTraffic.Status
+) LIKE 'Enroute'
+)
+AND (
+(
+tblTraffic.depPoint
+) LIKE DLookUp(
+'station', 'tblsettings'
+)
+)
+
+)
+GROUP BY [@AIRCRAFT].gearType, tblTraffic.callsign, tblTraffic.acType
+ORDER BY [@AIRCRAFT].gearType;
+"
+"qInbound","SELECT tblTraffic.ID, tblTraffic.flightRule, tblTraffic.Callsign, IIf([number]>1,[number],'') & [acType] AS Type, Format([DOF]+IIf([ETA] Is Null,IIf([ATD] Is Null,[ETD],[ATD])+[ETE],[ETA]),'Short Time') AS [ETA (Z)], tblTraffic.depPoint, IIf([Status] Like 'Enroute','*Enroute*',[Status]) AS [Status*], tblTraffic.ATD, tblTraffic.Tail, tblTraffic.Spot, tblTraffic.PPR, tblTraffic.spID, tblTraffic.ETA
+FROM tblTraffic
+WHERE (((tblTraffic.depPoint) Not Like DLookUp('Station','tblSettings')) AND (([DOF]+IIf([ETA] Is Null,IIf([ATD] Is Null,[ETD],[ATD])+[ETE],[ETA])) Between ltoz(Date()) And ltoz(Date()+TimeSerial(23,59,59))) AND ((tblTraffic.Destination) Like DLookUp('Station','tblSettings')) AND ((tblTraffic.Status)='Pending' Or (tblTraffic.Status)='Enroute')) OR (((tblTraffic.depPoint) Not Like DLookUp('Station','tblSettings')) AND (([DOF]+IIf([ETA] Is Null,IIf([ATD] Is Null,[ETD],[ATD])+[ETE],[ETA])) Between ltoz(Now()) And ltoz(DateAdd('h',8,Now()))) AND ((tblTraffic.Destination) Like DLookUp('Station','tblSettings')) AND ((tblTraffic.Status)='Pending' Or (tblTraffic.Status)='Enroute')) OR (((tblTraffic.depPoint) Not Like DLookUp('Station','tblSettings')) AND (([DOF]+IIf([ETA] Is Null,IIf([ATD] Is Null,[ETD],[ATD])+[ETE],[ETA])) Between ltoz(Date()) And ltoz(Date()+TimeSerial(23,59,59))) AND ((tblTraffic.Destination) Like DLookUp('Station','tblSettings')) AND ((tblTraffic.Status) Like 'Cancelled'))
+ORDER BY IIf([Status] Like 'Enroute','*Enroute*',[Status]), [DOF]+IIf([ETA] Is Null,IIf([ATD] Is Null,[ETD],[ATD])+[ETE],[ETA]);
+"
+"qLocal","SELECT tblTraffic.ID, tblTraffic.flightRule, tblTraffic.Callsign, IIf([number]>1,[number],'') & [acType] AS Type, tblTraffic.ETD, tblTraffic.ATD, Format([dof]+IIf([atd] Is Null,[etd],[atd])+[ete],'Short Time') AS [ETA (Z)], tblTraffic.ATA, IIf([Status] Like 'Enroute','*Enroute*',[Status]) AS [Status*], tblTraffic.Tail
+FROM tblTraffic
+WHERE (((tblTraffic.Status) Not Like 'Closed') AND ((tblTraffic.depPoint)=DLookUp('station','tblSettings')) AND ((tblTraffic.Destination)=DLookUp('station','tblSettings')) AND (([dof]+IIf([atd] Is Null,[etd],[atd])+[ete]) Between ltoz(Date()) And ltoz(Date()+TimeSerial(23,59,59)))) OR (((tblTraffic.Status) Not Like 'Closed' And (tblTraffic.Status) Not Like 'Cancelled') AND ((tblTraffic.depPoint)=DLookUp('station','tblSettings')) AND ((tblTraffic.Destination)=DLookUp('station','tblSettings')) AND (([dof]+IIf([atd] Is Null,[etd],[atd])+[ete]) Between ltoz(Now()) And ltoz(DateAdd('h',8,Now())))) OR (((tblTraffic.Status) Like 'Closed') AND ((tblTraffic.depPoint)=DLookUp('station','tblSettings')) AND ((tblTraffic.Destination)=DLookUp('station','tblSettings')) AND (([dof]+IIf([atd] Is Null,[etd],[atd])+[ete]) Between ltoz(Now()) And ltoz(DateAdd('n',30,Now()))))
+ORDER BY tblTraffic.Status;
+"
+"qNOTAMC","SELECT tblNOTAM.ID, tblNOTAM.NOTAM, Format([starttime],'dd-mmm-yy hh:nn') AS Start, Format([endtime],'dd-mmm-yy hh:nn') AS [End], tblNOTAM.Verbiage
+FROM tblNOTAM
+WHERE (((Left([notam],1))='M') AND ((DateDiff('d',[endtime],Now()))<=15) AND ((tblNOTAM.endTime)<Now()) AND ((tblNOTAM.nType) Not Like 'C'))
+ORDER BY Right([notam],2) DESC , Format([endtime],'dd-mmm-yy hh:nn') DESC;
+"
+"qNOTAML","SELECT tblNOTAM.ID, tblNOTAM.NOTAM, Format([starttime],'dd-mmm-yy hh:nn') AS Start, Format([endtime],'dd-mmm-yy hh:nn') AS [End], tblNOTAM.Verbiage, tblNOTAM.isCancelled
+FROM tblNOTAM
+WHERE (((tblNOTAM.isCancelled)=False) AND ((tblNOTAM.nType) Not Like 'C') AND ((Left([notam],1))='L') AND ((LTOZ(Now())) Between DateAdd('d',-3,[starttime]) And [endtime]))
+ORDER BY tblNOTAM.NOTAM DESC;
+"
+"qNOTAMM","SELECT tblNOTAM.ID, tblNOTAM.NOTAM, Format([starttime],'dd-mmm-yy hh:nn') AS Start, Format([endtime],'dd-mmm-yy hh:nn') AS [End], tblNOTAM.Verbiage, tblNOTAM.isCancelled
+FROM tblNOTAM
+WHERE (((tblNOTAM.isCancelled)=False) AND ((tblNOTAM.nType) Not Like 'C') AND ((Left([notam],1))='M') AND ((LTOZ(Now())) Between DateAdd('d',-7,[starttime]) And [endtime]))
+ORDER BY tblNOTAM.NOTAM DESC;
+"
+"qOnStation","SELECT tblTraffic.ID, tblTraffic.PPR, tblTraffic.Callsign, tblTraffic.acType, tblTraffic.Tail, tblTraffic.Spot, IIf([depPoint]=DLookUp('station','tblsettings') And [status]<>'Cancelled',Format([depDate],'dd-mmm-yy hh:nn'),IIf([PPR]<>'-',Format(DLookUp('depDate','tblPPR','PPR = '' & [PPR] & '''),'dd-mmm-yy hh:nn'),'')) AS [Departure Date (L)], tblTraffic.Stationed, tblTraffic.depPoint, tblTraffic.ATD, tblTraffic.ATA, tblTraffic.Destination, tblTraffic.ParentID
+FROM tblTraffic, tblSettings
+WHERE (((tblTraffic.Stationed)=True) AND ((tblTraffic.depPoint) Not Like [tblSettings].[Station]) AND ((tblTraffic.ATA) Is Not Null) AND ((tblTraffic.transient)=Nz([bos],True))) OR (((tblTraffic.Stationed)=True) AND ((tblTraffic.depPoint) Like [tblSettings].[Station]) AND ((tblTraffic.ATD) Is Null) AND ((tblTraffic.transient)=Nz([bos],True))) OR (((tblTraffic.Stationed)=True) AND ((tblTraffic.depPoint) Like [tblSettings].[Station]) AND ((tblTraffic.ATD) Is Null) AND ((tblTraffic.Destination) Like [tblSettings].[Station]) AND ((tblTraffic.ParentID) Is Not Null) AND ((tblTraffic.transient)=Nz([bos],True))) OR (((tblTraffic.Stationed)=True) AND ((tblTraffic.depPoint) Like [tblSettings].[Station]) AND ((tblTraffic.ATA) Is Not Null) AND ((tblTraffic.Destination) Like [tblSettings].[Station]) AND ((tblTraffic.ParentID) Is Not Null) AND ((tblTraffic.transient)=Nz([bos],True)))
+ORDER BY IIf([depPoint]=DLookUp('station','tblsettings') And [status]<>'Cancelled',Format([depDate],'dd-mmm-yy hh:nn'),IIf([PPR]<>'-',Format(DLookUp('depDate','tblPPR','PPR = '' & [PPR] & '''),'dd-mmm-yy hh:nn'),'')), tblTraffic.acType;
+"
+"qOutbound","SELECT tblTraffic.ID, tblTraffic.flightRule, tblTraffic.Callsign, IIf([number]>1,[number],'') & [acType] AS Type, tblTraffic.ETD, tblTraffic.altitude, tblTraffic.Destination, IIf([Status] Like 'Enroute','*Enroute*',[Status]) AS [Status*], tblTraffic.Tail, tblTraffic.PPR, tblTraffic.spID
+FROM tblTraffic
+WHERE (((tblTraffic.Destination) Not Like DLookUp('Station','tblSettings')) AND (([DOF]+[ETD]) Between ltoz(Date()) And ltoz(Date()+TimeSerial(23,59,59))) AND ((tblTraffic.Status)='Cancelled') AND ((tblTraffic.depPoint) Like DLookUp('Station','tblSettings'))) OR (((tblTraffic.Destination) Not Like DLookUp('Station','tblSettings')) AND (([DOF]+[ETD]) Between ltoz(Now()) And ltoz(DateAdd('h',8,Now()))) AND ((tblTraffic.Status)='Pending') AND ((tblTraffic.depPoint) Like DLookUp('Station','tblSettings'))) OR (((tblTraffic.Destination) Not Like DLookUp('Station','tblSettings')) AND (([DOF]+[ETD]) Between ltoz(Date()) And ltoz(Date()+TimeSerial(23,59,59))) AND ((tblTraffic.Status)='Pending') AND ((tblTraffic.depPoint) Like DLookUp('Station','tblSettings'))) OR (((tblTraffic.Destination) Not Like DLookUp('Station','tblSettings')) AND ((tblTraffic.Status)='Enroute') AND ((tblTraffic.depPoint) Like DLookUp('Station','tblSettings')) AND ((tblTraffic.ATD) Between ltoz(Now()) And ltoz(DateAdd('n',-30,Now()))))
+ORDER BY [DOF]+[ETD], tblTraffic.Status;
+"
+"qPPR","SELECT tblPPR.ID, tblPPR.spID, tblPPR.PPR, tblPPR.dvCode, tblPPR.Callsign, tblPPR.Type, tblPPR.arrDate, tblPPR.depDate, tblPPR.Status, tblPPR.Spot
+FROM tblPPR
+WHERE (((tblPPR.Status) Not Like 'Cancelled') AND ((tblPPR.PPR)<>'-') AND ((Format(Date(),'mm/dd/yyyy'))=Format([arrDate],'mm/dd/yyyy') Or (Format(Date(),'mm/dd/yyyy'))=Format([depDate],'mm/dd/yyyy')) AND ((tblPPR.archive)=False)) OR (((tblPPR.Status) Like 'Cancelled') AND ((Format(Date(),'mm/dd/yyyy'))=[arrDate]) AND (([showCancelled])=True))
+ORDER BY tblPPR.arrDate, tblPPR.PPR;
+"
+"qTrafficCount","SELECT qArr.Type, qArr.Arrivals, qDep.Departures  FROM (SELECT tblTraffic.countType AS Type, Sum(tblTraffic.Number) AS Arrivals FROM tblTraffic WHERE (((tblTraffic.Destination)=DLookUp('station','tblSettings'))) AND ((IIf(IsDate(tblTraffic.arrDate), DateValue(tblTraffic.arrDate), Null) Between CDate('8/18/2020') And CDate('8/18/2020'))) AND ((tblTraffic.Status) Like 'Closed') GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qArr LEFT JOIN (SELECT tblTraffic.countType AS Type, Sum(tblTraffic.Number) AS Departures FROM tblTraffic WHERE(((tblTraffic.depPoint)=DLookUp('station','tblSettings'))) AND ((IIf(IsDate(tblTraffic.depDate), DateValue(tblTraffic.depDate), Null) Between CDate('8/18/2020') And CDate('8/18/2020'))) AND ((tblTraffic.Status) Like 'Closed' Or (tblTraffic.Status) Like 'Enroute') GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qDep ON qArr.Type = qDep.Type UNION SELECT qDep.Type, qArr.Arrivals, qDep.Departures  FROM (SELECT tblTraffic.countType AS Type, Sum(tblTraffic.Number) AS Arrivals FROM tblTraffic WHERE (((tblTraffic.Destination)=DLookUp('station','tblSettings'))) AND ((IIf(IsDate(tblTraffic.arrDate), DateValue(tblTraffic.arrDate), Null) Between CDate('8/18/2020') And CDate('8/18/2020'))) AND ((tblTraffic.Status) Like 'Closed')GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qArr RIGHT JOIN (SELECT tblTraffic.countType AS Type, Sum(tblTraffic.Number) AS Departures  FROM tblTraffic  WHERE (((tblTraffic.depPoint)=DLookUp('station','tblSettings')))  AND ((IIf(IsDate(tblTraffic.depDate), DateValue(tblTraffic.depDate), Null) Between CDate('8/18/2020') And CDate('8/18/2020')))   AND ((tblTraffic.Status) Like 'Closed' Or (tblTraffic.Status) Like 'Enroute') GROUP BY tblTraffic.countType  HAVING (((tblTraffic.countType) Is Not Null))) as qDep ON qDep.Type = qArr.Type   WHERE qArr.Type IS NULL;
+"
+"qTrafficFlightStatusUpdate","UPDATE tblTraffic SET tblTraffic.Status = 'Closed'
+WHERE (((tblTraffic.Status)='Enroute') AND (([DOF]+(Nz([ATD],[ETD])+[ETE]))<Now()));
+"
+"qWeightCategory","SELECT a.gear AS [Gear Category], a.Arrivals, b.Departures, (nz(Arrivals,0)+nz(Departures,0)) AS Total
+FROM (SELECT [@AIRCRAFT].gearType AS gear, Sum(tblTraffic.number) AS Arrivals
+  FROM [@AIRCRAFT] INNER JOIN tblTraffic ON [@AIRCRAFT].acTypeID = tblTraffic.acType
+  WHERE (((tblTraffic.acType) Is Not Null) AND ((IIf(IsDate([arrDate]),DateValue([arrDate]),Null)) Between CDate([date1]) And CDate([date2])) AND ((tblTraffic.Status) Like 'Closed') AND ((tblTraffic.Destination) Like DLookUp('station','tblSettings')) AND tblTraffic.transient = CBool(nz([isTransient],False)))
+  GROUP BY [@AIRCRAFT].gearType)  AS a LEFT JOIN (SELECT [@AIRCRAFT].gearType as gear, Sum(tblTraffic.number) AS Departures
+  FROM [@AIRCRAFT] INNER JOIN tblTraffic ON [@AIRCRAFT].acTypeID = tblTraffic.acType
+  WHERE (((tblTraffic.acType) Is Not Null) AND ((IIf(IsDate([depDate]),DateValue([depDate]),Null)) Between CDate([date1]) And CDate([date2])) AND ((tblTraffic.Status) Like 'Closed' Or (tblTraffic.Status) Like 'Enroute') AND ((tblTraffic.depPoint) Like DLookUp('station','tblSettings')) AND tblTraffic.transient = CBool(nz([isTransient],False)))
+  GROUP BY [@AIRCRAFT].gearType)  AS b ON a.gear = b.gear
+
+UNION SELECT b.gear AS [Gear Category], a.Arrivals, b.Departures, (nz(Arrivals,0)+nz(Departures,0)) AS Total
+FROM (SELECT [@AIRCRAFT].gearType AS gear, Sum(tblTraffic.number) AS Arrivals
+  FROM [@AIRCRAFT] INNER JOIN tblTraffic ON [@AIRCRAFT].acTypeID = tblTraffic.acType
+  WHERE (((tblTraffic.acType) Is Not Null) AND ((IIf(IsDate([arrDate]),DateValue([arrDate]),Null)) Between CDate([date1]) And CDate([date2])) AND ((tblTraffic.Status) Like 'Closed') AND ((tblTraffic.Destination) Like DLookUp('station','tblSettings')) AND tblTraffic.transient = CBool(nz([isTransient],False)))
+  GROUP BY [@AIRCRAFT].gearType)  AS a RIGHT JOIN (SELECT [@AIRCRAFT].gearType as gear, Sum(tblTraffic.number) AS Departures
+  FROM [@AIRCRAFT] INNER JOIN tblTraffic ON [@AIRCRAFT].acTypeID = tblTraffic.acType
+  WHERE (((tblTraffic.acType) Is Not Null) AND ((IIf(IsDate([depDate]),DateValue([depDate]),Null)) Between CDate([date1]) And CDate([date2])) AND ((tblTraffic.Status) Like 'Closed' Or (tblTraffic.Status) Like 'Enroute') AND ((tblTraffic.depPoint) Like DLookUp('station','tblSettings')) AND tblTraffic.transient = CBool(nz([isTransient],False)))
+  GROUP BY [@AIRCRAFT].gearType)  AS b ON b.gear = a.gear 
+
+WHERE a.gear IS NULL;
+"

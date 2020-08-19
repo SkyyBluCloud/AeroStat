@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataroot xmlns:od="urn:schemas-microsoft-com:officedata" generated="2020-08-18T23:10:55">
+<_x0040_AGENCY>
+<agencyID>DOD</agencyID>
+<description>Department of Defense Civil Servants</description>
+</_x0040_AGENCY>
+<_x0040_AGENCY>
+<agencyID>FAA</agencyID>
+<description>Federal Aviation Administration</description>
+</_x0040_AGENCY>
+<_x0040_AGENCY>
+<agencyID>LN</agencyID>
+<description>Local National</description>
+</_x0040_AGENCY>
+<_x0040_AGENCY>
+<agencyID>USAF</agencyID>
+<description>US Air Force</description>
+</_x0040_AGENCY>
+<_x0040_AGENCY>
+<agencyID>USCG</agencyID>
+</_x0040_AGENCY>
+<_x0040_AGENCY>
+<agencyID>USMC</agencyID>
+</_x0040_AGENCY>
+<_x0040_AGENCY>
+<agencyID>USN</agencyID>
+</_x0040_AGENCY>
+<_x0040_AGENCY>
+<agencyID>USR</agencyID>
+<description>US Army</description>
+</_x0040_AGENCY>
+<_x0040_AGENCY>
+<agencyID>USSF</agencyID>
+<description>US Space Force</description>
+</_x0040_AGENCY>
+</dataroot>
