@@ -1,18 +1,109 @@
 Attribute VB_Name = "Util"
 Option Compare Database
 
+Public Function updateWWAs() As Boolean
+On Error GoTo errtrap
+'Updates tblWWA; returns collection of IDs from that table that are currently active
+'https://owsjet26.us.af.mil/rssRequest/wwa.rss?type=wwa&station=KHST
+Dim strURL, update As String: strURL = DLookup("WWAFeed", "tblsettings")
+Dim cUpdates As New Collection
+Dim xmldoc As New MSXML2.DOMDocument60
+Dim xmlElement As MSXML2.IXMLDOMElement
+Dim xmlSelection As MSXML2.IXMLDOMSelection
+Dim RS As DAO.Recordset: Set RS = CurrentDb.OpenRecordset("tblWWA")
+
+Const cstrXPath As String = "/rss/channel/item"
+
+    xmldoc.async = False
+    xmldoc.Load strURL
+    Set xmlSelection = xmldoc.SelectNodes(cstrXPath)
+    Dim fail As Boolean
+    Dim i As Integer: For Each xmlElement In xmlSelection
+        With RS
+            Dim cid: cid = DLookup("ID", "tblWWA", "pubDate = #" & Trim(Replace(Mid(xmlElement.ChildNodes(2).Text, InStr(1, xmlElement.ChildNodes(2).Text, ",") + 1), "GMT", "")) & "#")
+            If IsNull(cid) Then
+                .AddNew
+                For Each c In xmlElement.ChildNodes
+                Select Case c.nodeName
+                    Case "pubDate"
+                        .Fields(c.nodeName) = Trim(Replace(Mid(c.Text, InStr(1, c.Text, ",") + 1), "GMT", ""))
+                    Case "description"
+                        .Fields(c.nodeName) = Replace(Replace(Replace(Replace(c.Text, "&nbsp;", " "), "<![CDATA[ ", ""), "<br />", " "), " ]]>", "")
+                    Case "title"
+                        .Fields(c.nodeName) = c.Text
+                End Select
+                Next c
+
+                .update
+                .Bookmark = .LastModified
+                update = IIf(IsNull(update), "", update & ",") & cid
+            Else
+                'cUpdates.add cid
+            End If
+        End With
+    Next xmlElement
+    
+    If update = "" Then update = 0
+    CurrentDb.Execute "UPDATE tblWWA SET active = False WHERE ID <> " & join(Split(update, ","), " OR ID <> ")
+    
+fExit:
+    updateWWAs = True
+    Exit Function
+errtrap:
+    ErrHandler err, Error$, "Util.updateWWAs"
+End Function
+
+Public Function GetHTTPResponse(url As String) As String
+Dim msXML As Object
+Set msXML = CreateObject("Microsoft.XMLHTTP")
+With msXML
+  .Open "Get", url, False
+  .setRequestHeader "Content-Type", "application/x-www-form-urlencoded; charset=utf-8"
+  .Send
+  GetHTTPResponse = .responseText
+End With
+Set msXML = Nothing
+End Function
+
+
+Public Function doCAPS(frm As Form) As String
+On Error Resume Next
+'Triggers on TextBox Exit
+For Each ctl In frm.Controls
+    If TypeOf ctl Is TextBox Then
+        'If ctl.Value <> Replace(Nz(ctl.DefaultValue), """", "") Then ctl.Value = UCase(ctl.Value)
+        If ctl.Value <> Replace(Nz(ctl.DefaultValue), """", "") Then ctl.Text = UCase(ctl.Text)
+    End If
+Next
+
+End Function
+'Converts a 4-digit string representing a time into a time format Access can understand.
+' t <string>: 4 digit time
+Public Function getTime4Char(ByVal t As String) As Date
+On Error GoTo errtrap
+If Not IsNumeric(t) Then Exit Function
+    getTime4Char = TimeSerial(Left(t, 2), Right(t, 2), 0)
+fExit:
+    Exit Function
+errtrap:
+    ErrHandler err, Error$, "Util.getTime4Char"
+End Function
+
+'Lazy way to open the lclver table.
 Public Sub lclver()
     DoCmd.OpenTable "lclver"
 End Sub
 
+'Saves table relationships and saves them to a table to be exported later.
+'dbPath <string> = The path of the database to run the function on. Default: DLookup("backend", "tblsettings")
 Public Function saveRelations(Optional ByVal dbPath As String)
 If Nz(dbPath) = "" Then dbPath = DLookup("backend", "tblsettings")
 Dim acc As New Access.Application
 Dim db As DAO.Database: Set db = CurrentDb
-Dim RS As DAO.Recordset: Set RS = db.OpenRecordset("SELECT * FROM RELATIONS IN '" & dbPath & "'", , dbFailOnError)
+Dim RS As DAO.Recordset: Set RS = db.OpenRecordset("SELECT * FROM [@RELATIONS] IN '" & dbPath & "'", , dbFailOnError)
     
     log "Clearing old relations...", "Util.saveRelations"
-    db.Execute "DELETE * FROM RELATIONS IN '" & dbPath & "'", dbFailOnError
+    db.Execute "DELETE * FROM [@RELATIONS] IN '" & dbPath & "'", dbFailOnError
     
     For Each r In db.Relations
         With r
@@ -34,10 +125,10 @@ Dim RS As DAO.Recordset: Set RS = db.OpenRecordset("SELECT * FROM RELATIONS IN '
                 !ptable = r.Table
                 !ftable = r.ForeignTable
                 !Fields = sfields
-                .Update
+                .update
             End With
             
-            'CurrentDb.Execute "INSERT INTO [" & DLookup("backend", "tblsettings") & "].RELATIONS (name, attributes, pTable, fTable, fields) SELECT '" & _
+            'CurrentDb.Execute "INSERT INTO [" & DLookup("backend", "tblsettings") & "].[@RELATIONS] (name, attributes, pTable, fTable, fields) SELECT '" & _
                                 sName & "' AS newName, '" & .Attributes & "' AS newAttributes, '" & .Table & "' AS newTable, '" & _
                                 .ForeignTable & "' AS newForeignTable, '" & sfields & "' AS newFieldString IN;", dbFailOnError
             
@@ -48,44 +139,71 @@ db.Close
 Set db = Nothing
 End Function
 
-Public Function truncAll()
+'Don't do it.
+Public Sub truncAll()
+If MsgBox("THIS IS DANGEROUS! TURN BACK NOW!", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then
+If MsgBox("THIS CANNOT BE UNDONE! CANCEL THIS IMMEDIATELY!", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then
+If MsgBox("SERIOUSLY? CANCEL THIS PROCESS? PLEASE?", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then
+
     Dim tdf: For Each tdf In CurrentDb.TableDefs
         If Left(tdf.Name, 3) = "tbl" Then
             CurrentDb.Execute "DELETE * FROM " & tdf.Name, dbFailOnError
         End If
     Next
-End Function
+End If
+End If
+End If
+End Sub
 
-Public Function trunc(ByVal tbl As String)
-    CurrentDb.Execute "DELETE * FROM " & tbl, dbFailOnError
-End Function
+'Don't do this either.
+Public Sub trunc(ByVal tbl As String)
+    If MsgBox("THIS IS DANGEROUS! TURN BACK NOW!", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then CurrentDb.Execute "DELETE * FROM " & tbl, dbFailOnError
+End Sub
 
-Public Sub exportSchema(Optional hostDB As String, Optional Path As String = "%USERPROFILE%\Documents\AeroStat\DB EXPORT\Schema\")
+Public Sub exportSchema(Optional Path As String = "%USERPROFILE%\Documents\AeroStat\DB EXPORT\Schema\")
+On Error GoTo errtrap
 Dim tdf As DAO.TableDef
-Path = Replace(Path, "%USERPROFILE%", Environ$("userprofile"))
+'Path = Replace(Path, "%USERPROFILE%", Environ$("userprofile"))
+Path = CurrentProject.Path & "\DB EXPORT\Schema\"
 'Path = Replace(Path, "%USERPROFILE%", Replace(Environ$("userprofile"), "C:\", "D:\"))
-
-    relinkTables
 
     log "Creating path...", "Util.exportSchema"
     log IIf(Util.createPath(Path), "Success!", "Failed to create path."), "Util.exportSchema"
 
     saveRelations
     
+    Open Path & "SQL.csv" For Output As #1
+    Print #1, """Name"",""SQL"""
+        Dim qdf: For Each qdf In CurrentDb.QueryDefs
+            If Left(qdf.Name, 1) = "q" Then
+                log "Exporting query: " & qdf.Name, "Util.exportSchema"
+                'Application.ExportXML acExportQuery, qdf.Name, , Path & qdf.Name & ".xsd"
+                'CurrentDb.Execute "INSERT INTO [@SQL] (qName,[SQL]) SELECT '" & qdf.Name & "', '" & qdf.sql & "'", dbFailOnError
+                'EXPORT METHOD
+                Print #1, """" & qdf.Name & """,""" & Replace(qdf.sql, """", "'") & """"
+                DoEvents
+            End If
+        Next
+    Close #1
+    
     For Each tdf In CurrentDb.TableDefs
         If Left(tdf.Name, 3) = "tbl" Then
             log "Exporting schema: " & tdf.Name, "Util.exportSchema"
             'Application.ExportXML acExportTable, tdf.Name, , Path & tdf.Name & ".xsd"
-            Application.ExportXML acExportTable, tdf.Name, , Path & tdf.Name & ".xsd", , , , , , additionalData
+            Application.ExportXML acExportTable, tdf.Name, , Path & tdf.Name & ".xsd"
             DoEvents
-        ElseIf tdf.Name = "RELATIONS" Then
+        ElseIf Left(tdf.Name, 1) = "@" Then
             log "Exporting table: " & tdf.Name, "Util.exportSchema"
             Application.ExportXML acExportTable, tdf.Name, Path & tdf.Name & ".xml"
             DoEvents
         End If
     Next
+    
+sexit:
     log "Done!", "Util.exportSchema"
-
+    Exit Sub
+errtrap:
+    ErrHandler err, Error$, "Util.exportSchema"
 End Sub
 
 Public Function fixCase(ByRef s As Control)
@@ -289,11 +407,11 @@ pDir = CurrentProject.Path & "\DB EXPORT\"
     
     log "All database objects have been exported as a text file to " & exportLocation, "Util.exportAllObjects"
 
-sExit:
+sexit:
     Exit Sub
 errtrap:
     Util.ErrHandler err, Error$, "Util.EXPORT"
-    Resume sExit
+    Resume sexit
 End Sub
 
 Public Function findRank(ByVal r As String) As Variant
@@ -553,7 +671,7 @@ On Error Resume Next
 Dim db As DAO.Database
 Set db = CurrentDb
 Dim sql As String
-sql = "INSERT INTO debug (username,initials,computername,priority,module,details) SELECT tblUserAuth.username, tblUserAuth.opInitials, tblUserAuth.lastsystem, '" & priority & "', '" & module & "', " & """" & msg & """" & " FROM tblUserAuth WHERE tblUserAuth.username = '" & getUSN & "';"
+sql = "INSERT INTO *debug (username,initials,computername,priority,module,details) SELECT tblUserAuth.username, tblUserAuth.opInitials, tblUserAuth.lastsystem, '" & priority & "', '" & module & "', " & """" & msg & """" & " FROM tblUserAuth WHERE tblUserAuth.username = '" & getUSN & "';"
 
     db.Execute sql
     Debug.Print Format(Now, "dd-mmm-yy hh:nn:ssL") & "[" & priority & "] " & module & ": " & msg
@@ -587,12 +705,12 @@ With RS
     If .EOF Then Exit Function
     .edit
     .Fields(fld) = v
-    .Update
+    .update
     .Close
 End With
 Set RS = Nothing
 
-sExit:
+sexit:
     Exit Function
 errtrap:
     ErrHandler err, Error$, "Util.appendUser"
@@ -627,7 +745,7 @@ Set rstbl = CurrentDb.OpenRecordset("SELECT * FROM " & tbl & " WHERE ID = " & re
                 rsAlert!msg = M
             End Select
         End With
-        .Update
+        .update
         .Bookmark = .LastModified
     End With
     
@@ -643,11 +761,11 @@ Set RS = CurrentDb.OpenRecordset("tblSettings")
 
     RS.edit
     RS!frmTrafficLogSync = t
-    RS.Update
+    RS.update
     Set RS = CurrentDb.OpenRecordset("lclver")
     RS.edit
     RS!frmTrafficLogSync = t
-    RS.Update
+    RS.update
     RS.Close
 
 Set RS = Nothing
@@ -814,7 +932,7 @@ With RS
                     cnlFlight = True
                 End If
         End Select
-        .Update
+        .update
         syncTrafficLog !ID, "Traffic", False
     Else
         MsgBox "Flight not found", vbInformation, "Error"
