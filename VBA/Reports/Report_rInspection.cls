@@ -54,7 +54,7 @@ For i = start To DCount("ID", "tblInspectionItemCategory", "ID >= 1")
 Next
 inspectionItems3.Report.RecordSource = "SELECT * FROM tblInspectionItemCategory INNER JOIN tblInspectionItems ON tblInspectionItemCategory.ID = tblInspectionItems.categoryID WHERE tblInspectionItemCategory.ID Between " & start & " And " & loadCats
 
-sExit:
+sexit:
     Exit Sub
 errtrap:
     ErrHandler err, Error$, Name

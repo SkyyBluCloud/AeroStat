@@ -46,7 +46,7 @@ On Error GoTo errtrap
         bs = ""
     End If
     populate , , bs
-sExit:
+sexit:
     Exit Sub
 errtrap:
     MsgBox Error$

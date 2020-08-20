@@ -100,12 +100,13 @@ Dim saveLocation As String
             log "Creating table from XML: " & f.Name, "frmSetup.btnCreateBackend"
             .ImportXML f, acStructureOnly
         Next
+        
         .CloseCurrentDatabase
     End With
     log "Done!", "frmSetup.btnCreateBackend"
     tabCtl = tabCtl + 1
     
-sExit:
+sexit:
     'Cleanup
     Set acc = Nothing
     Set fd = Nothing
@@ -118,7 +119,7 @@ errtrap:
     Case 76
         MsgBox Error$ & " (" & err & ")", vbCritical, "Error"
     End Select
-    Resume sExit
+    Resume sexit
 End Sub
 
 Private Sub btnNext_Click()

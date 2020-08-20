@@ -83,7 +83,7 @@ On Error GoTo errtrap
 '        .Attachments.add file
 '    End With
 
-sExit:
+sexit:
     Exit Sub
 errtrap:
     ErrHandler err, Error$, Me.Name
@@ -151,34 +151,6 @@ End Sub
 Private Sub Report_Load()
     Caption = "PPR Report " & Format(Now, "dd-mmm-yy hhnn(L)")
     If Nz(OpenArgs) <> "" Then Me.RecordSource = OpenArgs
-End Sub
-
-'Private Sub txtBoxHighlighter_Click()
-'Dim idx As Integer
-'Dim s() As String
-'Dim found As Boolean
-'
-'    Dim i: For Each i In Split(Nz(hLight, "0"), ",")
-'        If ID <> CInt(i) Then
-'            ReDim Preserve s(0 To idx) As String
-'            s(idx) = i
-'            idx = idx + 1
-'        Else
-'            found = True
-'        End If
-'    Next
-'    If Not found Then
-'        ReDim Preserve s(0 To idx) As String
-'        s(idx) = ID
-'    End If
-'
-'    hLight = join(s, ",")
-'    Report.Requery
-'
-'End Sub
-
-Private Sub highlight()
-
 End Sub
 
 Private Sub txtBoxOverlay_Click()

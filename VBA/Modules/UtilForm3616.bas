@@ -173,7 +173,7 @@ If RS.RecordCount = 0 Then Exit Function
             !closed = True
             .Fields(LCase(roleStr) & "Sig") = getUSN
             .Fields(LCase(roleStr) & "SigTime") = Now
-            .Update
+            .update
         Else
         
             CurrentDb.Execute "UPDATE tblShiftManager SET " & LCase(roleStr) & "Sig = '" & getUSN & "', " & _

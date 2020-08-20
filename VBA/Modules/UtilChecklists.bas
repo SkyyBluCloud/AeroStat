@@ -35,7 +35,7 @@ Set rsCD = CurrentDb.OpenRecordset("tblChecklistCompletionData")
             !itemID = rsItems!itemID
             !shiftID = shiftID
             !startDate = Now
-            .Update
+            .update
         End With
         .MoveNext
     Loop: End With

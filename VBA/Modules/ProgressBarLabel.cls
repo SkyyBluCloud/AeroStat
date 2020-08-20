@@ -175,7 +175,7 @@ Public Property Let Value(ByVal dblVal As Double)
     'update only if change is => 1%
     If (CInt(dblVal * (100 / mdblMax))) > (CInt(mdblVal * (100 / mdblMax))) Then
         mdblVal = dblVal
-        Update
+        update
     Else
         mdblVal = dblVal
     End If
@@ -264,7 +264,7 @@ ErrHandler:
 
 End Property
 
-Private Sub Update()
+Private Sub update()
 
     On Error GoTo 0    ' Debug Mode
 

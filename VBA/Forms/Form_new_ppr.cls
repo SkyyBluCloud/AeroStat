@@ -73,7 +73,7 @@ Private Sub arrDate_AfterUpdate()
     '    End If
     End If
 
-sExit:
+sexit:
     formatPPR
 End Sub
 
@@ -147,7 +147,7 @@ With RS
     !archive = True
     !archivetime = Now
     !archiveby = Util.getOpInitials
-    .Update
+    .update
     .Close
 End With
 Set RS = Nothing
@@ -167,7 +167,7 @@ If comment = "" Then Exit Sub
         !inputTime = Now
         !comment = comment
         !opInitials = Util.getOpInitials
-        .Update
+        .update
         .Bookmark = .LastModified
         If NewRecord Then unsavedComment = !ID
         .Close
@@ -224,7 +224,7 @@ Private Sub depDate_AfterUpdate()
         End If
     End If
 
-sExit:
+sexit:
 
 End Sub
 
@@ -796,7 +796,7 @@ inoutsearch:
                     If Not inout Then arrID = !ID
                     !spID = spID
                     Callsign = !Callsign
-                    .Update
+                    .update
                     Exit Do
                 End If
             End If

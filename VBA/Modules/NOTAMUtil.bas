@@ -47,7 +47,7 @@ With cNOTAM: Do While Not .EOF
     With N:
         .edit
         !cancelled = True
-        .Update
+        .update
     End With
     End If
     .MoveNext
@@ -66,7 +66,7 @@ Dim rNOTAM As DAO.Recordset
                 .edit
                 !isCancelled = True
                 !endTime = nEndTime
-                .Update
+                .update
                 .Close
             End If
         End With
@@ -74,7 +74,6 @@ Dim rNOTAM As DAO.Recordset
 fExit:
     cancelNOTAM = True
     Exit Function
-    
 errtrap:
     ErrHandler err, Error$, "NOTAMUtil.cancelNOTAM"
 End Function
@@ -92,7 +91,7 @@ parseNOTAM = 0
 Dim N As String
 Dim q, a, b, c, d, e As String
 Dim cNOTAM As String
-Dim cNOTAMStart As Date
+Dim cNOTAMEnd As Date
 Dim rNOTAM2 As DAO.Recordset
 s = noBreaks(s)
 Dim rNOTAM As DAO.Recordset
@@ -137,7 +136,8 @@ With rNOTAM
             !verbiage = "Cancel " & cNOTAM
             !startTime = IIf(Nz(start) = "", Now, start)
             !endTime = IIf(Nz(expiry) = "", DateAdd("d", 3, Now), expiry)
-            cNOTAMStart = !startTime
+            cNOTAMEnd = !startTime
+            NOTAMUtil.cancelNOTAM cNOTAM, cNOTAMEnd
         Case Else
             parseNOTAM = 0
             MsgBox "Could not parse NOTAM: Invalid format.", vbInformation, "NOTAM Control"
@@ -154,21 +154,21 @@ With rNOTAM
         End If
     End If
         
-    .Update
+    .update
     .Bookmark = .LastModified
     parseNOTAM = !ID
     
-    If Nz(cNOTAM) <> "" Then
-        Set rNOTAM2 = CurrentDb.OpenRecordset("SELECT * FROM tblNOTAM WHERE NOTAM = '" & cNOTAM & "'")
-        With rNOTAM2
-            .edit
-            !isCancelled = True
-            !endTime = Nz(cNOTAMStart, Now)
-            .Update
-            .Close
-        End With
-        .Close
-    End If
+'    If Nz(cNOTAM) <> "" Then
+'        Set rNOTAM2 = CurrentDb.OpenRecordset("SELECT * FROM tblNOTAM WHERE NOTAM = '" & cNOTAM & "'")
+'        With rNOTAM2
+'            .edit
+'            !isCancelled = True
+'            !endTime = Nz(cNOTAMStart, Now)
+'            .Update
+'            .Close
+'        End With
+'        .Close
+'    End If
 End With
 Set rNOTAM = Nothing
 Set rNOTAM2 = Nothing

@@ -43,7 +43,7 @@ Dim f As String
     End With
 
     
-sExit:
+sexit:
     
     Exit Sub
 errtrap:

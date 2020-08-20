@@ -47,7 +47,7 @@ If DLookup("ntype", "tblNOTAM", "NOTAM = '" & NOTAM & "'") = "C" Then Exit Sub
             .edit
             !isCancelled = True
             !endTime = Now
-            .Update
+            .update
             .MoveNext
     Loop: End With
 

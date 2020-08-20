@@ -11,14 +11,6 @@ Option Compare Database
 Option Explicit
 Public args As String
 
-Private Declare PtrSafe Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" ( _
-                    ByVal hwnd As Long, _
-                    ByVal lpOperation As String, _
-                    ByVal lpFile As String, _
-                    ByVal lpParameters As String, _
-                    ByVal lpDirectory As String, _
-                    ByVal nShowCmd As Long) As Long
-
 Private Sub Detail_Print(cancel As Integer, PrintCount As Integer)
 Dim eol As Double
 eol = r3616Shift.Height
@@ -66,7 +58,7 @@ Dim ctl
                 For Each ctl In .Controls
                     ctl.Visible = True
                 Next
-                .Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & Replace(UCase([RANK].[rank]),'-','') & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & RS!amosSigTime & "' AS sigTime FROM RANK INNER JOIN (tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.amosSig = tblUserAuth.username) ON RANK.ID = tblUserAuth.rankID WHERE tblShiftManager.shiftID = " & RS!shiftID & ";"
+                .Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & Replace(UCase([@RANK].[rank]),'-','') & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & RS!amosSigTime & "' AS sigTime FROM [@RANK] INNER JOIN (tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.amosSig = tblUserAuth.username) ON [@RANK].ID = tblUserAuth.rankID WHERE tblShiftManager.shiftID = " & RS!shiftID & ";"
             End If
         End With
         i = i + 1
@@ -79,7 +71,7 @@ Dim ctl
         For Each ctl In Me.namoSig.Report.Controls
             ctl.Visible = True
         Next
-        Me.namoSig.Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & Replace(UCase([RANK].[rank]),'-','') & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & RS!namoSigTime & "' AS sigTime FROM RANK INNER JOIN (tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.amosSig = tblUserAuth.username) ON RANK.ID = tblUserAuth.rankID WHERE tblShiftManager.shiftID = " & RS!shiftID & ";"
+        Me.namoSig.Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & Replace(UCase([@RANK].[rank]),'-','') & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & RS!namoSigTime & "' AS sigTime FROM [@RANK] INNER JOIN (tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.namoSig = tblUserAuth.username) ON [@RANK].ID = tblUserAuth.rankID WHERE tblShiftManager.shiftID = " & RS!shiftID & ";"
     End If
     
     If Not IsNull(RS!afmSig) Then
@@ -87,7 +79,7 @@ Dim ctl
         For Each ctl In Me.afmSig.Report.Controls
             ctl.Visible = True
         Next
-        Me.afmSig.Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & Replace(UCase([RANK].[rank]),'-','') & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & RS!afmSigTime & "' AS sigTime FROM RANK INNER JOIN (tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.amosSig = tblUserAuth.username) ON RANK.ID = tblUserAuth.rankID WHERE tblShiftManager.shiftID = " & RS!shiftID & ";"
+        Me.afmSig.Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & Replace(UCase([@RANK].[rank]),'-','') & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & RS!afmSigTime & "' AS sigTime FROM [@RANK] INNER JOIN (tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.afmSig = tblUserAuth.username) ON [@RANK].ID = tblUserAuth.rankID WHERE tblShiftManager.shiftID = " & RS!shiftID & ";"
     End If
     
 End Sub

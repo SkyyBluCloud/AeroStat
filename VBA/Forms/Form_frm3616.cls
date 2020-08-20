@@ -89,7 +89,7 @@ Dim oi As String: oi = getOpInitials
     
 'End With
 
-sExit:
+sexit:
     entryTime = ""
     entry = ""
     logView.Requery
@@ -102,6 +102,10 @@ End Sub
 Private Sub checkInsp_Click()
     DoCmd.OpenForm "frmInspections", , , , , acDialog, shiftID
 logView.Requery
+End Sub
+
+Private Sub btnNewWx_Click()
+updateWWAs
 End Sub
 
 Private Sub btnTemplateSettings_Click()
@@ -163,7 +167,7 @@ Dim closeSt As Boolean
     With rss
         .edit
         !closed = True
-        .Update
+        .update
         .Close
     End With
     
@@ -216,7 +220,9 @@ End Sub
 Private Sub entry_KeyDown(KeyCode As Integer, Shift As Integer)
     Select Case KeyCode
     Case VBA.vbKeyReturn 'Enter key
-        Dirty = False
+        bClose = True
+        If Dirty Then Dirty = False
+        addEntry.SetFocus
         addEntry_Click
         entryTime = ""
         entryTime.SetFocus

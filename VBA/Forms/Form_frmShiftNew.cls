@@ -142,7 +142,7 @@ bClose = True
                         .edit
                         !lastShift = Me.shiftID
                         joined = joined & ctl.Value & ";"
-                        .Update
+                        .update
                         Exit Do
                     Else
                         .MoveNext
@@ -190,7 +190,7 @@ bClose = True
             IIf(shiftTitle = "SWINGSHIFT", "RWY " & rwy & " IN USE. RSC " & rsc & ", BWC " & bwc & ". BARRIERS " & IIf(barrier = "WITHDRAWN", "WITHDRAWN", "CONFIGURED FOR RWY " & barrier) & ". ", "") & _
             shiftTitle & " CHECKLIST INITIATED. MONITORING RAMPNET FOR PROPER PHRASEOLOGY THROUGHOUT SHIFT"
             'FUTURE: User customization
-            .Update
+            .update
         End With
         End If
        
@@ -199,7 +199,7 @@ bClose = True
         'DoCmd.close acForm, "frmShiftSelect", acSaveYes
     End If
     
-sExit:
+sexit:
     tor = Now
     'DoCmd.close acForm, "frmShiftNew", acSaveYes
     Exit Sub

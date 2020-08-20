@@ -17,7 +17,7 @@ Private Sub btnComment_Click()
     Dim res As String
     res = InputBox("Enter your comment for this shift:" & vbCrLf & vbCrLf & Format(shiftList.Column(1), "dd-mmm-yy hh:nnL") & " - " & Format(shiftList.Column(2), "dd-mmm-yy hh:nnL") & ": " & vbCrLf & shiftList.Column(3), _
                 "Reviewer Comments", Nz(DLookup("reviewerComments", "tblShiftManager", "shiftID=" & shiftList.Column(0))))
-    If Nz(res) <> "" Then CurrentDb.Execute "UPDATE tblShiftManager SET reviewerComments = '" & res & "' WHERE shiftID = " & shiftList.Column(0), dbFailOnError
+    If Nz(res) <> "" Then CurrentDb.Execute "UPDATE tblShiftManager SET reviewerComments = reviewerComments & '" & res & "' WHERE shiftID = " & shiftList.Column(0), dbFailOnError
     AF3616.Requery
 End Sub
 
@@ -136,7 +136,7 @@ On Error GoTo errtrap
 '            .Report.FilterOn = True
         End With
     End If
-sExit:
+sexit:
     Exit Sub
 errtrap:
     ErrHandler err, Error$, Me.Name

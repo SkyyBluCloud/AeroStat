@@ -9,6 +9,10 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
 
+Private Sub btnBaseAcft_Click()
+DoCmd.OpenForm "frmBaseAcft"
+End Sub
+
 Private Sub btnSave_Click()
 With frmSetupGlobalSettings.Form
     If .Dirty Then .Dirty = False

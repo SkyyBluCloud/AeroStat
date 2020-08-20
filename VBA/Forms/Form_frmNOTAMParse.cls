@@ -13,7 +13,14 @@ Dim shiftID As Integer
 Private Sub bParse_Click()
 Dim N As Integer
 Dim logTime As Date
+'If Nz(parse) = "" Then Exit Sub
+If Nz(parse) = "" Then
+    Dim DataObj As New MSForms.DataObject
+    DataObj.GetFromClipboard
+    parse = DataObj.GetText
+End If
 If Nz(parse) = "" Then Exit Sub
+
 N = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Environ$("username") & "'"), Date, DateAdd("d", 3, Date))
 
     If N <> 0 Then
@@ -46,7 +53,7 @@ N = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Enviro
                             "NEW NOTAM COUNT: " & DCount("notam", "qNOTAMM") & "M, " & DCount("notam", "qNOTAML") & "L"
                 End Select
                 !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
-                .Update
+                .update
                 .Close
             End With
             Set log = Nothing
