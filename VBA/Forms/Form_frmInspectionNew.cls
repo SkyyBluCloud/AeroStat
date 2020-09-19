@@ -138,7 +138,7 @@ Dim t As Date
 log:
     entry = Callsign & "/" & Initials & " ON AFLD " & IIf(specialCheck <> 0, "FOR " & ctSimple, "CK (" & ctSimple & ")")
     'outTime = Format(Left(entryTime, 2) & "." & Right(entryTime, 2), "hh:nn") WTF???
-    t = checkDate & " " & ZToL(outTime, True)
+    t = checkDate & " " & ZToL(outTime)
     If firstEntryComplete Or (Not NewRecord And logOff = 0) Then
         firstEntryComplete = True
         If logOff = 0 Then
@@ -148,7 +148,7 @@ log:
         End If
         'entry = Callsign & "/" & Initials & " OFF AFLD. " & IIf(Nz(Remarks) = "", "NO CHANGES TO REPORT", Nz(Remarks))
         'entry = Callsign & "/" & Initials & " OFF AFLD. " & IIf(Nz(Remarks) = "", "NO CHANGES TO REPORT", "")
-        t = checkDate & " " & ZToL(inTime, True)
+        t = checkDate & " " & ZToL(inTime)
         firstEntry = False
         closed = True
     End If
