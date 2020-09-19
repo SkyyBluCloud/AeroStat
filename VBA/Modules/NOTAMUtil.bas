@@ -119,18 +119,26 @@ With rNOTAM
         Case "N", "R"
             !controlZone = Mid(s, q, (InStr(q, s, "/") - q))
             !qcode = Mid(s, InStr(q, s, "/") + 1, 5)
-            
             !startTime = getDateFromNOTAM(Mid(s, b, 10))
             !endTime = getDateFromNOTAM(Mid(s, c, 10))
+            
             If d > 3 Then
                 !period = Mid(s, d, e - d - 4)
             End If
+            
             If !nType = "R" Then
                 cNOTAM = Mid(s, InStr(1, s, "NOTAMR") + 7, 8)
+                If IsNumeric(Left(cNOTAM, 1)) Or Not IsNumeric(Mid(cNOTAM, 2, 3)) Then
+                    parseNOTAM = 0
+                    MsgBox "Could not parse NOTAM. NOTAM number required after 'NOTAMR'", vbInformation, "NOTAM Control"
+                    Exit Function
+                End If
+                
                 !verbiage = "Replaces " & cNOTAM & ": " & Mid(s, e)
             Else
                 !verbiage = Mid(s, e)
             End If
+            
         Case "C"
             cNOTAM = Mid(s, 17, 8)
             !verbiage = "Cancel " & cNOTAM
@@ -138,6 +146,7 @@ With rNOTAM
             !endTime = IIf(Nz(expiry) = "", DateAdd("d", 3, Now), expiry)
             cNOTAMEnd = !startTime
             NOTAMUtil.cancelNOTAM cNOTAM, cNOTAMEnd
+            
         Case Else
             parseNOTAM = 0
             MsgBox "Could not parse NOTAM: Invalid format.", vbInformation, "NOTAM Control"
@@ -147,8 +156,10 @@ With rNOTAM
     If Nz(usr) <> "" Then
         If Len(usr) = 2 Then
             !issuedBy = usr
+            
         ElseIf Not IsNull(DLookup("opinitials", "tbluserauth", "lastname = '" & Trim(Mid(usr, InStr(1, Trim(usr), " "))) & "'")) Then
             !issuedBy = DLookup("opinitials", "tbluserauth", "lastname = '" & Trim(Mid(usr, InStr(1, Trim(usr), " "))) & "'")
+            
         ElseIf Nz(usr) <> "" Then
             !issuedBy = UCase(Left(usr, 1) & Mid(usr, InStr(1, Trim(usr), " ") + 1, 1)) & "*"
         End If
