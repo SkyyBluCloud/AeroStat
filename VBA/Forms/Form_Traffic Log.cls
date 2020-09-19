@@ -309,7 +309,7 @@ With update
         !frmTrafficLogSync = DLookup("frmTrafficLogSync", "tblSettings")
         .update
         
-        CurrentDb.Execute "qTrafficFlightStatusUpdate"
+        
 '        For Each ctl In Controls
 '            If TypeOf ctl Is ListBox Then ctl.Requery
 '        Next
@@ -322,6 +322,10 @@ With update
     .Close
 End With
 Set update = Nothing
+
+Dim db As DAO.Database: Set db = CurrentDb
+db.Execute "qTrafficFlightStatusUpdate"
+If db.RecordsAffected <> 0 Then fpReload
 End Sub
 
 Public Function refreshAlert(Optional All As Boolean)
@@ -495,18 +499,18 @@ End Sub
 
 Private Sub fpReload(Optional fpType As Integer)
     Select Case fpType
-    Case 0
+    Case 0 ' Nothing received; update all windows
         For Each ctl In Controls
             If TypeOf ctl Is ListBox Then
                 If ctl.Tag Like "*fp*" Then ctl.Requery
             End If
         Next
     
-    Case 1
+    Case 1 'Update inbound only
         inbound_aircraft.Requery
-    Case 2
+    Case 2 'Update outbound only
         outbound_aircraft.Requery
-    Case 3
+    Case 3 'Update local only
         local_aircraft.Requery
     End Select
     

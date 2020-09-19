@@ -167,7 +167,8 @@ ppr_list.RowSource = "SELECT tblPPR.ID, tblPPR.PPR, tblPPR.Status, tblPPR.arrDat
         
         
         DoCmd.OpenReport "rPPR", acViewReport, , , , ppr_list.RowSource
-
+        DoEvents
+        
         Reports("rPPR").hLight = join(s, ",")
         Reports("rppr").Requery
         

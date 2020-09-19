@@ -49,7 +49,6 @@ Dim ctl
     Set RS = CurrentDb.OpenRecordset(Me.RecordSource)
     RS.filter = "not IsNull(amosSig)"
     
-
     i = 1
     With RS: Do While Not .EOF
         With Me.Controls("dSig" & i)
@@ -67,7 +66,9 @@ Dim ctl
     
     
     If Not IsNull(RS!namoSig) Then
+    
         Me.namoSig.Visible = True
+        
         For Each ctl In Me.namoSig.Report.Controls
             ctl.Visible = True
         Next
@@ -75,7 +76,9 @@ Dim ctl
     End If
     
     If Not IsNull(RS!afmSig) Then
+    
         Me.afmSig.Visible = True
+        
         For Each ctl In Me.afmSig.Report.Controls
             ctl.Visible = True
         Next
@@ -86,12 +89,14 @@ End Sub
 
 Private Sub Report_Open(cancel As Integer)
 On Error Resume Next
+Dim args: args = Null
     If Parent.Name <> "frmAFMDash" Then
         'error
     Else
-        args = Nz(Parent.shiftList.Column(1), args)
+        args = Format(Nz(Parent.shiftList.Column(1), Nz(args, Date)), "dd-mmm-yy")
     End If
-    If Not IsNull(OpenArgs) Or args <> "" Then Me.RecordSource = "SELECT tblShiftManager.*, Format([shiftstart],'dd-mmm-yy') AS Expr1 FROM tblShiftManager WHERE (((Format([shiftstart],'dd-mmm-yy'))=Format('" & Nz(OpenArgs, args) & "','dd-mmm-yy')));"
+    If Not IsNull(OpenArgs) Or args <> "" Then Me.RecordSource = "SELECT tblShiftManager.* FROM tblShiftManager WHERE dateserial(year(tblShiftManager.shiftstart),month(tblShiftManager.shiftstart),day(tblShiftManager.shiftstart)) = #" & Nz(Me.OpenArgs, Nz(args, Date)) & "#;"
+    
 End Sub
 
 'Private Sub updateRecordSource()

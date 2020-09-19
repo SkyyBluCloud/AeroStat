@@ -19,18 +19,22 @@ End Sub
 
 Private Sub approval_Click()
     Select Case approval
-        Case 1
+        Case 1 'Approved
             FormHeader.BackColor = RGB(0, 255, 0)
             FormFooter.BackColor = RGB(0, 255, 0)
-        Case -1
+            Me.Status = "Approved"
+        Case -1 'Denied
             FormHeader.BackColor = Toggle56.BackColor
             FormFooter.BackColor = Toggle56.BackColor
-        Case 2
+            Me.Status = "Denied"
+        Case 2 'Requested
             FormHeader.BackColor = Toggle57.BackColor
             FormFooter.BackColor = Toggle57.BackColor
-        Case 0
+            Me.Status = "Requested/Pending"
+        Case 0 'Cancelled
             FormHeader.BackColor = Toggle58.BackColor
             FormFooter.BackColor = Toggle58.BackColor
+            Me.Status = "Cancelled"
     End Select
 End Sub
 
@@ -183,7 +187,7 @@ End Sub
 
 Private Sub depDate_AfterUpdate()
     
-    If IsDate(depDate) Then
+    If isdate(depDate) Then
         frmRestrictionsResponse = False
         If Not frmRestrictionsResponseDoNotShow Then 'If the check box in frmRestrictions was checked
             'I'm sure theres a better way to write this...

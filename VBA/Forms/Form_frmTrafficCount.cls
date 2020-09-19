@@ -14,13 +14,15 @@ Dim qdf As DAO.QueryDef
 Dim dateChange As Boolean
 
 Private Sub acCount_DblClick(cancel As Integer)
-    DoCmd.OpenForm "frmTrafficCountDetails", , , , , , _
-        "SELECT tblTraffic.ID, tblTraffic.Callsign, tblTraffic.Type, tblTraffic.Tail, tblTraffic.countType AS [Counted As], tblTraffic.depPoint, tblTraffic.depDate, tblTraffic.Destination, tblTraffic.arrDate " & _
+    Dim oa As String: oa = "SELECT tblTraffic.ID, tblTraffic.Callsign, tbltraffic.number & '/' & tblTraffic.acType AS Type, tblTraffic.Tail, tblTraffic.countType AS [Counted As], tblTraffic.depPoint, tblTraffic.depDate, tblTraffic.Destination, tblTraffic.arrDate " & _
         "FROM tblTraffic " & _
-        "WHERE ((tblTraffic.ATD is not null And tblTraffic.depPoint = dlookup('station','settings') And ((IIf(IsDate(tblTraffic.depDate), DateValue(tblTraffic.depDate), Null) Between CDate('" & date1 & "') And CDate('" & date2 & "')))) " & _
-        "OR (tblTraffic.ATA is not null And tblTraffic.Destination = dlookup('station','settings') And ((IIf(IsDate(tblTraffic.arrDate), DateValue(tblTraffic.arrDate), Null) Between CDate('" & date1 & "') And CDate('" & date2 & "'))))) " & _
+        "WHERE ((tblTraffic.ATD is not null And tblTraffic.depPoint = dlookup('station','tblSettings') And ((IIf(IsDate(tblTraffic.depDate), DateValue(tblTraffic.depDate), Null) Between CDate('" & date1 & "') And CDate('" & date2 & "')))) " & _
+        "OR (tblTraffic.ATA is not null And tblTraffic.Destination = dlookup('station','tblSettings') And ((IIf(IsDate(tblTraffic.arrDate), DateValue(tblTraffic.arrDate), Null) Between CDate('" & date1 & "') And CDate('" & date2 & "'))))) " & _
         "AND tblTraffic.countType Like '" & acCount.Column(0) & "' " & _
         "ORDER BY tblTraffic.arrDate DESC, tblTraffic.depDate DESC;"
+
+    DoCmd.OpenForm "frmTrafficCountDetails", , , , , , oa
+
 '    Forms!frmTrafficCountDetails!details.RowSource = _
 '        "SELECT tblTraffic.ID, tblTraffic.Callsign, tblTraffic.Type, tblTraffic.Tail, tblTraffic.countType AS [Counted As], tblTraffic.depPoint, tblTraffic.depDate, tblTraffic.Destination, tblTraffic.arrDate " & _
 '        "FROM tblTraffic " & _
