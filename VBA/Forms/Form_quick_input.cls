@@ -37,7 +37,7 @@ End Sub
 Private Sub cPPR_LostFocus()
 If NewRecord Then Exit Sub
 Dim RS As DAO.Recordset
-Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblPPR WHERE ((nz(tblPPR.PPR)<>'-') AND ((Format('" & ZToL(DOF + ETD) & "','mm/dd/yyyy')) Between Format([arrDate],'mm/dd/yyyy') And Format([depDate],'mm/dd/yyyy'))) ORDER BY tblPPR.ID;")
+Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblPPR WHERE ((nz(tblPPR.PPR)<>'-') AND ((Format('" & DOF + ZToL(ETD) & "','mm/dd/yyyy')) Between Format([arrDate],'mm/dd/yyyy') And Format([depDate],'mm/dd/yyyy'))) ORDER BY tblPPR.ID;")
     
     Do While Not RS.EOF
         If Nz(PPR) = "" And depPoint <> Destination And (RS!Callsign = Callsign Or RS!Tail = Tail) And ((Destination = DLookup("station", "tblSettings") And Nz(RS!arrID, 0) = 0) Or depPoint = DLookup("station", "tblSettings")) Then
@@ -171,7 +171,8 @@ DoEvents
     '''''DOF error check''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     If Destination = stn Then
-        arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "dd-mmm-yy") & " " & Format(ZToL(Nz(ATA, IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE)), True), "hh:nn")
+        'arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "dd-mmm-yy") & " " & Format(ZToL(Nz(ATA, IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE))), "hh:nn")
+        arrDate = Util.cETA(DOF, ETD, ETE, ETA, ATD)
         arrordep = arrDate
         If Not Status = "Closed" And Not DateDiff("d", arrDate, Now) = 0 Then
             If MsgBox("Calculated ETA as " & arrDate & " (L). Is this correct?" & vbCrLf & "(DOF: " & DOF & ")", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
@@ -181,7 +182,7 @@ DoEvents
         End If
     End If
     If depPoint = stn Then
-        depDate = ZToL(DOF + Nz(ATD, ETD))
+        depDate = DOF + ZToL(Nz(ATD, ETD))
         If arrordep = "" Then arrordep = depDate
         If Not Status = "Closed" And Not DateDiff("d", depDate, Now) = 0 Then
             If MsgBox("Calculated ETD as " & depDate & " (L). Is this correct?" & vbCrLf & "(DOF: " & DOF & ")", vbQuestion + vbYesNo, "AeroStat") = vbNo Then

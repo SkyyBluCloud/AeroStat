@@ -194,10 +194,12 @@ DoEvents
     Dim arrordep As String
     If Destination = stn Then
         arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "dd-mmm-yy") & " " & Format(ZToL(IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE), True), "hh:nn")
+        'arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "dd-mmm-yy") & " " & Format(ZToL(IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE)), "hh:nn")
+        arrDate = Format(DOF + ZToL(Nz(ATD, ETD) + ETE), "dd-mmm-yy") & " " & Format(ZToL(IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE)), "hh:nn")
         arrordep = arrDate
     End If
     If depPoint = stn Then
-        depDate = ZToL(DOF + Nz(ATD, ETD))
+        depDate = DOF + ZToL(Nz(ATD, ETD))
         If arrordep = "" Then arrordep = depDate
     End If
     arrordep = Format(arrordep, "dd-mmm-yy")
@@ -341,17 +343,17 @@ els:
     
     'If departed ANYWHERE
     ElseIf Not IsNull(ATD) Or Not IsNull(ETA) Then
-        
+        ATA = ""
         If Not DateDiff("d", depDate, Now) = 0 Then
             If MsgBox("Confirm DOF:" & vbCrLf & Format(DOF, "dd-mmm-yy") & vbCrLf & vbCrLf & "Is this correct?" & vbCrLf & "(You may have to change the DOF if the departure was past 0000Z)", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
                 GoTo fb
             End If
-            depDate = ZToL(DOF & " " & Format(Nz(ATD, ETD), "hh.nn"))
+            depDate = DOF + ZToL(Nz(ATD, ETD))
         End If
         
         Status = "Enroute"
         'arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "mm/dd/yy") & " " & Format(ZToL(cETA, True), "hh:nn")
-        arrDate = DateAdd("n", (60 * Format(ETE, "h")) + Format(ETE, "nn"), ZToL(DOF & " " & Format(Nz(ATD, ETD), "hh.nn")))
+        arrDate = DateAdd("n", (60 * Format(ETE, "h")) + Format(ETE, "nn"), DOF + ZToL(Nz(ATD, ETD)))
         'if departed here
         If depPoint = stn Then
             
