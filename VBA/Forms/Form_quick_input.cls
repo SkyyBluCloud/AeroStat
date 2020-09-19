@@ -13,11 +13,25 @@ Dim bClose As Boolean
 Dim pprSelect As Boolean
 
 Private Sub ATActime_Click()
-    DoCmd.OpenForm "check_in_out", , , "ID = " & ID, acFormEdit
+    DoCmd.OpenForm "check_in_out", , , "ID = " & ID, acFormEdit, acDialog
+    Form_Current
 End Sub
 
 Private Sub ATDctime_Click()
-    DoCmd.OpenForm "check_in_out", , , "ID = " & ID, acFormEdit
+    DoCmd.OpenForm "check_in_out", , , "ID = " & ID, acFormEdit, acDialog
+    Form_Current
+End Sub
+
+Private Sub btnReg_Click()
+    DoCmd.OpenForm "frmListBoxDialog", , , , , acDialog, "qBaseAcft"
+    
+    If CurrentProject.AllForms("frmListBoxDialog").IsLoaded Then
+        With Forms!frmListBoxDialog!ctlListBox
+        Tail = .Column(1)
+        acType = .Column(2)
+        DoCmd.Close acForm, "frmListBoxDialog"
+        End With
+    End If
 End Sub
 
 Private Sub cancel_flt_Click()
@@ -50,6 +64,36 @@ Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblPPR WHERE ((nz(tblPPR.PPR)<>'
     If IsNull(DLookup("PPR", "tblPPR", "PPR = '" & PPR & "'")) Then
         MsgBox "Invalid PPR Number.", vbCritical, "Flight Plan"
         cPPR.SetFocus
+    End If
+End Sub
+
+Private Sub ctlETD_Exit(cancel As Integer)
+    If isdate(ctlETD) Then Exit Sub
+    If IsNumeric(ctlETD) And Len(ctlETD) = 3 Then ctlETD = 0 & ctlETD
+    ctlETD.BorderColor = RGB(166, 166, 166)
+    ETD = getTime4Char(ctlETD)
+    ctlETD = Left(ctlETD, 2) & ":" & Right(ctlETD, 2)
+    
+    If Not isdate(ctlETD) Then
+        cancel = True
+        ctlETD = ""
+        ctlETD.BorderColor = RGB(255, 0, 0)
+        ctlETD.SetFocus
+    End If
+End Sub
+
+Private Sub ctlETE_Exit(cancel As Integer)
+    If isdate(ctlETE) Then Exit Sub
+    If IsNumeric(ctlETE) And Len(ctlETE) = 3 Then ctlETE = 0 & ctlETE
+    ctlETE.BorderColor = RGB(166, 166, 166)
+    ETE = getTime4Char(ctlETE)
+    ctlETE = Left(ctlETE, 2) & ":" & Right(ctlETE, 2)
+    
+    If Not isdate(ctlETE) Then
+        cancel = True
+        ctlETE = ""
+        ctlETE.BorderColor = RGB(255, 0, 0)
+        ctlETE.SetFocus
     End If
 End Sub
 
@@ -759,6 +803,10 @@ Private Sub Form_Current()
     
     cancel_flt.Visible = Not NewRecord
     Tail.RowSource = Nz(longTail)
+    
+    
+    If Not IsNull(ETD) Then ctlETD = Hour(ETD) & ":" & Format(Minute(ETD), "00")
+    If Not IsNull(ETE) Then ctlETE = Hour(ETE) & ":" & Format(Minute(ETE), "00")
 End Sub
 
 Private Sub Form_Error(DataErr As Integer, response As Integer)

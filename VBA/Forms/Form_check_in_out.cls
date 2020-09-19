@@ -40,7 +40,71 @@ Private Sub Form_Error(DataErr As Integer, response As Integer)
 End Sub
 
 Private Sub Form_Current()
-    bClose = False
+On Error GoTo errtrap
+Dim stn As String
+bClose = False
+
+stn = DLookup("Station", "tblSettings")
+reload:
+    If Status = "Pending" Then
+        If depPoint = Destination Or Not Destination = stn Then
+            TWR_out.Visible = True
+            CP_out.Visible = True
+            
+        ElseIf Not depPoint = stn Then
+            lblor.Visible = True
+            ctlETA.Visible = True
+        End If
+        
+        ctlATD.Visible = True
+        ctlATD = Format(LToZ(Time), "hhnn")
+        ctlATD.SetFocus
+        DOF.Visible = True
+        
+    ElseIf Status = "Enroute" Then
+        If depPoint = Destination Or Not depPoint = stn Then
+            ctlATA.Visible = True
+            ctlATA = Format(LToZ(Time), "hhnn")
+            ctlATA.SetFocus
+            TWR_in.Visible = True
+            CP_in.Visible = True
+            edit.Visible = False
+            undoDep.Visible = True
+            Spot.Visible = True
+            lblSpot.Visible = True
+            If Not IsNull(ctlETA) Then undoDep.Caption = "Reset ATD"
+        End If
+        
+    ElseIf Status = "Closed" Then
+        If MsgBox("This will reset the times. Continue?", vbQuestion + vbYesNo, "Traffic Log") = vbYes Then
+            ctlATA = ""
+            ctlATD = ""
+            ATA = ""
+            ATD = ""
+            Status = "Pending"
+            
+            bClose = True
+            If Dirty Then Dirty = False
+            GoTo reload
+            bClose = False
+        Else
+            DoCmd.Close acForm, "check_in_out"
+        End If
+        
+        Exit Sub
+    End If
+sexit:
+    If Not IsNull(ETA) Then ctlETA = Hour(ETA) & ":" & Format(Minute(ETA), "00")
+    If Not IsNull(ATA) Then ctlATA = Hour(ATA) & ":" & Format(Minute(ATA), "00")
+    If Not IsNull(ATD) Then ctlATD = Hour(ETD) & ":" & Format(Minute(ETD), "00")
+    Exit Sub
+errtrap:
+    ErrHandler err, Error$, Me.Name & ".Form_Current"
+    Resume Next
+    
+    
+    
+    
 End Sub
 
 Private Sub Form_Close()
@@ -54,6 +118,84 @@ Private Sub Form_Close()
 '    For Each ctl In tl.Controls
 '        If TypeOf ctl Is ListBox Then ctl.Requery
 '    Next
+End Sub
+
+Private Sub ctlATD_BeforeUpdate(cancel As Integer)
+On Error Resume Next
+If Not IsNumeric(ctlATD) Or Len(ctlATD) > 4 Then
+    ctlATD = ""
+    Exit Sub
+End If
+
+ATD = getTime4Char(ctlATD)
+ctlATD = Left(ctlATD, 2) & ":" & Right(ctlATD, 2)
+End Sub
+
+Private Sub ctlATA_BeforeUpdate(cancel As Integer)
+On Error Resume Next
+If Not IsNumeric(ctlATA) Or Len(ctlATA) > 4 Then
+    ctlATA = ""
+    Exit Sub
+End If
+
+ATA = getTime4Char(ctlATA)
+ctlATA = Left(ctlATA, 2) & ":" & Right(ctlATA, 2)
+End Sub
+
+Private Sub ctlETA_BeforeUpdate(cancel As Integer)
+On Error Resume Next
+If Not IsNumeric(ctlETA) Or Len(ctlETA) > 4 Then
+    ctlETA = ""
+    Exit Sub
+End If
+
+ETA = getTime4Char(ctlETA)
+ctlETA = Left(ctlETA, 2) & ":" & Right(ctlETA, 2)
+End Sub
+
+Private Sub ctlATD_Exit(cancel As Integer)
+    If isdate(ctlATD) Then Exit Sub
+    If IsNumeric(ctlATD) And Len(ctlATD) = 3 Then ctlATD = 0 & ctlATD
+    ctlATD.BorderColor = RGB(166, 166, 166)
+    ATD = getTime4Char(Nz(ctlATD))
+    ctlATD = Left(ctlATD, 2) & ":" & Right(ctlATD, 2)
+    
+    If Not isdate(ctlATD) Then
+        cancel = True
+        ctlATD = ""
+        ctlATD.BorderColor = RGB(255, 0, 0)
+        ctlATD.SetFocus
+    End If
+End Sub
+
+Private Sub ctlATA_Exit(cancel As Integer)
+    If isdate(ctlATA) Then Exit Sub
+    If IsNumeric(ctlATA) And Len(ctlATA) = 3 Then ctlATA = 0 & ctlATA
+    ctlATA.BorderColor = RGB(166, 166, 166)
+    ATA = getTime4Char(ctlATA)
+    ctlATA = Left(ctlATA, 2) & ":" & Right(ctlATA, 2)
+    
+    If Not isdate(ctlATA) Then
+        cancel = True
+        ctlATA = ""
+        ctlATA.BorderColor = RGB(255, 0, 0)
+        ctlATA.SetFocus
+    End If
+End Sub
+
+Private Sub ctlETA_Exit(cancel As Integer)
+    If isdate(ctlETA) Then Exit Sub
+    If IsNumeric(ctlETA) And Len(ctlETA) = 3 Then ctlETA = 0 & ctlETA
+    ctlETA.BorderColor = RGB(166, 166, 166)
+    ETA = getTime4Char(ctlETA)
+    ctlETA = Left(ctlETA, 2) & ":" & Right(ctlETA, 2)
+    
+    If Not isdate(ctlETA) Then
+        cancel = True
+        ctlETA = ""
+        ctlETA.BorderColor = RGB(255, 0, 0)
+        ctlETA.SetFocus
+    End If
 End Sub
 
 Private Sub cancel_Click()
@@ -84,61 +226,6 @@ On Error Resume Next
         submit.SetFocus
         submit_Click
     End If
-End Sub
-
-Private Sub Form_Load()
-On Error GoTo errtrap
-Dim stn As String
-
-stn = DLookup("Station", "tblSettings")
-reload:
-    If Status = "Pending" Then
-        If depPoint = Destination Or Not Destination = stn Then
-            TWR_out.Visible = True
-            CP_out.Visible = True
-            
-        ElseIf Not depPoint = stn Then
-            lblor.Visible = True
-            ETA.Visible = True
-        End If
-        
-        ATD.Visible = True
-        ATD = LToZ(Time)
-        ATD.SetFocus
-        DOF.Visible = True
-        
-    ElseIf Status = "Enroute" Then
-        If depPoint = Destination Or Not depPoint = stn Then
-            ATA.Visible = True
-            ATA = LToZ(Time)
-            ATA.SetFocus
-            TWR_in.Visible = True
-            CP_in.Visible = True
-            edit.Visible = False
-            undoDep.Visible = True
-            Spot.Visible = True
-            lblSpot.Visible = True
-            If Not IsNull(ETA) Then undoDep.Caption = "Reset ATD"
-        End If
-        
-    ElseIf Status = "Closed" Then
-        If MsgBox("This will reset the times. Continue?", vbQuestion + vbYesNo, "Traffic Log") = vbYes Then
-            ATA = ""
-            ATD = ""
-            Status = "Pending"
-            GoTo reload
-        Else
-            DoCmd.Close acForm, "check_in_out", acSaveYes
-        End If
-        
-        Exit Sub
-    End If
-sexit:
-    Exit Sub
-errtrap:
-    ErrHandler err, Error$, Me.Name & ".Form_Load"
-    Resume Next
-    
 End Sub
 
 Private Sub submit_Click()
@@ -193,7 +280,6 @@ DoEvents
     'Open the appropriate traffic count record for the day
     Dim arrordep As String
     If Destination = stn Then
-        arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "dd-mmm-yy") & " " & Format(ZToL(IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE), True), "hh:nn")
         'arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "dd-mmm-yy") & " " & Format(ZToL(IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE)), "hh:nn")
         arrDate = Format(DOF + ZToL(Nz(ATD, ETD) + ETE), "dd-mmm-yy") & " " & Format(ZToL(IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE)), "hh:nn")
         arrordep = arrDate
