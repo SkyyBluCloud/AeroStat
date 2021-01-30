@@ -15,3 +15,8 @@ https://government.github.com/fedramp-faq
 
 ## Stations pending deployment
 - 6
+
+## Note:
+Currently, there is only one person working on the project, currently serving 1.5 locations. It is normal for me to go months as a time without posing it to this GitHub. However, rest assured the project continues and new features are contantly being added.
+
+TL;DR - Low demand = Low GitHub activity
