@@ -8,16 +8,22 @@ Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
-Dim shiftID As Integer
+Option Explicit
+Dim shiftID As Variant
+
+Public Function getClipboard() As String
+    Dim DataObj As New MSForms.DataObject
+    DataObj.GetFromClipboard
+    getClipboard = DataObj.GetText
+    Set DataObj = Nothing
+End Function
 
 Private Sub bParse_Click()
 Dim N As Integer
 Dim logTime As Date
 'If Nz(parse) = "" Then Exit Sub
 If Nz(parse) = "" Then
-    Dim DataObj As New MSForms.DataObject
-    DataObj.GetFromClipboard
-    parse = DataObj.GetText
+    parse = getClipboard
 End If
 If Nz(parse) = "" Then Exit Sub
 
@@ -35,15 +41,18 @@ N = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Enviro
         If logentry And shiftID <> 0 Then
             Set log = CurrentDb.OpenRecordset("SELECT * FROM tbl3616 WHERE shiftID = " & shiftID)
             With log
+                Dim shiftStart As Date: shiftStart = CDate(Format(DLookup("shiftstart", "tblshiftmanager", "shiftid = " & shiftID), "dd-mmm-yy"))
                 .AddNew
                 !shiftID = shiftID
+                
                 'logTime = LToZ(Now)
                 '!entryTime = IIf(IsNull(DLookup("entryTime", "tbl3616", "format(entryTime,'yymmddhhnn') = " & Format(logTime, "yymmddhhnn"))), logTime, DateAdd("n", 1, logTime))
-                !entryTime = LToZ(Now)
+                
+                !entryTime = LToZ(shiftStart + TimeSerial(Hour(Now), Minute(Now), 0))
                 Do While Not IsNull(DLookup("entryTime", "tbl3616", "format(entryTime,'yymmddhhnn') = " & Format(!entryTime, "yymmddhhnn")))
                     !entryTime = DateAdd("n", 1, !entryTime)
                 Loop
-                
+
                 Select Case nType
                     Case "N", "R"
                         !entry = "NEW NOTAM: " & NOTAM & " - " & verbiage & ". VALID " & Format(startTime, "yymmddhhnn") & " - " & Format(endTime, "yymmddhhnn") & ". " & _
@@ -53,10 +62,13 @@ N = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Enviro
                             "NEW NOTAM COUNT: " & DCount("notam", "qNOTAMM") & "M, " & DCount("notam", "qNOTAML") & "L"
                 End Select
                 !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
+                !entry = UCase(!entry)
                 .update
                 .Close
             End With
             Set log = Nothing
+            
+
         End If
         
         MsgBox "Parse successful!", vbInformation, "NOTAM Control"
@@ -74,9 +86,22 @@ MsgBox "Example of an ICAO Format:" & vbCrLf & "M0380/20 NOTAMN Q) ZMA/QFAGD/IV/
 End Sub
 
 Private Sub Form_Load()
-If Nz(Me.OpenArgs) <> "" Then
-    logentry.Visible = True
-    shiftID = Me.OpenArgs
-End If
-logentry.Visible = (Nz(Me.OpenArgs) <> "")
+    logentry.Visible = (Nz(Me.OpenArgs) <> "")
+    
+    Select Case Nz(OpenArgs)
+        Case Is <> 0
+            logentry.Visible = True
+            shiftID = Me.OpenArgs
+            If Not Nz(DLookup("closed", "tblshiftmanager", "shiftid = " & shiftID), True) Then
+                bParse_Click
+            End If
+    End Select
+
+
+
+'If Nz(Me.OpenArgs) <> "" Then
+'    logentry.Visible = True
+'    shiftID = Me.OpenArgs
+'End If
+
 End Sub

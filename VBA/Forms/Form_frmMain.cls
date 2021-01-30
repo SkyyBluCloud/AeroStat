@@ -11,6 +11,7 @@ Attribute VB_Exposed = False
 '
 '
 '    Copyright 2017-2020 Shane J. DeSouza
+'       https://github.com/SkyyBluCloud/AeroStat
 '       sdesouza187@gmail.com
 '
 '   Licensed under the Apache License, Version 2.0 (the "License");
@@ -78,6 +79,11 @@ Private Sub qrcsop_Click()
     MsgBox "Not ready yet.", vbInformation, "AeroStat"
 End Sub
 
+Private Sub Form_Close()
+On Error Resume Next
+closeAllForms
+End Sub
+
 Private Sub lblTitle_Click()
 DoCmd.OpenForm "frmAbout"
 End Sub
@@ -94,8 +100,7 @@ Dim isClosed As Boolean: isClosed = Nz(DLookup("closed", "tblShiftManager", "shi
 Dim onShift As Boolean: onShift = DLookup("onShift", "tbluserauth", "username = '" & Environ$("username") & "'")
 
     If Not onShift Or isClosed Then
-        DoCmd.OpenForm "frmShiftSelect"
-        Exit Sub
+        DoCmd.OpenForm "frmShiftBoard", , , , acFormAdd
     ElseIf Not isClosed Then
         DoCmd.OpenForm "frmShiftBoard", , , "shiftid = " & shiftID, acFormEdit, , shiftID
     End If
@@ -138,8 +143,15 @@ On Error GoTo sperr
         !isLoggedIn = True
         !lastSystem = Environ$("computername")
         
+        Forms!frmLoading!loadingText.Caption = "Checking WWAs..."
+        DoEvents
+        
+        'DoCmd.OpenForm "WWADaemon", , , , , acHidden, DLookup("wwafeed", "tblsettings")
+        
+        DoEvents
         
         Forms!frmLoading!loadingText.Caption = "Starting AeroStat..."
+        DoEvents
         
         view.SourceObject = "Traffic Log"
         DoCmd.Close acForm, "frmLoading", acSaveYes
@@ -210,6 +222,9 @@ Dim salute As String, lv As Double
     DoCmd.OpenForm "frmLoading"
     Forms!frmLoading!loadingText.Caption = "Loading global settings..."
     
+    If Right(CurrentProject.Name, 5) = "accde" Then CurrentDb.Execute "UPDATE tblSettings SET frontEndSource = '" & CurrentProject.fullName & "'"
+    
+    
     If Util.relinkTables(DLookup("backend", "lclver"), Forms!frmLoading) Then
         usn = Nz(DLookup("username", "tblUserAuth", "username = '" & Environ$("username") & "'"))
         qusn = "SELECT * FROM tblUserAuth WHERE username = '" & usn & "'"
@@ -222,7 +237,7 @@ Dim salute As String, lv As Double
         GoTo open_err
     End If
     
-    DoCmd.Maximize
+    'DoCmd.Maximize
     
     
     
@@ -313,21 +328,8 @@ qusn = "SELECT * FROM tblUserAuth WHERE username = '" & usn & "'"
         Application.Quit
         Exit Sub
     ElseIf DLookup("RS", "tbluserauth", "username='" & Environ$("username") & "'") Then
-        bClose = True
-'        Shell "\\znre-fs-022v\Wing\374OG\374OSS\374OSS.OSAA\00_Section_Info\50_Section_Specific_Info\Traffic Log Tracker\DATABASE\BACKEND\update.bat"
-'        Application.Quit
-
-        Dim dbFrom, dbTo As String
-        Dim fso As New FileSystemObject
-        
-        'If Left(CurrentProject.Path, "2") = "\\" Then CurrentDb.Execute "UPDATE lclver SET frontEndLocation = " & CurrentProject.fullName
-        
-        dbFrom = DLookup("dbRoot", "tblSettings")
-        dbTo = Environ$("userprofile") & "\"
-        'If dir(dbTo, vbNormal) = "" Then createPath dbTo
-        If dir(dbTo, vbNormal) = "" Then fso.CreateFolder dbTo
-        fso.CopyFile dbFrom, dbTo & CurrentProject.Name
-        Application.FollowHyperlink dbTo & CurrentProject.Name
+        MsgBox "The database has been updated and will now restart." & vbCrLf & "Applied changes were already saved.", vbOKOnly, "AeroStat"
+        Application.FollowHyperlink DLookup("dbroot", "tblsettings") & DLookup("frontendsource", "tblsettings")
         Application.Quit
         Exit Sub
     End If

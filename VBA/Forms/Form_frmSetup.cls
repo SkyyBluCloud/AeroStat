@@ -74,7 +74,7 @@ Dim saveLocation As String
         Dim schema As String
         
         .DBEngine.CreateDatabase saveLocation, dbLangGeneral
-        .OpenCurrentDatabase saveLocation, True
+        .OpenCurrentDatabase saveLocation
         schema = .CurrentProject.Path & "\Schema\"
         
         If Not fso.FolderExists(schema) Then

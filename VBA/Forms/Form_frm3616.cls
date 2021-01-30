@@ -25,6 +25,7 @@ Attribute VB_Exposed = False
 '   limitations under the License.
 
 Option Compare Database
+Public verbose As Boolean
 
 Private Sub addEntry_Click()
 On Error GoTo errtrap
@@ -50,42 +51,36 @@ Dim oi As String: oi = getOpInitials
     End If
     If Right(entry, 1) = "." Then entry = Left(entry, Len(entry) - 1)
     entry = UCase(entry)
+    
+    If optAutoContract Then 'If "Auto-Contract" is checked off
+        Dim rsCTR As DAO.Recordset: Set rsCTR = CurrentDb.OpenRecordset("@CONTRACTIONS")
+        With rsCTR: Do While Not .EOF
+            
+            entry = Replace(entry, !decode, !contraction)
+            If verbose And (entry <> entry.OldValue) Then log "Replaced '" & !decode & "' with '" & !contraction & "'", Name & ".addEntry_Click"
+            .MoveNext
+        Loop: End With
+        rsCTR.Close
+        Set rsCTR = Nothing
+    End If
+    
+    entryTime = ZToL(TimeSerial(Left(entryTime, 2), Right(entryTime, 2), 0))
 
-'    Set rs = CurrentDb.OpenRecordset(logView.RowSource)
-'    With rs
-'    Do While Not .EOF
-'        If !entryTime = LToZ(Format(edate, "dd-mmm-yy") & " " & ZToL(Format(Left(entryTime, 2) & "." & Right(entryTime, 2), "hh:nn"), True)) Then
-'            If MsgBox("The following entry will be replaced:" & vbCrLf & Me.entryTime & ": " & !entry & vbCrLf & vbCrLf & "Replace?", vbQuestion + vbYesNo, "Events Log") = vbYes Then
-'                .edit
-'                !entry = UCase(Me.entry)
-'                .update
-'                GoTo sexit
-'            Else
-'                Exit Sub
-'            End If
-'        End If
-'        .MoveNext
-'    Loop
-    
-    entryTime = Format(ZToL(TimeSerial(Left(entryTime, 2), Right(entryTime, 2), 0), True), "hhnn")
-    
-'    .AddNew
-'    !entryTime = LToZ(Format(edate, "dd-mmm-yy") & " " & Format(Left(entryTime, 2) & "." & Right(entryTime, 2), "hh:nn"))
-'    If !entryTime < LToZ(DLookup("shiftstart", "tblshiftmanager", "shiftid = " & shiftID)) Then !entryTime = DateAdd("d", 1, !entryTime)
-'    'edate & " " & Left(entryTime, 2) & "." & Right(entryTime, 2)
-'    !shiftID = shiftID
-'    !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
-'    !entry = entry
-'    .update
     Dim midFix As Date: midFix = edate
-    If LToZ(DateSerial(Year(edate), Month(edate), Day(edate)) & " " & TimeSerial(Left(entryTime, 2), Right(entryTime, 2), 1)) _
+    If LToZ(DateSerial(Year(edate), Month(edate), Day(edate)) + TimeSerial(Hour(entryTime), Minute(entryTime), 0)) _
             < DLookup("shiftstart", "tblshiftmanager", "shiftid = " & shiftID) Then
         midFix = DateAdd("d", 1, edate)
     End If
 
+    If optLateEntry Then 'If "Late Entry" is checked off
+        If MsgBox("The ""Late Entry"" button is selected. This will insert the entry before* the first entry of the log. Continue?", vbQuestion + vbYesNo, "Events Log") = vbYes Then
+            midFix = DateSerial(Year(IIf(edate <> midFix, midFix, edate)), Month(IIf(edate <> midFix, midFix, edate)), Day(IIf(edate <> midFix, midFix, edate)) - 1)
+        Else
+            Exit Sub
+        End If
+    End If
 
-    UtilForm3616.newEntry shiftID, LToZ(DateSerial(Year(midFix), Month(midFix), Day(midFix)) & " " & TimeSerial(Left(entryTime, 2), Right(entryTime, 2), 0)), entry, oi
-
+    UtilForm3616.newEntry shiftID, LToZ(DateSerial(Year(midFix), Month(midFix), Day(midFix)) + TimeSerial(Hour(entryTime), Minute(entryTime), 0)), UCase(entry), oi
     
 'End With
 
@@ -105,25 +100,15 @@ logView.Requery
 End Sub
 
 Private Sub btnNewWx_Click()
-updateWWAs
-End Sub
-
-Private Sub btnTemplateSettings_Click()
-'Open some edit for thingy
+Forms!WWADaemon.updateWWAs
 End Sub
 
 Private Sub cboTemplate_AfterUpdate()
+On Error Resume Next
 entryTime = IIf(Nz(entryTime) = "", Format(LToZ(Now), "hhnn"), entryTime)
 entry.SetFocus
 entry = DLookup("verbiage", "tbl3616template", "ID = " & cboTemplate)
 cboTemplate = ""
-End Sub
-
-Private Sub cboTemplate_Change()
-'entryTime = Format(LToZ(Now), "hhnn")
-'entry.SetFocus
-'entry = DLookup("verbiage", "tbl3616template", "ID = " & cboTemplate)
-'cboTemplate = ""
 End Sub
 
 Private Sub clear_Click()

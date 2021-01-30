@@ -9,12 +9,16 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
 Dim doOrderArrDate, doOrderDepDate, doOrderPPR, obArrDate, obDepDate, obPPR As Boolean
-Public hLight As String
+Public hLight As String 'CSV
 
 Private Sub arrdate_Label_Click()
 doOrderArrDate = True
 obArrDate = Not obArrDate
 refreshOrder 1
+End Sub
+
+Private Sub btnClose_Click()
+DoCmd.Close acReport, Me.Name
 End Sub
 
 Private Sub btnEmail_Click()
@@ -100,13 +104,13 @@ obDepDate = Not obDepDate
 refreshOrder 2
 End Sub
 
-Public Function doHighlight(ByVal xID As Integer) As Integer
-'This function is called from the 'Conditional Formatting' module of the report
+Public Function doHighlight(ByVal xID As Integer) As Boolean
+'This function is called from the 'Conditional Formatting' module(?) of the report
     For Each h In Split(hLight, ",")
-        If h = xID Then
-            doHighlight = True
-            Exit Function
-        End If
+        
+        doHighlight = (xID = h)
+        
+        If doHighlight Then Exit Function
     Next
 End Function
 

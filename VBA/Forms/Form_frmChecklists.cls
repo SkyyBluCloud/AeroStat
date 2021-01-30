@@ -72,6 +72,7 @@ End If
     lstDetails.Requery
     
     cboInitials.SetFocus
+    DoEvents
 End Sub
 
 Private Sub btnClear_Click()
@@ -169,6 +170,8 @@ End Sub
 Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
 Select Case KeyCode
 Case vbKeyReturn
+    btnCheck.SetFocus
+    DoEvents
     btnCheck_Click
 End Select
 End Sub

@@ -104,7 +104,7 @@ End Function
 Public Function newEntry(ByVal shiftID As Integer, ByVal zuluDateTime As Date, ByVal entry As String, Optional ByVal opInitials As String) As Boolean
 On Error GoTo errtrap
 Dim dupeEntry As String
-dupeEntry = Nz(DLookup("entry", "tbl3616", "shiftid = " & shiftID & " AND format(entrytime,'hhnn') = '" & Format(zuluDateTime, "hhnn" & "'")))
+dupeEntry = Nz(DLookup("entry", "tbl3616", "shiftid = " & shiftID & " AND entrytime = #" & zuluDateTime & "#"))
 If dupeEntry <> "" Then
     If MsgBox("The following entry will be replaced:" & vbCrLf & Format(zuluDateTime, "hhnn") & ": " & dupeEntry & vbCrLf & vbCrLf & "Replace?", vbQuestion + vbYesNo, "Events Log") = vbNo Then
         While Not IsNull(DLookup("entrytime", "tbl3616", "shiftid = " & shiftID & " AND format(entrytime,'hhnn') = '" & Format(zuluDateTime, "hhnn" & "'")))

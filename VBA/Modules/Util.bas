@@ -1,63 +1,19 @@
 Attribute VB_Name = "Util"
 Option Compare Database
 
-Public Function updateWWAs() As Boolean
-On Error GoTo errtrap
-'Updates tblWWA; returns collection of IDs from that table that are currently active
-'https://owsjet26.us.af.mil/rssRequest/wwa.rss?type=wwa&station=KHST
-Dim strURL, update As String: strURL = DLookup("WWAFeed", "tblsettings")
-Dim cUpdates As New Collection
-Dim xmldoc As New MSXML2.DOMDocument60
-Dim xmlElement As MSXML2.IXMLDOMElement
-Dim xmlSelection As MSXML2.IXMLDOMSelection
-Dim RS As DAO.Recordset: Set RS = CurrentDb.OpenRecordset("tblWWA")
+Public Sub closeAllForms()
+On Error Resume Next
+    For Each f In CurrentProject.AllForms
+        If f.IsLoaded Then
+            DoCmd.Close acForm, f.Name
+        End If
+    Next
+End Sub
 
-Const cstrXPath As String = "/rss/channel/item"
-
-    xmldoc.async = False
-    xmldoc.Load strURL
-    Set xmlSelection = xmldoc.SelectNodes(cstrXPath)
-    Dim fail As Boolean
-    Dim i As Integer: For Each xmlElement In xmlSelection
-        With RS
-            Dim cid: cid = DLookup("ID", "tblWWA", "pubDate = #" & Trim(Replace(Mid(xmlElement.ChildNodes(2).Text, InStr(1, xmlElement.ChildNodes(2).Text, ",") + 1), "GMT", "")) & "#")
-            If IsNull(cid) Then
-                .AddNew
-                For Each c In xmlElement.ChildNodes
-                Select Case c.nodeName
-                    Case "pubDate"
-                        .Fields(c.nodeName) = Trim(Replace(Mid(c.Text, InStr(1, c.Text, ",") + 1), "GMT", ""))
-                    Case "description"
-                        .Fields(c.nodeName) = Replace(Replace(Replace(Replace(c.Text, "&nbsp;", " "), "<![CDATA[ ", ""), "<br />", " "), " ]]>", "")
-                    Case "title"
-                        .Fields(c.nodeName) = c.Text
-                End Select
-                Next c
-
-                .update
-                .Bookmark = .LastModified
-                update = IIf(IsNull(update), "", update & ",") & cid
-            Else
-                'cUpdates.add cid
-            End If
-        End With
-    Next xmlElement
-    
-    If update = "" Then update = 0
-    CurrentDb.Execute "UPDATE tblWWA SET active = False WHERE ID <> " & join(Split(update, ","), " OR ID <> ")
-    
-fExit:
-    updateWWAs = True
-    Exit Function
-errtrap:
-    ErrHandler err, Error$, "Util.updateWWAs"
-End Function
-
-Public Function GetHTTPResponse(url As String) As String
-Dim msXML As Object
-Set msXML = CreateObject("Microsoft.XMLHTTP")
+Public Function GetHTTPResponse(URL As String) As String
+Dim msXML As New MSXML2.XMLHTTP60
 With msXML
-  .Open "Get", url, False
+  .Open "Get", URL, False
   .setRequestHeader "Content-Type", "application/x-www-form-urlencoded; charset=utf-8"
   .Send
   GetHTTPResponse = .responseText
@@ -77,20 +33,23 @@ For Each ctl In frm.Controls
 Next
 
 End Function
-'Converts a 4-digit string representing a time into a time format Access can understand.
+
+Public Function getTime4Char(ByVal char4 As String) As Date
+'Converts a 4-digit string, representing a time, into a time format Access can understand.
 ' t <string>: 4 digit time
-Public Function getTime4Char(ByVal t As String) As Date
 On Error GoTo errtrap
-If Not IsNumeric(t) Then Exit Function
-    getTime4Char = TimeSerial(Left(t, 2), Right(t, 2), 0)
+If Not IsNumeric(char4) Or Len(char4) > 4 Or Right(char4, 2) > 59 Then Exit Function
+    
+    getTime4Char = TimeSerial(Left(char4, 2), Right(char4, 2), 0)
+    
 fExit:
     Exit Function
 errtrap:
     ErrHandler err, Error$, "Util.getTime4Char"
 End Function
 
-'Lazy way to open the lclver table.
 Public Sub lclver()
+'Lazy way to open the lclver table.
     DoCmd.OpenTable "lclver"
 End Sub
 
@@ -140,19 +99,28 @@ Set db = Nothing
 End Function
 
 'Don't do it.
-Public Sub truncAll()
-If MsgBox("THIS IS DANGEROUS! TURN BACK NOW!", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then
-If MsgBox("THIS CANNOT BE UNDONE! CANCEL THIS IMMEDIATELY!", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then
-If MsgBox("SERIOUSLY? CANCEL THIS PROCESS? PLEASE?", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then
+Public Sub truncAll(ByVal dbPath As Variant)
+    If MsgBox("THIS IS DANGEROUS! TURN BACK NOW!", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then
+    If MsgBox("THIS CANNOT BE UNDONE! CANCEL THIS IMMEDIATELY!", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then
+    If MsgBox("SERIOUSLY? CANCEL THIS PROCESS? PLEASE?", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then
+        Dim db As DAO.Database
+        Dim app As New Access.Application: app.OpenCurrentDatabase dbPath
+        Set db = app.CurrentDb
+    
+        Dim tdf: For Each tdf In db.TableDefs
+            If Left(tdf.Name, 3) = "tbl" Then
+                db.Execute "DELETE * FROM " & tdf.Name, dbFailOnError
+            End If
+        Next
+    End If
+    End If
+    End If
 
-    Dim tdf: For Each tdf In CurrentDb.TableDefs
-        If Left(tdf.Name, 3) = "tbl" Then
-            CurrentDb.Execute "DELETE * FROM " & tdf.Name, dbFailOnError
-        End If
-    Next
-End If
-End If
-End If
+    Set db = Nothing
+    app.CloseCurrentDatabase
+    app.Quit
+    Set app = Nothing
+    MsgBox "Done. It's like it never happened...", vbInformation, "Trunc"
 End Sub
 
 'Don't do this either.
@@ -160,11 +128,10 @@ Public Sub trunc(ByVal tbl As String)
     If MsgBox("THIS IS DANGEROUS! TURN BACK NOW!", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then CurrentDb.Execute "DELETE * FROM " & tbl, dbFailOnError
 End Sub
 
-Public Sub exportSchema(Optional Path As String = "%USERPROFILE%\Documents\AeroStat\DB EXPORT\Schema\")
+Public Sub exportSchema(Optional Path As Variant = Null)
 On Error GoTo errtrap
 Dim tdf As DAO.TableDef
-'Path = Replace(Path, "%USERPROFILE%", Environ$("userprofile"))
-Path = CurrentProject.Path & "\DB EXPORT\Schema\"
+If IsNull(Path) Then Path = CurrentProject.Path & "\DB EXPORT\Schema\"
 'Path = Replace(Path, "%USERPROFILE%", Replace(Environ$("userprofile"), "C:\", "D:\"))
 
     log "Creating path...", "Util.exportSchema"
@@ -173,7 +140,9 @@ Path = CurrentProject.Path & "\DB EXPORT\Schema\"
     saveRelations
     
     Open Path & "SQL.csv" For Output As #1
-    Print #1, """Name"",""SQL"""
+    
+        Print #1, """Name"",""SQL"""
+        
         Dim qdf: For Each qdf In CurrentDb.QueryDefs
             If Left(qdf.Name, 1) = "q" Then
                 log "Exporting query: " & qdf.Name, "Util.exportSchema"
@@ -211,46 +180,50 @@ On Error Resume Next
     s.Value = UCase(Left(s.Value, 1)) & Right(LCase(s.Value), Len(s.Value) - 1)
 End Function
 
-Public Function cETA(ByVal DOF, ATD, ETD, ETE As Date) As Date
-    cETA = Format([DOF] + IIf([ATD] Is Null, [ETD], [ATD]) + [ETE], "Short Time")
+Public Function cETA(ByVal DOF As Variant, ByVal ETD As Variant, ByVal ETE As Variant, Optional ByVal ETA = Null, Optional ByVal ATD = Null) As Date
+On Error Resume Next
+DOF = CDate(DOF): ETD = CDate(ETD): ETE = CDate(ETE)
+'[DOF]+IIf([ETA] Is Null,IIf([ATD] Is Null,[ETD],[ATD])+[ETE],[ETA])
+    cETA = DateSerial(Year(DOF), Month(DOF), Day(DOF)) + Nz(ATD, ETD) + ETE
+    If Not IsNull(ETA) Then
+        cETA = DOF + ETA
+    End If
 End Function
 
-Function LToZ(ByVal lcl As String) As Date
-    Dim Timezone As Integer
-    Timezone = DLookup("Timezone", "tblSettings")
-    If DLookup("dst", "tblsettings") Then Timezone = Timezone + 1
-    If lcl = "" Then Exit Function
+Function LToZ(ByVal lcl As Date) As Date
+    Dim Timezone As Integer: Timezone = DLookup("Timezone", "tblSettings")
+    If DLookup("dst", "tblsettings") And isDST Then Timezone = Timezone + 1
+    'If lcl = "" Then Exit Function
     
     LToZ = DateAdd("h", -Timezone, lcl)
+    'LToZ = TimeSerial(Hour(LToZ), Minute(LToZ), 0)
+    
 End Function
 
-Function ZToL(ByVal zulu As String, Optional isTime As Boolean) As String
-    Dim Timezone As Integer
-    Timezone = DLookup("Timezone", "tblSettings")
-    If DLookup("dst", "tblsettings") Then Timezone = Timezone + 1
-    If zulu = "" Then Exit Function
+Function ZToL(ByVal zulu As Date) As Date
+    Dim Timezone As Integer: Timezone = DLookup("Timezone", "tblSettings")
+    If DLookup("dst", "tblsettings") And isDST Then Timezone = Timezone + 1
+    'If zulu = "" Then Exit Function
     
     ZToL = DateAdd("h", Timezone, zulu)
-    If isTime Then ZToL = Format(ZToL, "hh:nn")
+    'ZToL = TimeSerial(Hour(ZToL), Minute(ZToL), 0)
 End Function
 
-Public Function isDST(ByVal d0 As Date, Optional locale As String = "US") As Boolean
-Dim dstOn, dstOff As String
+Public Function isDST(Optional ByVal d0 As Variant = Null, Optional locale As String = "US") As Boolean
+Dim dstOn As Date, dstOff As Date
+d0 = Nz(d0, Date)
 
     Select Case locale
-    
     Case "US"
-        dstOn = "MAR 8 "
-        dstOff = "NOV 1 "
-        isDST = d0 >= NextSun("Mar 8 " & Year(d0)) And d0 < NextSun("Nov 1 " & Year(d0))
-    Case "EU"
-        dstOn = "MAR 8 "
-        dstOff = "NOV 1 "
-        isDST = d0 >= LastSun("Mar 8 " & Year(d0)) And d0 < LastSun("Nov 1 " & Year(d0))
+        dstOn = DateSerial(Year(d0), 3, 8) '"#MAR 8 " & Year(d0) & "#"
+        dstOff = DateSerial(Year(d0), 11, 1) '"#NOV 1 " & Year(d0) & "#"
         
+    Case "EU"
+        dstOn = DateSerial(Year(d0), 3, 31) '"#MAR 31 " & Year(d0) & "#"
+        dstOff = DateSerial(Year(d0), 11, 1) '"#NOV 1 " & Year(d0) & "#"
     End Select
-
-   
+    
+    isDST = d0 >= LastSun(dstOn) And d0 < LastSun(dstOff)
 End Function
 
 Private Function NextSun(D1 As Date) As Date

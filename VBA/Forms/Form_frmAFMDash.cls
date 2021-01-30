@@ -128,8 +128,8 @@ On Error GoTo errtrap
 
     If shiftList.ItemsSelected.Count <= 1 Then
         With AF3616
-'            .SourceObject = ""
-'           DoEvents
+            .SourceObject = ""
+            DoEvents
             .SourceObject = "Report.new3616"
             '.Report.args = shiftList.Column(1)  ' shiftStart
             .SetFocus
