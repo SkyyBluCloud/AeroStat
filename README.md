@@ -17,6 +17,6 @@ https://government.github.com/fedramp-faq
 - 6
 
 ## Note:
-Currently, there is only one person working on the project, currently serving 1.5 locations. It is normal for me to go months as a time without posing it to this GitHub. However, rest assured the project continues and new features are contantly being added.
+Currently, there is only one person working on the project, currently serving 1.5 locations. It is normal for me to go months at a time without posing any updates to this GitHub. However, rest assured the project continues and new features are contantly being added.
 
 TL;DR - Low demand = Low GitHub activity
