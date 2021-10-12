@@ -17,7 +17,7 @@ Private Sub btnComment_Click()
     Dim res As String
     res = InputBox("Enter your comment for this shift:" & vbCrLf & vbCrLf & Format(shiftList.Column(1), "dd-mmm-yy hh:nnL") & " - " & Format(shiftList.Column(2), "dd-mmm-yy hh:nnL") & ": " & vbCrLf & shiftList.Column(3), _
                 "Reviewer Comments", Nz(DLookup("reviewerComments", "tblShiftManager", "shiftID=" & shiftList.Column(0))))
-    If Nz(res) <> "" Then CurrentDb.Execute "UPDATE tblShiftManager SET reviewerComments = '" & res & "' WHERE shiftID = " & shiftList.Column(0), dbFailOnError
+    If Not IsNull(res) Then CurrentDb.Execute "UPDATE tblShiftManager SET reviewerComments = '" & res & "' WHERE shiftID = " & shiftList.Column(0), dbFailOnError
     AF3616.Requery
 End Sub
 
@@ -48,7 +48,7 @@ Private Sub btnSign_Click()
 '
 '******MODULED********
 
-    If UtilForm3616.signLog(shiftList, AF3616.Report.RecordSource, role) Then
+    If UtilForm3616.signLog(shiftList, role) Then
         shiftList.Requery
         shiftList_Click
     End If
@@ -101,8 +101,8 @@ Set qdf = CurrentDb.QueryDefs("qAFMDash")
 '        Set shiftList.Recordset = CurrentDb.OpenRecordset("SELECT tblShiftManager.shiftID, tblShiftManager.shiftStart AS [Start Time (L)], tblShiftManager.shiftEnd AS [End Time (L)], tblShiftManager.superlead AS AMOS, IIf([amosSig] Is Not Null,'YES','NO') AS [AMOS Signed], IIf([namoSig] Is Not Null,'YES','NO') AS [NAMO Signed], IIf([afmSig] Is Not Null,'YES','NO') AS [AFM Signed], [amosSig] Is Not Null AS Expr1, [namoSig] Is Not Null AS Expr2, [afmSig] Is Not Null AS Expr3 FROM tblShiftManager ORDER BY tblShiftManager.shiftStart DESC;")
     End Select
     
-    btnSign.Enabled = reviewStatus <> ""
-    btnComment.Enabled = reviewStatus <> ""
+    btnSign.enabled = reviewStatus <> ""
+    btnComment.enabled = reviewStatus <> ""
     For Each ctl In Me.Controls
         If ctl.Tag = "review" Then
             ctl.Caption = reviewStatus
@@ -128,15 +128,15 @@ On Error GoTo errtrap
 
     If shiftList.ItemsSelected.Count <= 1 Then
         With AF3616
-'            .SourceObject = ""
-'           DoEvents
+            .SourceObject = ""
+            DoEvents
             .SourceObject = "Report.new3616"
             '.Report.args = shiftList.Column(1)  ' shiftStart
             .SetFocus
 '            .Report.FilterOn = True
         End With
     End If
-sExit:
+sexit:
     Exit Sub
 errtrap:
     ErrHandler err, Error$, Me.Name
@@ -147,6 +147,6 @@ DoCmd.OpenForm "frm3616", , , , , , shiftList.Column(0)
 End Sub
 
 Private Sub togDate_Click()
-cboMonth.Enabled = togDate
-cboYear.Enabled = togDate
+cboMonth.enabled = togDate
+cboYear.enabled = togDate
 End Sub

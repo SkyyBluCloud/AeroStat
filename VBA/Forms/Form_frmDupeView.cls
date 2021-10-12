@@ -15,7 +15,7 @@ Dim qdf As DAO.QueryDef
 
 Private Sub btnAll_Click()
 If MsgBox("This will keep all listed PPRs including the PPR being edited.", vbInformation + vbOKCancel, "PPR") = vbCancel Then Exit Sub
-DoCmd.Close acForm, "frmdupeview", acSaveYes
+DoCmd.Close acForm, "frmdupeview"
 End Sub
 
 Private Sub btnNone_Click()
@@ -35,11 +35,11 @@ If MsgBox("This will archive all listed PPRs and keep the current PPR being edit
                     RS.Close
                 End If
             End If
-            .Update
+            .update
         End If
         .MoveNext
     Loop: End With
-    DoCmd.Close acForm, "frmdupeview", acSaveYes
+    DoCmd.Close acForm, "frmdupeview"
     
 End Sub
 
@@ -72,25 +72,25 @@ If MsgBox("This will keep selected PPRs and archive the rest.", vbInformation + 
                     RS.Close
                 End If
             End If
-            .Update
+            .update
         End If
         
         .MoveNext 'On to the next dupe
     Loop: End With
     Forms!new_ppr.bDELETE = True
-    DoCmd.Close acForm, "frmdupeview", acSaveYes
+    DoCmd.Close acForm, "frmdupeview"
 
 End Sub
 
 Private Sub cancel_Click()
 Forms!new_ppr.dupeCheckFail = True
-DoCmd.Close acForm, "frmDupeView", acSaveYes
+DoCmd.Close acForm, "frmDupeView"
 End Sub
 
 Private Sub Form_Load()
 'With Forms!new_ppr
 '    If IsNull(OpenArgs) Then
-'        DoCmd.close acForm, "frmdupeview", acSaveYes
+'        DoCmd.close acForm, "frmdupeview"
 '        errHandler err, "Form was not passed recordset.", "frmDupeView"
 '        Exit Sub
 '    End If
@@ -105,10 +105,10 @@ If Not rsDUPE.EOF Then
         Select Case .RecordCount
         
         Case 1 And !PPR = Forms!new_ppr!PPR
-            DoCmd.Close acForm, "frmdupeview", acSaveYes
+            DoCmd.Close acForm, "frmdupeview"
             Exit Sub
         Case 0
-            DoCmd.Close acForm, "frmdupeview", acSaveYes
+            DoCmd.Close acForm, "frmdupeview"
             Exit Sub
         Case Else
             
@@ -117,7 +117,7 @@ If Not rsDUPE.EOF Then
         Set qdf = CurrentDb.QueryDefs("qMissionTrackerByID")
     End With
 Else
-    DoCmd.Close acForm, "frmdupeview", acSaveYes
+    DoCmd.Close acForm, "frmdupeview"
 End If
 End Sub
 

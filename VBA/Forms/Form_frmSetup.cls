@@ -20,7 +20,7 @@ Private Sub btnBack_Click()
         Exit Sub
         
     Case 2
-        btnNext.Enabled = True
+        btnNext.enabled = True
     
     End Select
     tabCtl = tabCtl - 1
@@ -45,7 +45,7 @@ Dim fd As Office.FileDialog: Set fd = Application.FileDialog(msoFileDialogFilePi
         End If
     End With
     
-    btnNext.Enabled = Util.relinkTables(txtBackend)
+    btnNext.enabled = Util.relinkTables(txtBackend)
     
 End Sub
 
@@ -74,7 +74,7 @@ Dim saveLocation As String
         Dim schema As String
         
         .DBEngine.CreateDatabase saveLocation, dbLangGeneral
-        .OpenCurrentDatabase saveLocation, True
+        .OpenCurrentDatabase saveLocation
         schema = .CurrentProject.Path & "\Schema\"
         
         If Not fso.FolderExists(schema) Then
@@ -82,8 +82,8 @@ Dim saveLocation As String
             With fd
                 .title = "Select schema folder"
                 If .show Then
-                    Dim s1: For Each s1 In .SelectedItems
-                        schema = s1
+                    Dim S1: For Each S1 In .SelectedItems
+                        schema = S1
                     Next
                 Else
                     'Cancelled by user
@@ -100,12 +100,13 @@ Dim saveLocation As String
             log "Creating table from XML: " & f.Name, "frmSetup.btnCreateBackend"
             .ImportXML f, acStructureOnly
         Next
+        
         .CloseCurrentDatabase
     End With
     log "Done!", "frmSetup.btnCreateBackend"
     tabCtl = tabCtl + 1
     
-sExit:
+sexit:
     'Cleanup
     Set acc = Nothing
     Set fd = Nothing
@@ -118,7 +119,7 @@ errtrap:
     Case 76
         MsgBox Error$ & " (" & err & ")", vbCritical, "Error"
     End Select
-    Resume sExit
+    Resume sexit
 End Sub
 
 Private Sub btnNext_Click()
@@ -132,6 +133,7 @@ On Error Resume Next
         btnNext.Caption = "Next"
     
     Case 3 'Global Settings
+        frmSetupGlobalSettings.SourceObject = "frmSetupGlobalSettings"
         Dim fail As Boolean
         Dim ctl: For Each ctl In Me.frmSetupGlobalSettings.Form
             If ctl.Tag = "!" Then
@@ -152,17 +154,21 @@ Private Sub btnShiftDef_Click()
     DoCmd.OpenForm "frmShiftDef", , , , , acDialog
 End Sub
 
-Private Sub tabCtl_Change()
+Private Sub Form_Load()
+If Not CurrentProject.Name Like "*DEV*" Then tabCtl.Style = 2 'TabStyle "None"
+End Sub
+
+Private Sub TabCtl_Change()
 
     Select Case tabCtl
     Case 1 'License
         btnNext.Caption = "Accept"
         
     Case 2 'Backend
-        btnNext.Enabled = Nz(txtBackend) <> ""
+        btnNext.enabled = Nz(txtBackend) <> ""
     
     Case 3 'Global Settings
-        
+        frmSetupGlobalSettings.SourceObject = "frmSetupGlobalSettings"
         
     Case tabCtl.Pages.Count - 1 'Last page
         btnNext.Caption = "Finish"

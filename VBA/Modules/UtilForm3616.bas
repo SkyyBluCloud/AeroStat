@@ -20,7 +20,7 @@ total = (DateDiff("d", startDate, endDate)) + 1
             progress = progress + 1
         End If
     Next
-fExit:
+fexit:
     log "Saved " & progress & "/" & total & " logs successfully!", "UtilForm3616.saveAllPDFs"
     saveAllPDFs = True
     Exit Function
@@ -28,13 +28,13 @@ errtrap:
 
 End Function
 
-Public Function savePDF(ByVal rDate As Date, Optional ByRef overwrite As Variant) As Boolean
+Public Function savePDF(ByVal rDate As Date, Optional ByRef overwrite As Variant) As String
 On Error GoTo errtrap
 Dim fp, f As String
-Dim N As Integer
+Dim n As Integer
 Dim ans As VbMsgBoxResult
 
-    If Not IsMissing(overwrite) Then 'Triggeres if this method was called by another method (such as .saveAllPDFs)
+    If Not IsMissing(overwrite) Then 'Triggers if this method was called by another method (such as .saveAllPDFs)
         Select Case overwrite
         Case True
             ans = vbYes
@@ -43,13 +43,15 @@ Dim ans As VbMsgBoxResult
         End Select
     End If
 
-    DoCmd.SetWarnings False
+    'DoCmd.SetWarnings False
+    If IsNull(DLookup("data", "tblSettings", "key = 'dbRoot'")) Then GoTo errtrap
     
-    fp = DLookup("dbroot", "tblSettings") & "\Daily Operations\" & UCase(Format(rDate, "yyyy\\mm mmm yy\\d mmm yy\\"))
+    fp = DLookup("data", "tblSettings", "key = 'dbRoot'") & "Daily Operations\" & UCase(Format(rDate, "yyyy\\mm mmm yy\\dd\\"))
     If dir(fp, vbDirectory) = "" Then createPath fp
     f = fp & UCase(Format(rDate, "d mmm yy ")) & "EVENTS LOG DB.PDF"
+    
     Do While Len(dir(f)) > 0
-        N = N + 1
+        n = n + 1
         If ans = 0 Then
             ans = MsgBox("A duplicate log was found for this date. replace?", vbQuestion + vbYesNoCancel, "Events Log")
         End If
@@ -60,26 +62,26 @@ Dim ans As VbMsgBoxResult
         Case vbCancel
             Exit Function
         Case vbNo
-            Select Case N
+            Select Case n
                 Case 1
-                    f = Replace(f, ".pdf", " (" & N & ").pdf")
+                    f = Replace(f, ".pdf", " (" & n & ").pdf")
                 Case Else
-                    f = Replace(f, " (" & N - 1 & ").pdf", " (" & N & ").pdf")
+                    f = Replace(f, " (" & n - 1 & ").pdf", " (" & n & ").pdf")
             End Select
         End Select
     Loop
     
-    If N <> 0 And IsNull(overwrite) Then
-        MsgBox "This log will be saved as '(" & N & ").pdf' instead", vbInformation, "AF3616"
+    If n <> 0 And IsNull(overwrite) Then
+        MsgBox "This log will be saved as '(" & n & ").pdf' instead", vbInformation, "AF3616"
     End If
     
-    DoCmd.OpenReport "new3616", acViewReport, , , , rDate
-    Reports!new3616.Visible = False
+    DoCmd.OpenReport "new3616", acViewReport, , , acHidden, rDate
     DoEvents
+    
     DoCmd.OutputTo acOutputReport, "new3616", acFormatPDF, f
     DoCmd.Close acReport, "new3616", acSaveNo
     
-    DoCmd.SetWarnings True
+    'DoCmd.SetWarnings True
     
     If IsNull(overwrite) Then
         Select Case MsgBox("Saved successfully in " & f & "." & vbCrLf & "Open PDF?", vbQuestion + vbYesNo, "Events Log")
@@ -88,12 +90,12 @@ Dim ans As VbMsgBoxResult
             'DoCmd.Close acReport, "new3616"
         End Select
     End If
-fExit:
+fexit:
         
 
     
     log "Successfully saved log as " & f, "UtilForm3616.savePDF"
-    savePDF = True
+    savePDF = f
     MsgBox "Log saved.", vbInformation, "Save PDF"
     Exit Function
 errtrap:
@@ -104,25 +106,31 @@ End Function
 Public Function newEntry(ByVal shiftID As Integer, ByVal zuluDateTime As Date, ByVal entry As String, Optional ByVal opInitials As String) As Boolean
 On Error GoTo errtrap
 Dim dupeEntry As String
-dupeEntry = Nz(DLookup("entry", "tbl3616", "shiftid = " & shiftID & " AND format(entrytime,'hhnn') = '" & Format(zuluDateTime, "hhnn" & "'")))
-If dupeEntry <> "" Then
-    If MsgBox("The following entry will be replaced:" & vbCrLf & Format(zuluDateTime, "hhnn") & ": " & dupeEntry & vbCrLf & vbCrLf & "Replace?", vbQuestion + vbYesNo, "Events Log") = vbNo Then
-        While Not IsNull(DLookup("entrytime", "tbl3616", "shiftid = " & shiftID & " AND format(entrytime,'hhnn') = '" & Format(zuluDateTime, "hhnn" & "'")))
-            zuluDateTime = DateAdd("n", 1, zuluDateTime)
-        Wend
-    Else
-        CurrentDb.Execute "DELETE FROM tbl3616 WHERE entry = " & """" & dupeEntry & """", dbFailOnError
+dupeEntry = Nz(DLookup("entry", "tbl3616", "shiftid = " & shiftID & " AND Not archive AND entrytime = #" & zuluDateTime & "#"))
+
+    If dupeEntry <> "" Then
+        If MsgBox("The following entry will be replaced:" & vbCrLf & Format(zuluDateTime, "hhnn") & ": " & dupeEntry & vbCrLf & vbCrLf & "Replace?", vbQuestion + vbYesNo, "Events Log") = vbNo Then
+            While Not IsNull(DLookup("entrytime", "tbl3616", "shiftid = " & shiftID & " AND format(entrytime,'hhnn') = '" & Format(zuluDateTime, "hhnn" & "'")))
+                zuluDateTime = DateAdd("n", 1, zuluDateTime)
+            Wend
+        Else
+            'This little shit right here.... (26 Nov 20)
+            'CurrentDb.Execute "UPDATE tbl3616 SET archive = True, archiveBy = '" & opInitials & "' WHERE entry = " & """" & dupeEntry & """", dbFailOnError
+            Dim db As DAO.Database: Set db = CurrentDb
+            db.Execute "UPDATE tbl3616 SET archive = True, archiveBy = '" & opInitials & "', archiveTime = Now() WHERE entrytime = #" & zuluDateTime & "# AND entry = " & """" & dupeEntry & """", dbFailOnError
+            log "Archived " & db.RecordsAffected, "UtilForm3616.newEntry"
+            Set db = Nothing
+        End If
     End If
-End If
+    
+    If Nz(opInitials) = "" Then opInitials = Util.getOpInitials(getUSN)
+    entry = UCase(Trim(entry))
 
-If Nz(opInitials) = "" Then opInitials = Util.getOpInitials
-entry = UCase(Trim(entry))
-
-    CurrentDb.Execute "INSERT INTO tbl3616 (shiftID,entryTime,entry,initials) " & _
-                        "SELECT " & shiftID & ", '" & Format(zuluDateTime, "dd-mmm-yy") & " " & _
+    CurrentDb.Execute "INSERT INTO tbl3616 (shiftID,originalOpInitials,entryTime,entry,initials) " & _
+                        "SELECT " & shiftID & ", getopinitials(getusn()), '" & Format(zuluDateTime, "dd-mmm-yy") & " " & _
                         Left(Format(zuluDateTime, "hhnn"), 2) & "." & Right(Format(zuluDateTime, "hhnn"), 2) & "', " & """" & entry & """" & ", '" & opInitials & "'", dbFailOnError
 
-fExit:
+fexit:
     newEntry = True
     Exit Function
 errtrap:
@@ -130,59 +138,74 @@ errtrap:
     handleError "newEntry"
 End Function
 
-Public Function signLog(ByVal shiftID As Integer, ByVal eLogRecSrc As String, ByVal role As Integer) As Boolean
+Public Function signLog(ByVal shiftID As Integer, ByVal role As Integer) As Boolean
 On Error GoTo errtrap
-Dim RS As DAO.Recordset
-Set RS = CurrentDb.OpenRecordset(eLogRecSrc)
+Dim db As DAO.Database: Set db = CurrentDb
+Dim rsShift As DAO.Recordset: Set rsShift = CurrentDb.OpenRecordset("SELECT * FROM tblShiftManager WHERE shiftID = " & shiftID)
 Dim roleStr As String
-If RS.RecordCount = 0 Then Exit Function
+Dim cert As Variant
+If rsShift.RecordCount = 0 Then Exit Function
 'If rs!closed Then
 '    MsgBox "This shift was already signed.", vbInformation, "Events Log"
 '    Exit Function
 'End If
-    While shiftID <> RS!shiftID
-        RS.MoveNext
-    Wend
-
+    
     Select Case role
-    Case 2
-        If RS!closed Then
+    Case 1
+        'If rsShift!certifierID <> 0 Then
+        If IsNull(amosSig) Then
             MsgBox "This shift was already signed.", vbInformation, "Events Log"
             Exit Function
         End If
         
         roleStr = "AMOS"
         
-    Case 3: roleStr = "NAMO"
-    Case 4: roleStr = "AFM"
+    Case 2
+        If rsShift!certifierID = 0 Then
+            MsgBox "This shift was already signed.", vbInformation, "Events Log"
+            Exit Function
+        End If
+        
+        roleStr = "NAMO"
+    Case 3
+        If rsShift!certifierID = 0 Then
+            MsgBox "This shift was already signed.", vbInformation, "Events Log"
+            Exit Function
+        End If
+        roleStr = "AFM"
     End Select
     
-    If MsgBox("You are signing this Events Log as the " & roleStr & ". " & vbCrLf & vbCrLf & _
+    'TODO: Don't hard-code
+    If MsgBox("You are signing as the " & roleStr & ". " & vbCrLf & vbCrLf & _
         "By signing this document, you certify that all entries are correct; " & _
         "that all scheduled operations have been accomplished, except as noted; " & _
         "that all abnormal occurences or conditions and all significant incidents/events have been recorded.", vbOKCancel + vbInformation, "Events Log") = vbCancel _
     Then Exit Function
     
-    If Not IsNull(DLookup("initials", "tbl3616", "shiftID = " & shiftID & " AND right(initials,1) <> '*'")) Then
-        CurrentDb.Execute "UPDATE tblShiftManager SET reviewerComments = '* = Denotes entry re-accomplished. " & reviewerComments & "' WHERE shiftID = " & shiftID, dbFailOnError
-    End If
+'    If Not IsNull(DLookup("initials", "tbl3616", "shiftID = " & shiftID & " AND right(initials,1) <> '*'")) Then
+'        CurrentDb.Execute "UPDATE tblShiftManager SET reviewerComments = '* = Denotes entry re-accomplished. " & reviewerComments & "' WHERE shiftID = " & shiftID, dbFailOnError
+'    End If
     
-    With RS
-        If role = 2 Then
+    With rsShift
+        Select Case role
+        Case 1
             .edit
             !closed = True
-            .Fields(LCase(roleStr) & "Sig") = getUSN
-            .Fields(LCase(roleStr) & "SigTime") = Now
-            .Update
-        Else
-        
-            CurrentDb.Execute "UPDATE tblShiftManager SET " & LCase(roleStr) & "Sig = '" & getUSN & "', " & _
-                                                                LCase(roleStr) & "SigTime = Now() " & _
-                                                                Mid(eLogRecSrc, InStr(1, eLogRecSrc, "WHERE"), Len(eLogRecSrc))
-        End If
+            '!certifierID = newCert(getUSN)
+            !amosSig = getUSN
+            !amosSigTime = Now
+            .update
+        Case 2 Or 3
+            If Not UtilCertifier.certifyShiftDay(role, getUSN, DateValue(!shiftStart)) Then GoTo errtrap
+            
+        End Select
+            'Old Sig
+'            CurrentDb.Execute "UPDATE tblShiftManager SET " & LCase(roleStr) & "Sig = '" & getUSN & "', " & _
+'                                                                LCase(roleStr) & "SigTime = Now() " & _
+'                                                                Mid(eLogRecSrc, InStr(1, eLogRecSrc, "WHERE"), Len(eLogRecSrc))
     End With
     
-fExit:
+fexit:
     MsgBox "Log signed!", vbInformation, "Events Log"
     signLog = True
     Exit Function

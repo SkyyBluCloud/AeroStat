@@ -14,11 +14,11 @@ Dim shiftID As Integer
 Private Sub bParse_Click()
 If Nz(parse) = "" Then Exit Sub
 'n = NOTAMUtil.parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'"))
-N = NOTAMUtil.parseNOTAM(parse)
-    If N <> 0 Then
+n = NOTAMUtil.parseNOTAM(parse)
+    If n <> 0 Then
         Undo
         bClose = True
-        Me.filter = "ID = " & N
+        Me.Filter = "ID = " & n
         Me.FilterOn = True
         issuedBy.BorderColor = RGB(255, 0, 0)
     Else
@@ -89,11 +89,11 @@ If Dirty Then Dirty = False
                     !entry = "NOTAM " & Right(verbiage, 8) & " CANCELLED"
             End Select
             !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
-            .Update
+            .update
             .Close
         End With
         Set log = Nothing
     End If
             
-DoCmd.Close acForm, "frmNOTAMInput", acSaveYes
+DoCmd.Close acForm, "frmNOTAMInput"
 End Sub

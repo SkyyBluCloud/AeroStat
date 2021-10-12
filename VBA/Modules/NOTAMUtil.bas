@@ -18,7 +18,7 @@ log "Converting Report....", myName & ".convertNOTAMReport"
 DoCmd.OpenForm "frmLoading"
 old.MoveLast
 old.MoveFirst
-With Forms!frmLoading
+With Forms!frmloading
     !loadingText.Caption = "Converting report..."
     DoEvents
     !pBar.Max = old.RecordCount
@@ -30,7 +30,7 @@ With old: Do While Not .EOF
     .MoveNext
     If num Mod 20 = 0 Then log num & " records complete...", myName & ".convertNOTAMReport"
     DoEvents
-    Forms!frmLoading!pBar.Value = Forms!frmLoading!pBar.Value + 1
+    Forms!frmloading!pBar.Value = Forms!frmloading!pBar.Value + 1
     Loop
 End With
 log "Done!", myName & ".convertNOTAMReport"
@@ -38,16 +38,16 @@ DoCmd.Close acForm, "frmLoading"
 End Function
 
 Public Function retroCancel()
-Dim N As DAO.Recordset
+Dim n As DAO.Recordset
 Dim cNOTAM As DAO.Recordset
 Set cNOTAM = CurrentDb.OpenRecordset("SELECT * FROM tblNOTAM WHERE nType = 'C'")
 With cNOTAM: Do While Not .EOF
-    Set N = CurrentDb.OpenRecordset("SELECT * FROM tblNOTAM WHERE NOTAM = '" & !NOTAM & "'")
-    If Not N.EOF Then
-    With N:
+    Set n = CurrentDb.OpenRecordset("SELECT * FROM tblNOTAM WHERE NOTAM = '" & !NOTAM & "'")
+    If Not n.EOF Then
+    With n:
         .edit
         !cancelled = True
-        .Update
+        .update
     End With
     End If
     .MoveNext
@@ -66,15 +66,14 @@ Dim rNOTAM As DAO.Recordset
                 .edit
                 !isCancelled = True
                 !endTime = nEndTime
-                .Update
+                .update
                 .Close
             End If
         End With
     End If
-fExit:
+fexit:
     cancelNOTAM = True
     Exit Function
-    
 errtrap:
     ErrHandler err, Error$, "NOTAMUtil.cancelNOTAM"
 End Function
@@ -89,57 +88,77 @@ Optional ByVal proc As Boolean) As Integer
 
 On Error GoTo errtrap
 parseNOTAM = 0
-Dim N As String
+Dim n As String
 Dim q, a, b, c, d, e As String
 Dim cNOTAM As String
-Dim cNOTAMStart As Date
+Dim cNOTAMEnd As Date
+Const spaces As Integer = 3
 Dim rNOTAM2 As DAO.Recordset
 s = noBreaks(s)
 Dim rNOTAM As DAO.Recordset
 Set rNOTAM = CurrentDb.OpenRecordset("tblNOTAM")
 With rNOTAM
     
-    q = InStr(1, s, "Q)") + 3
-    a = InStr(1, s, "A)") + 3
-    b = InStr(1, s, "B)") + 3
-    c = InStr(1, s, "C)") + 3
-    d = InStr(1, s, "D)") + 3
-    e = InStr(1, s, "E)") + 3
+    q = InStr(1, s, "Q)") + spaces
+    a = InStr(1, s, "A)") + spaces
+    b = InStr(1, s, "B)") + spaces
+    c = InStr(1, s, "C)") + spaces
+    d = InStr(1, s, "D)") + spaces
+    e = InStr(1, s, "E)") + spaces
+    
+    If (Not Mid(s, 15, 1) = "C" And (q > a Or a > b Or b > c Or (d <> spaces And c > d))) Then
+        parseNOTAM = -1 'Invalid Format
+        MsgBox "Could not parse NOTAM: Invalid format.", vbInformation, "NOTAM Control"
+        Exit Function
+    ElseIf d > e Then
+        d = spaces
+    End If
     
     .AddNew
     !NOTAM = Left(s, 8)
     If Not IsNull(DLookup("notam", "tblnotam", "notam = '" & !NOTAM & "'")) And Not proc Then
+        parseNOTAM = 0
         MsgBox "This NOTAM already exists.", vbInformation, "NOTAM Control"
         Exit Function
     End If
     
     !nType = Mid(s, 15, 1)
-    N = !nType 'Why?
+    n = !nType 'Why?
     !aerodrome = Mid(s, a, 4)
     Select Case !nType
         Case "N", "R"
             !controlZone = Mid(s, q, (InStr(q, s, "/") - q))
             !qcode = Mid(s, InStr(q, s, "/") + 1, 5)
-            
             !startTime = getDateFromNOTAM(Mid(s, b, 10))
             !endTime = getDateFromNOTAM(Mid(s, c, 10))
-            If d > 3 Then
+            
+            If d > spaces Then
                 !period = Mid(s, d, e - d - 4)
             End If
+            
             If !nType = "R" Then
                 cNOTAM = Mid(s, InStr(1, s, "NOTAMR") + 7, 8)
+                If IsNumeric(Left(cNOTAM, 1)) Or Not IsNumeric(Mid(cNOTAM, 2, 3)) Then
+                    parseNOTAM = -1 'Invalid Format
+                    MsgBox "Could not parse NOTAM. NOTAM number required after 'NOTAMR'", vbInformation, "NOTAM Control"
+                    Exit Function
+                End If
+                
                 !verbiage = "Replaces " & cNOTAM & ": " & Mid(s, e)
             Else
                 !verbiage = Mid(s, e)
             End If
+            
         Case "C"
             cNOTAM = Mid(s, 17, 8)
             !verbiage = "Cancel " & cNOTAM
             !startTime = IIf(Nz(start) = "", Now, start)
             !endTime = IIf(Nz(expiry) = "", DateAdd("d", 3, Now), expiry)
-            cNOTAMStart = !startTime
+            cNOTAMEnd = !startTime
+            NOTAMUtil.cancelNOTAM cNOTAM, cNOTAMEnd
+            
         Case Else
-            parseNOTAM = 0
+            parseNOTAM = -1 'Invalid Format
             MsgBox "Could not parse NOTAM: Invalid format.", vbInformation, "NOTAM Control"
             Exit Function
     End Select
@@ -147,32 +166,34 @@ With rNOTAM
     If Nz(usr) <> "" Then
         If Len(usr) = 2 Then
             !issuedBy = usr
+            
         ElseIf Not IsNull(DLookup("opinitials", "tbluserauth", "lastname = '" & Trim(Mid(usr, InStr(1, Trim(usr), " "))) & "'")) Then
             !issuedBy = DLookup("opinitials", "tbluserauth", "lastname = '" & Trim(Mid(usr, InStr(1, Trim(usr), " "))) & "'")
+            
         ElseIf Nz(usr) <> "" Then
             !issuedBy = UCase(Left(usr, 1) & Mid(usr, InStr(1, Trim(usr), " ") + 1, 1)) & "*"
         End If
     End If
         
-    .Update
+    .update
     .Bookmark = .LastModified
     parseNOTAM = !ID
     
-    If Nz(cNOTAM) <> "" Then
-        Set rNOTAM2 = CurrentDb.OpenRecordset("SELECT * FROM tblNOTAM WHERE NOTAM = '" & cNOTAM & "'")
-        With rNOTAM2
-            .edit
-            !isCancelled = True
-            !endTime = Nz(cNOTAMStart, Now)
-            .Update
-            .Close
-        End With
-        .Close
-    End If
+'    If Nz(cNOTAM) <> "" Then
+'        Set rNOTAM2 = CurrentDb.OpenRecordset("SELECT * FROM tblNOTAM WHERE NOTAM = '" & cNOTAM & "'")
+'        With rNOTAM2
+'            .edit
+'            !isCancelled = True
+'            !endTime = Nz(cNOTAMStart, Now)
+'            .Update
+'            .Close
+'        End With
+'        .Close
+'    End If
 End With
 Set rNOTAM = Nothing
 Set rNOTAM2 = Nothing
-fExit:
+fexit:
     Exit Function
     Resume Next
 errtrap:

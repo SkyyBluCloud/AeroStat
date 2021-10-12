@@ -8,7 +8,7 @@ Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
-
+'OpenArgs = The date to be checked
 Private Sub cancel_Click()
     Forms!new_ppr.frmRestrictionsResponse = True
     DoCmd.Close acForm, "frmrestrictions", acSaveNo

@@ -9,15 +9,41 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
 Option Explicit
-Public args As String
+Public args As Variant
+Dim pageCount() As Integer
 
-Private Declare PtrSafe Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" ( _
-                    ByVal hwnd As Long, _
-                    ByVal lpOperation As String, _
-                    ByVal lpFile As String, _
-                    ByVal lpParameters As String, _
-                    ByVal lpDirectory As String, _
-                    ByVal nShowCmd As Long) As Long
+Private Sub printClick(ByVal d As Variant)
+If IsNull(d) Or Not IsDate(d) Then Exit Sub
+DoCmd.OpenReport "new3616", acViewReport, , , acHidden, d
+DoCmd.SelectObject acReport, "new3616"
+Reports!new3616.Visible = False
+DoCmd.RunCommand acCmdPrint
+DoEvents
+DoCmd.Close acReport, "new3616"
+End Sub
+
+
+
+Private Sub btnPrint_Click()
+On Error GoTo errtrap
+    If Not CurrentProject.AllReports("new3616").IsLoaded Then
+        DoCmd.OpenReport "new3616", acViewPreview, , , acHidden, rDate
+        DoEvents
+    End If
+    DoCmd.SelectObject acReport, "new3616"
+    DoCmd.RunCommand acCmdPrint
+    DoEvents
+    
+sexit:
+    DoCmd.Close acReport, "new3616"
+    Exit Sub
+errtrap:
+    Select Case err
+        Case Else
+            ErrHandler err, Error$, Me.Name & ".btnPrint_Click"
+            GoTo sexit
+    End Select
+End Sub
 
 Private Sub Detail_Print(cancel As Integer, PrintCount As Integer)
 Dim eol As Double
@@ -42,64 +68,120 @@ End Sub
 
 Private Sub Report_Load()
 On Error Resume Next
-Dim RS As DAO.Recordset
+Dim rsShift As DAO.Recordset
+Dim qdfSig As DAO.QueryDef
+Dim oldSQL As String
+Dim newSQL As String
 Dim i As Integer
 Dim ctl
 'If Parent.Name = "frmAFMDash" Then args = Nz(Parent.shiftList.Column(1), args)
 'Me.RecordSource = "SELECT tblShiftManager.*, Format([shiftstart],'dd-mmm-yy') AS Expr1 FROM tblShiftManager WHERE (((Format([shiftstart],'dd-mmm-yy'))=Format('" & Nz(OpenArgs, args) & "','dd-mmm-yy')));"
-
+    
     If IsNull(shiftCount) Then Exit Sub
 '    If shiftCount > 6 Then
 ''        MsgBox "Only a maximum of 6 shifts can be loaded onto one report.", vbInformation, "AF3616"
 '        DoCmd.close acReport, "new3616"
 '    End If
     
-    Set RS = CurrentDb.OpenRecordset(Me.RecordSource)
-    RS.filter = "not IsNull(amosSig)"
     
-
+    Set rsShift = CurrentDb.OpenRecordset(Me.RecordSource) 'The shifts
+    Set qdfSig = CurrentDb.QueryDefs("qSig")
+    oldSQL = qdfSig.sql
+    
     i = 1
-    With RS: Do While Not .EOF
+    With rsShift: Do While Not .EOF
+    
         With Me.Controls("dSig" & i)
-            If Not IsNull(RS!amosSig) Then 'AMOS
             '.SourceObject = "Report.dSig"
-                For Each ctl In .Controls
+            
+            If Not IsNull(rsShift!username) Then
+                
+                newSQL = oldSQL
+                
+                newSQL = Replace(newSQL, "[varUSN]", "'" & rsShift!username & "'")
+                newSQL = Replace(newSQL, "[varSigTime]", "#" & rsShift!sigTime & "#")
+                newSQL = Replace(newSQL, "[varShiftID]", rsShift!shiftID)
+                
+                .Report.RecordSource = newSQL
+                '.Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & Replace(UCase([@RANK].[rank]),'-','') & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & rsShift!amosSigTime & "' AS sigTime FROM [@RANK] INNER JOIN (tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.amosSig = tblUserAuth.username) ON [@RANK].ID = tblUserAuth.rankID WHERE tblShiftManager.shiftID = " & rsShift!shiftID & ";"
+
+               For Each ctl In .Report.Controls
                     ctl.Visible = True
                 Next
-                .Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & Replace(UCase([RANK].[rank]),'-','') & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & RS!amosSigTime & "' AS sigTime FROM RANK INNER JOIN (tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.amosSig = tblUserAuth.username) ON RANK.ID = tblUserAuth.rankID WHERE tblShiftManager.shiftID = " & RS!shiftID & ";"
             End If
+            
         End With
         i = i + 1
         .MoveNext
     Loop: .MoveFirst: End With
     
+    If Not rsShift.EOF Then
     
-    If Not IsNull(RS!namoSig) Then
-        Me.namoSig.Visible = True
-        For Each ctl In Me.namoSig.Report.Controls
-            ctl.Visible = True
-        Next
-        Me.namoSig.Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & Replace(UCase([RANK].[rank]),'-','') & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & RS!namoSigTime & "' AS sigTime FROM RANK INNER JOIN (tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.amosSig = tblUserAuth.username) ON RANK.ID = tblUserAuth.rankID WHERE tblShiftManager.shiftID = " & RS!shiftID & ";"
-    End If
-    
-    If Not IsNull(RS!afmSig) Then
-        Me.afmSig.Visible = True
-        For Each ctl In Me.afmSig.Report.Controls
-            ctl.Visible = True
-        Next
-        Me.afmSig.Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & Replace(UCase([RANK].[rank]),'-','') & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & RS!afmSigTime & "' AS sigTime FROM RANK INNER JOIN (tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.amosSig = tblUserAuth.username) ON RANK.ID = tblUserAuth.rankID WHERE tblShiftManager.shiftID = " & RS!shiftID & ";"
+        If Not IsNull(rsShift!concur) Then
+            'Me.namoSig.Report.RecordSource = "SELECT UCase([tbluserauth].[lastname]) & '.' & UCase([tbluserauth].[firstname]) & '.' & Replace(UCase([@RANK].[rank]),'-','') & '.' & [tbluserauth].[username] AS sName, tblUserAuth.opInitials, tblUserAuth.username, tblShiftManager.shiftID, '" & rsShift!namoSigTime & "' AS sigTime FROM [@RANK] INNER JOIN (tblShiftManager INNER JOIN tblUserAuth ON tblShiftManager.namoSig = tblUserAuth.username) ON [@RANK].ID = tblUserAuth.rankID WHERE tblShiftManager.shiftID = " & rsShift!shiftID & ";"
+            Set qdfSig = CurrentDb.QueryDefs("qSig2")
+            oldSQL = qdfSig.sql
+            newSQL = oldSQL
+            newSQL = Replace(newSQL, "[varUSN]", "'" & rsShift!concur & "'")
+            newSQL = Replace(newSQL, "[varSigTime]", "#" & rsShift!concurSigTime & "#")
+            newSQL = Replace(newSQL, "[varShiftID]", rsShift!shiftID)
+            
+            Me.namoSig.Report.RecordSource = newSQL
+            
+            Me.namoSig.Visible = True
+            
+            For Each ctl In Me.namoSig.Report.Controls
+                ctl.Visible = True
+            Next
+        End If
+        
+        If Not IsNull(rsShift!cert) Then
+            Set qdfSig = CurrentDb.QueryDefs("qSig3")
+            oldSQL = qdfSig.sql
+            newSQL = oldSQL
+            newSQL = Replace(newSQL, "[varUSN]", "'" & rsShift!cert & "'")
+            newSQL = Replace(newSQL, "[varSigTime]", "#" & rsShift!certSigTime & "#")
+            newSQL = Replace(newSQL, "[varShiftID]", rsShift!shiftID)
+            
+            Me.afmSig.Report.RecordSource = newSQL
+            
+            Me.afmSig.Visible = True
+            For Each ctl In Me.afmSig.Report.Controls
+                ctl.Visible = True
+            Next
+            
+        End If
     End If
     
 End Sub
 
 Private Sub Report_Open(cancel As Integer)
-On Error Resume Next
-    If Parent.Name <> "frmAFMDash" Then
+'OpenArgs = The DateSerial of the log
+On Error GoTo sErr
+args = Null
+
+    Select Case Parent.Name
+    
+    Case "This throws an error when the parent doesn't exist"
         'error
-    Else
-        args = Nz(Parent.shiftList.Column(1), args)
-    End If
-    If Not IsNull(OpenArgs) Or args <> "" Then Me.RecordSource = "SELECT tblShiftManager.*, Format([shiftstart],'dd-mmm-yy') AS Expr1 FROM tblShiftManager WHERE (((Format([shiftstart],'dd-mmm-yy'))=Format('" & Nz(OpenArgs, args) & "','dd-mmm-yy')));"
+    Case "frmAfmDash"
+        args = Format(Nz(Parent.shiftList.Column(1), Nz(args, Date)), "dd-mmm-yy")
+    Case "frmReportsView"
+        args = Parent.Parent.reportDate
+    End Select
+    
+    If Not IsNull(OpenArgs) Or Not IsNull(args) Then Me.RecordSource = "SELECT tblShiftManager.*, tblShiftCertifier.* FROM tblShiftCertifier " & _
+                                                "RIGHT JOIN tblShiftManager ON tblShiftCertifier.ID = tblShiftManager.certifierID " & _
+                                                "WHERE dateValue(tblShiftManager.shiftstart) = #" & Nz(Me.OpenArgs, Nz(args, Date)) & "#;"
+sexit:
+    Exit Sub
+sErr:
+    Select Case err
+    Case 2452
+        Resume Next
+    Case Is <> 0
+        ErrHandler err, Error$, Me.Name & ".Report_Open"
+    End Select
 End Sub
 
 'Private Sub updateRecordSource()
@@ -152,7 +234,7 @@ Private Sub savePDF_Click()
 '            DoCmd.Close acReport, "new3616"
 '
 '    End Select
-    If Not UtilForm3616.savePDF(rDate) Then Exit Sub
+    Application.FollowHyperlink UtilForm3616.savePDF(rDate)
 End Sub
 
 Private Sub savePDF2_Click()

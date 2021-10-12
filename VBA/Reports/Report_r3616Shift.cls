@@ -9,33 +9,34 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
 Option Explicit
+Dim iPageCount() As Integer
+Public lclPage As Integer
 
-'Private Declare ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" ( _
-'                    ByVal hwnd As Long, _
-'                    ByVal lpOperation As String, _
-'                    ByVal lpFile As String, _
-'                    ByVal lpParameters As String, _
-'                    ByVal lpDirectory As String, _
-'                    ByVal nShowCmd As Long) As Long
+Public Property Get pageCount(page) As Integer
+    pageCount = iPageCount(page)
+End Property
+
+Private Sub btnEdit_Click()
+DoCmd.OpenForm "frm3616", , , , , acDialog, shiftID
+Parent.Requery
+End Sub
 
 Private Sub Detail_Print(cancel As Integer, PrintCount As Integer)
 Dim eol As Double
 eol = Me.Height
+If lclPage = 0 Then lclPage = 1
+
+    If lclPage <> PrintCount - 1 Then
+        ReDim Preserve iPageCount(1 To PrintCount) As Integer
+        lclPage = lclPage + 1
+    End If
+    
+    'log "PrintCount = " & PrintCount, "r3616Shift.Print"
+    
+    iPageCount(PrintCount) = iPageCount(PrintCount) + 1
 
 Me.Line (Me.Line43.Left, 0)-(Me.Line43.Left, eol)
 'Me.Line (Me.Line44.Left, 0)-(Me.Line44.Left, eol)
 'Me.Line (Me.Line92.Left, 0)-(Me.Line92.Left, eol)
 
 End Sub
-
-'Private Sub savePDF_Click()
-''Create nonexisting directories
-'Dim f As String
-'    DoCmd.SetWarnings False
-'    f = DLookup("drivePrefix", "tblSettings") & "1. Events Logs\" & UCase(Format(rDate, "yyyy\\mm mmm yyyy\\d mmm yy ") & DLookup("shiftTitle", "tblShiftManager", Me.Filter) & " db") & ".pdf"
-'    DoCmd.OutputTo acOutputReport, "r3616", acFormatPDF, f
-'    MsgBox "To sign, go to: " & vbCrLf & "Tools -> Certificates -> Digitally Sign" & vbCrLf & vbCrLf & "Then draw a signature block under 'Signature'" & vbCrLf & "(This log is not valid without a signature)", vbInformation, "AeroStat"
-'    ShellExecute Me.hwnd, "Open", f, vbNullString, "\\", 1
-'    DoCmd.SetWarnings True
-'End Sub
-

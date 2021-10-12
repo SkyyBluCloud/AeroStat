@@ -60,7 +60,7 @@ Dim rsLog As DAO.Recordset
     If IsNull(DLookup("af483", "tbl483", "af483 = '" & AF483 & "'")) Then
         If MsgBox("Confirm information:" & vbCrLf & vbCrLf & _
             AF483 & vbCrLf & _
-            rank & " " & lastName & ", " & firstName & " " & Unit, vbInformation + vbYesNo, "AF483") = vbYes Then
+            rank & " " & lastName & ", " & firstName & " " & unit, vbInformation + vbYesNo, "AF483") = vbYes Then
             
             Dim appendData() As String
             Dim idx As Integer
@@ -86,7 +86,7 @@ Dim rsLog As DAO.Recordset
             'CurrentDb.Execute "INSERT INTO tbl483 (af483,rankID,lastname,firstname,midinit,unit) " & _
                                 "SELECT '" & cAF483 & "', '" & rankID & "', '" & lastName & "', '" & firstName & "', '" & midInit & "', '" & Unit & "'", dbFailOnError
             CurrentDb.Execute "INSERT INTO tbl483 (af483,rankID,lastname,firstname,midinit,unit,issuedBy,issueDate,lastCheck) " & _
-                                "SELECT '" & join(appendData, "', '") & "', '" & Util.getOpInitials & "', now(), now()", dbFailOnError
+                                "SELECT '" & join(appendData, "', '") & "', '" & Util.getOpInitials(getUSN) & "', now(), now()", dbFailOnError
 
             Undo
 
@@ -95,7 +95,7 @@ Dim rsLog As DAO.Recordset
             Me.compliant = copyCompliant
             Me.reason = copyReason
             Me.shiftID = copyShift
-            Me.by = Util.getOpInitials
+            Me.by = Util.getOpInitials(getUSN)
             If Dirty Then Dirty = False
         End If
     End If
@@ -124,14 +124,14 @@ Dim rsLog As DAO.Recordset
                     !entryTime = LToZ(checkDate)
                     !entry = "483 CK LOGGED " & IIf(compliant, "IN COMPLIANCE", "NOT IN COMPLIANCE")
                     !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
-                    .Update
+                    .update
                 End With
             End If
         End If
     End If
     
-sExit:
-    DoCmd.Close acForm, "frm483CompCheck", acSaveYes
+sexit:
+    DoCmd.Close acForm, "frm483CompCheck"
     Exit Sub
 errtrap:
 '    If err = 3101 Then
