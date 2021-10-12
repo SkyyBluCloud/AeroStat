@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<dataroot xmlns:od="urn:schemas-microsoft-com:officedata" generated="2021-10-12T15:08:44">
+<dataroot xmlns:od="urn:schemas-microsoft-com:officedata" generated="2020-08-18T23:10:56">
 <_x0040_AIRCRAFT>
 <ID>1</ID>
 <acTypeID>A10</acTypeID>
@@ -20,13 +20,6 @@
 <ID>4</ID>
 <acTypeID>A345</acTypeID>
 <gearType>12</gearType>
-</_x0040_AIRCRAFT>
-<_x0040_AIRCRAFT>
-<ID>80</ID>
-<acTypeID>AS50</acTypeID>
-<synonym>AS350</synonym>
-<gearType>1</gearType>
-<designation>A-Star</designation>
 </_x0040_AIRCRAFT>
 <_x0040_AIRCRAFT>
 <ID>5</ID>
@@ -195,11 +188,6 @@
 <gearType>5</gearType>
 </_x0040_AIRCRAFT>
 <_x0040_AIRCRAFT>
-<ID>82</ID>
-<acTypeID>CN35</acTypeID>
-<gearType>4</gearType>
-</_x0040_AIRCRAFT>
-<_x0040_AIRCRAFT>
 <ID>36</ID>
 <acTypeID>D328</acTypeID>
 <synonym>C146</synonym>
@@ -238,9 +226,10 @@
 <gearType>8</gearType>
 </_x0040_AIRCRAFT>
 <_x0040_AIRCRAFT>
-<ID>84</ID>
-<acTypeID>E6</acTypeID>
-<gearType>8</gearType>
+<ID>43</ID>
+<acTypeID>F18</acTypeID>
+<synonym>FA18, EA18, F18G, F18H</synonym>
+<gearType>2</gearType>
 </_x0040_AIRCRAFT>
 <_x0040_AIRCRAFT>
 <ID>44</ID>
@@ -252,12 +241,6 @@
 <ID>45</ID>
 <acTypeID>F16</acTypeID>
 <synonym>F16C</synonym>
-<gearType>2</gearType>
-</_x0040_AIRCRAFT>
-<_x0040_AIRCRAFT>
-<ID>43</ID>
-<acTypeID>F18</acTypeID>
-<synonym>FA18, EA18, F18G, F18H</synonym>
 <gearType>2</gearType>
 </_x0040_AIRCRAFT>
 <_x0040_AIRCRAFT>
@@ -301,11 +284,6 @@
 <_x0040_AIRCRAFT>
 <ID>55</ID>
 <acTypeID>H25B</acTypeID>
-<gearType>1</gearType>
-</_x0040_AIRCRAFT>
-<_x0040_AIRCRAFT>
-<ID>81</ID>
-<acTypeID>H35</acTypeID>
 <gearType>1</gearType>
 </_x0040_AIRCRAFT>
 <_x0040_AIRCRAFT>
@@ -374,11 +352,6 @@
 <gearType>7</gearType>
 </_x0040_AIRCRAFT>
 <_x0040_AIRCRAFT>
-<ID>83</ID>
-<acTypeID>PC12</acTypeID>
-<gearType>0</gearType>
-</_x0040_AIRCRAFT>
-<_x0040_AIRCRAFT>
 <ID>68</ID>
 <acTypeID>Q4</acTypeID>
 <synonym>RQ4</synonym>
@@ -435,5 +408,17 @@
 <ID>78</ID>
 <acTypeID>YS11</acTypeID>
 <gearType>0</gearType>
+</_x0040_AIRCRAFT>
+<_x0040_AIRCRAFT>
+<ID>80</ID>
+<acTypeID>AS50</acTypeID>
+<synonym>AS350</synonym>
+<gearType>1</gearType>
+<designation>A-Star</designation>
+</_x0040_AIRCRAFT>
+<_x0040_AIRCRAFT>
+<ID>81</ID>
+<acTypeID>H35</acTypeID>
+<gearType>1</gearType>
 </_x0040_AIRCRAFT>
 </dataroot>

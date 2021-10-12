@@ -108,7 +108,7 @@ Dim msg As String
     msg = UCase(Trim(msg))
     
     If OpenArgs = "frmInspectionNew" Then
-        With Forms!frmInspectionNew
+        With Forms!frminspectionnew
             !Remarks = !Remarks & " " & msg
         End With
         
@@ -123,7 +123,7 @@ Dim msg As String
                 !entryTime = LToZ(obTime)
                 !entry = msg
                 !Initials = Initials
-                .update
+                .Update
                 .Close
             Else
                 MsgBox "Either you are not currently in a shift, or the log for the shift has been closed.", vbInformation, "BASH Report"
@@ -133,10 +133,10 @@ Dim msg As String
         Set RS = Nothing
     End If
     'DoCmd.RunCommand acCmdSaveRecord
-    DoCmd.Close acForm, "frmBASH"
+    DoCmd.Close acForm, "frmBASH", acSaveYes
     MsgBox "BASH entry successfully saved.", vbInformation, "BASH Report"
     
-sexit:
+sExit:
     Exit Sub
 errtrap:
     ErrHandler err, Error$, Me.Name & ".save_Click"

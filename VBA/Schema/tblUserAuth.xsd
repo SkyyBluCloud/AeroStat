@@ -61,7 +61,6 @@
 <xsd:element name="spAccess" minOccurs="1" od:jetType="yesno" od:sqlSType="bit" od:nonNullable="yes" type="xsd:boolean"/>
 <xsd:element name="BOOT" minOccurs="1" od:jetType="yesno" od:sqlSType="bit" od:nonNullable="yes" type="xsd:boolean"/>
 <xsd:element name="RS" minOccurs="1" od:jetType="yesno" od:sqlSType="bit" od:nonNullable="yes" type="xsd:boolean"/>
-<xsd:element name="kiosk" minOccurs="1" od:jetType="yesno" od:sqlSType="bit" od:nonNullable="yes" type="xsd:boolean"/>
 </xsd:sequence>
 </xsd:complexType>
 </xsd:element>

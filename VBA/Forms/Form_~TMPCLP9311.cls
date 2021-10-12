@@ -17,7 +17,6 @@ DoCmd.Close acForm, Me.Name
 End Sub
 
 Private Sub btnSave_Click()
-    bClose = True
     If Dirty Then Dirty = False
     DoCmd.Close acForm, Me.Name
 End Sub

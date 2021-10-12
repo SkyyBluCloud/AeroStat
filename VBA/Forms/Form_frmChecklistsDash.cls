@@ -20,9 +20,8 @@ Dim db As DAO.Database: Set db = CurrentDb
         log "Deleted " & db.RecordsAffected & " checklist(s)", Me.Name & ".btnDelete_Click"
     End If
     lstChecklists = ""
-    lstChecklists.Requery
     
-sexit:
+sExit:
     Exit Sub
 errtrap:
     ErrHandler err, Error$, Me.Name & ".btnDelete_Click"
@@ -31,19 +30,19 @@ End Sub
 Private Sub btnNew_Click()
 Dim db As DAO.Database: Set db = CurrentDb
 
-    db.Execute "INSERT INTO tblChecklistIndex (title, code) VALUES ('New Checklist', '###')"
+    db.Execute "INSERT INTO tblChecklistIndex (title, code) SELECT 'New Checklist', '###'"
     Me.lstChecklists.Requery
-    Me.lstChecklists = db.OpenRecordset("SELECT @@IDENTITY").Fields(0) 'Recalls field '0' from previosly executed query
+    Me.lstChecklists = db.OpenRecordset("SELECT @@IDENTITY").Fields(0)
     
     With sfEditChecklist.Form
         .Recordset.AddNew
         !checklistID = lstChecklists
-        '!order = 1
-        !item = "New Item"
-        .Recordset.update
+        !order = 1
+        !Item = "New Item"
+        .Recordset.Update
         
         .bClose = True
-        .Filter = "checklistID = " & Me.lstChecklists
+        .filter = "checklistID = " & Me.lstChecklists
         .FilterOn = True
     End With
     
@@ -64,22 +63,15 @@ On Error GoTo errtrap
         
         Me.sfEditChecklist.SourceObject = "frmChecklistEdit"
         With Me.sfEditChecklist.Form
-            .Filter = "tblChecklistIndex.checklistID = " & lstChecklists
+            .filter = "checklistID = " & lstChecklists
             .FilterOn = True
             Set !lstItems.Recordset = qdf.OpenRecordset
         End With
     End If
     
-sexit:
+sExit:
     Exit Function
-    Resume Next
 errtrap:
-    Select Case err
-    Case 3709 'Filter not found
-        Resume Next
-    Case Else
-        
-    End Select
     ErrHandler err, Error$, Me.Name & ".refreshChecklistEditor"
 End Function
 

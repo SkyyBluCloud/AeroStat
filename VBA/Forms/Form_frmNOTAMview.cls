@@ -47,7 +47,7 @@ If DLookup("ntype", "tblNOTAM", "NOTAM = '" & NOTAM & "'") = "C" Then Exit Sub
             .edit
             !isCancelled = True
             !endTime = Now
-            .update
+            .Update
             .MoveNext
     Loop: End With
 
@@ -127,7 +127,7 @@ Dim where As String
         where = "WHERE left(tblNOTAM.NOTAM,1) = 'V'"
         
     Case 4 'LOA (Issued NOTAM for backup facility)
-        where = "WHERE tblNOTAM.aerodrome <> '" & DLookup("data", "tblSettings", "key = 'station'") & "'"
+        where = "WHERE tblNOTAM.aerodrome <> '" & DLookup("station", "tblSettings") & "'"
         
     End Select
     

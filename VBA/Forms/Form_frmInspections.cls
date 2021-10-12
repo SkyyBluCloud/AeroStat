@@ -8,126 +8,29 @@ Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
-Option Explicit
-Private fail As Boolean
-Private bClose As Boolean
-Public varDate As Date
+Public shiftID As Integer
 
-Private Sub btn483_Click()
-    DoCmd.OpenForm "frm483compcheck", , , , acFormAdd, acDialog, Parent!shiftID
-End Sub
-
-Private Sub btnBack_Click()
-tabCtl = btnBack.Tag
-End Sub
-
-Private Sub btnNewInsp_Click()
-Me.DataEntry = True
-tabCtl.Pages(1).SetFocus
-btnBack.Tag = 0
-End Sub
-
-Private Sub btnSave_Click()
-On Error GoTo errtrap
-    
-    fail = False
-    Dim c: For Each c In Me.Controls
-        If c.Tag = "required" Then
-            If TypeOf c Is TextBox Or TypeOf c Is ComboBox Then
-                If Nz(c.Value, 0) = 0 Then
-                    c.BorderColor = RGB(255, 0, 0)
-                    fail = True
-                Else
-                    c.BorderColor = RGB(166, 166, 166)
-                End If
-            End If
-        End If
-    Next c
-    If fail Then Exit Sub
-    
-    bClose = True
-    If Me.Dirty Then
-        Me.Dirty = False
-        With lstInsp
-            .Requery
-            .SetFocus
-        End With
+Public Function changeView(ByVal v As String, Optional ByVal sid As Integer, Optional ByVal filter As Variant = 0)
+    shiftID = sid
+    view.SourceObject = v
+    If filter <> 0 Then
+        view.Form.Undo
+        view.Form.filter = "ID = " & filter
+        view.Form.FilterOn = True
     End If
-    
-    Call lstInspUpdate
+'    If v = "frmInspectionNew" Then
+'    With view.Form
+'        If IsNull(!outTime) Then
+'            !outTime = LToZ(Format(Now, "hh:nn"))
+'        ElseIf IsNull(!inTime) Then
+'            !inTime = LToZ(Format(Now, "hh:nn"))
+'        End If
+'    End With
+'    End If
+End Function
 
-sexit:
-    Exit Sub
-errtrap:
-    ErrHandler err, Error$, Me.Name & ".btnSave_Click"
-End Sub
-
-Private Sub lstInspUpdate()
-    Dim newSQL As String: newSQL = Replace(CurrentDb.QueryDefs("qInspectionsShiftView").sql, "[varDate]", "#" & DateValue(Nz(Parent!shiftStart, Date)) & "#")
-    Me.lstInsp.RowSource = newSQL
-End Sub
-
-Private Sub ctlInTime_BeforeUpdate(cancel As Integer): With ctlInTime
-    
-    Dim ct As Variant: ct = getTime4Char(ctlInTime.Text)
-    If Not IsDate(ct) Then
-        .BorderColor = vbRed
-    Else
-        .BorderColor = RGB(166, 166, 166)
-        .Value = ct
-        inTime = ct
-    End If
-End With
-End Sub
-
-Private Sub ctlOutTime_BeforeUpdate(cancel As Integer): With ctlOutTime
-
-    Dim ct As Variant: ct = getTime4Char(.Text)
-    If Not IsDate(ct) Then
-        .BorderColor = vbRed
-    Else
-        .BorderColor = RGB(166, 166, 166)
-        .Value = ct
-        outTime = ct
-    End If
-End With
-End Sub
-
-Private Sub Form_BeforeUpdate(cancel As Integer)
-    If Not bClose Then Undo
-End Sub
-
-Private Sub Form_Current()
-    bClose = False
-    
-    Dim c: For Each c In Me.Controls
-        If c.Tag Like "*!newrecord*" Then
-            c.Visible = Not NewRecord
-        End If
-    Next c
-    
-End Sub
-
-Private Sub Form_Load()
-    If Not CurrentProject.Name Like "*DEV*" Then tabCtl.Style = 2  'No tabs
-    Call lstInspUpdate
-End Sub
-
-Private Sub lstInsp_DblClick(cancel As Integer)
-If IsNull(lstInsp) Then Exit Sub
-On Error GoTo errtrap
-    
-    Me.Filter = "tblInspections.ID = " & lstInsp
-    Me.FilterOn = True
-    tabCtl.Pages(1).SetFocus
-    btnBack.Tag = 0
-sexit:
-    Exit Sub
-errtrap:
-    ErrHandler err, Error$, Me.Name & ".lstInsp_DblClick"
-End Sub
-
-Private Sub TabCtl_Change()
-tabCtl.Pages(tabCtl).SetFocus
-btnBack.Visible = tabCtl <> 0
+Private Sub back_Click()
+    changeView back.Tag
+    view.SetFocus
+    back.Visible = False
 End Sub

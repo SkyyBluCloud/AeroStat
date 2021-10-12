@@ -25,7 +25,7 @@ If Nz(acType.Value) = Replace(acType.DefaultValue, """", "") Then acType = ""
 End Sub
 
 Private Sub acType_Exit(cancel As Integer)
-doCAPS Me
+If Nz(acType.Value) = "" Then acType = Replace(acType.DefaultValue, """", "")
 replaceGhost
 End Sub
 
@@ -35,7 +35,6 @@ Me.Tail.SetFocus
 End Sub
 
 Private Sub btnSave_Click()
-On Error GoTo errtrap
 bClose = True
 Dim ctl: For Each ctl In Me.Controls
     If TypeOf ctl Is TextBox Then
@@ -44,21 +43,10 @@ Dim ctl: For Each ctl In Me.Controls
         End If
     End If
 Next
-sexit:
-    If Dirty Then Dirty = False
-    lstBaseAcft.Requery
-    DataEntry = True
-    Tail.SetFocus
-    acType.BorderColor = RGB(166, 166, 166)
-errtrap:
-    Select Case err
-    Case 3201
-        acType.BorderColor = RGB(255, 0, 0)
-    End Select
-End Sub
-
-Private Sub btnStereos_Click()
- DoCmd.OpenForm "frmStereoFlightPlan"
+If Dirty Then Dirty = False
+lstBaseAcft.Requery
+DataEntry = True
+Tail.SetFocus
 End Sub
 
 Private Sub designator_Change()
@@ -76,6 +64,7 @@ If Nz(designator.Value) = Replace(designator.DefaultValue, """", "") Then design
 End Sub
 
 Private Sub designator_Exit(cancel As Integer)
+If Nz(designator.Value) = "" Then designator = Replace(designator.DefaultValue, """", "")
 replaceGhost
 End Sub
 
@@ -114,12 +103,12 @@ End Select
 End Sub
 
 Private Sub lstBaseAcft_AfterUpdate()
-    Me.Filter = "ID = " & lstBaseAcft
+    Me.filter = "ID = " & lstBaseAcft
     Me.FilterOn = True
     'replaceGhost
 End Sub
 
-Public Function replaceGhost(Optional ByRef ctlTxt As TextBox, Optional ByVal enter As Boolean)
+Public Function replaceGhost(Optional ByRef txt As TextBox, Optional ByVal enter As Boolean)
 '    If enter Then
 '        txt.ForeColor = RGB(0, 0, 0)
 '        txt = ""
@@ -150,8 +139,8 @@ DoEvents
 End Function
 
 Private Sub lstBaseAcft_Click()
-On Error Resume Next
-    Me.Filter = "ID = " & lstBaseAcft
+    On Error Resume Next
+    Me.filter = "ID = " & lstBaseAcft
     Me.FilterOn = True
 End Sub
 
@@ -169,10 +158,6 @@ If Nz(Tail.Value) = Replace(Tail.DefaultValue, """", "") Then Tail = ""
 End Sub
 
 Private Sub Tail_Exit(cancel As Integer)
-doCAPS Me
+If Nz(Tail.Value) = "" Then Tail = Replace(Tail.DefaultValue, """", "")
 replaceGhost
-End Sub
-
-Private Sub Unit_Enter()
-If Nz(unit.Value) = Replace(unit.DefaultValue, """", "") Then unit = ""
 End Sub

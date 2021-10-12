@@ -49,7 +49,7 @@ Dim fld As DAO.Field
                         End If
                     End With
                 Next
-                .update
+                .Update
                 .Close
             End With
         End If

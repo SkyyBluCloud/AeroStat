@@ -8,52 +8,35 @@ Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
-Option Explicit
-Dim shiftID As Variant
-
-Public Function getClipboard() As String
-    On Error Resume Next
-    Dim dataObj As New MSForms.DataObject
-    dataObj.GetFromClipboard
-    getClipboard = dataObj.GetText
-    Set dataObj = Nothing
-End Function
+Dim shiftID As Integer
 
 Private Sub bParse_Click()
-Dim n As Integer
+Dim N As Integer
 Dim logTime As Date
-'If Nz(parse) = "" Then Exit Sub
-If Nz(parse) = "" Then
-    parse = getClipboard
-End If
 If Nz(parse) = "" Then Exit Sub
+N = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Environ$("username") & "'"), Date, DateAdd("d", 3, Date))
 
-n = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Environ$("username") & "'"), Date, DateAdd("d", 3, Date))
-
-    If n <> 0 Then
-        Me.Filter = "ID = " & n
+    If N <> 0 Then
+        Me.filter = "ID = " & N
         Me.FilterOn = True
         
         Dim log As DAO.Recordset
 '        Dim shiftID As Integer
 '        shiftID = DLookup("lastshift", "tbluserauth", "username='" & Environ$("username") & "'")
-        'shiftID = IIf(     Nz(    DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0))    , True), 0, shiftID)
+        shiftID = IIf(Nz(DLookup("closed", "tblShiftManager", "shiftID =" & shiftID), True), 0, shiftID)
         
         If logentry And shiftID <> 0 Then
             Set log = CurrentDb.OpenRecordset("SELECT * FROM tbl3616 WHERE shiftID = " & shiftID)
             With log
-                Dim shiftStart As Date: shiftStart = CDate(Format(DLookup("shiftstart", "tblshiftmanager", "shiftid = " & shiftID), "dd-mmm-yy"))
                 .AddNew
                 !shiftID = shiftID
-                
                 'logTime = LToZ(Now)
                 '!entryTime = IIf(IsNull(DLookup("entryTime", "tbl3616", "format(entryTime,'yymmddhhnn') = " & Format(logTime, "yymmddhhnn"))), logTime, DateAdd("n", 1, logTime))
-                
-                !entryTime = LToZ(shiftStart + TimeSerial(Hour(Now), Minute(Now), 0))
+                !entryTime = LToZ(Now)
                 Do While Not IsNull(DLookup("entryTime", "tbl3616", "format(entryTime,'yymmddhhnn') = " & Format(!entryTime, "yymmddhhnn")))
                     !entryTime = DateAdd("n", 1, !entryTime)
                 Loop
-
+                
                 Select Case nType
                     Case "N", "R"
                         !entry = "NEW NOTAM: " & NOTAM & " - " & verbiage & ". VALID " & Format(startTime, "yymmddhhnn") & " - " & Format(endTime, "yymmddhhnn") & ". " & _
@@ -63,17 +46,14 @@ n = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Enviro
                             "NEW NOTAM COUNT: " & DCount("notam", "qNOTAMM") & "M, " & DCount("notam", "qNOTAML") & "L"
                 End Select
                 !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
-                !entry = UCase(!entry)
-                .update
+                .Update
                 .Close
             End With
             Set log = Nothing
-            
-
         End If
         
         MsgBox "Parse successful!", vbInformation, "NOTAM Control"
-        DoCmd.Close acForm, "frmNOTAMParse"
+        DoCmd.Close acForm, "frmNOTAMParse", acSaveYes
         
 '        If MsgBox("Parse successful, would you like to view the NOTAM?", vbQuestion + vbYesNo, "NOTAM Control") = vbYes Then
 '            DoCmd.OpenForm "frmNOTAMInput", , , "ID = " & n, acFormEdit
@@ -87,22 +67,9 @@ MsgBox "Example of an ICAO Format:" & vbCrLf & "M0380/20 NOTAMN Q) ZMA/QFAGD/IV/
 End Sub
 
 Private Sub Form_Load()
-    logentry.Visible = (Nz(Me.OpenArgs) <> "")
-    
-    Select Case Nz(OpenArgs)
-        Case Is <> 0
-            logentry.Visible = True
-            shiftID = Me.OpenArgs
-            If Not Nz(DLookup("closed", "tblshiftmanager", "shiftid = " & shiftID), True) Then
-                bParse_Click
-            End If
-    End Select
-
-
-
-'If Nz(Me.OpenArgs) <> "" Then
-'    logentry.Visible = True
-'    shiftID = Me.OpenArgs
-'End If
-
+If Nz(Me.OpenArgs) <> "" Then
+    logentry.Visible = True
+    shiftID = Me.OpenArgs
+End If
+logentry.Visible = (Nz(Me.OpenArgs) <> "")
 End Sub

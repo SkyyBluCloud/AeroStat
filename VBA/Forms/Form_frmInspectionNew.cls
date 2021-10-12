@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Option Compare Database
 Public bClose As Boolean
 
-Private Function getCheckType(ByVal idx As Integer) As String 'TODO: Should not be hard coded
+Private Function getCheckType(ByVal idx As Integer) As String
 getCheckType = Array("IFE/GE", "RSC/RCR", "SEVERE WX", "UNAUTHORIZED LANDING", "ADPM VIOLATION", "FOD", "CONSTRUCTION", "BASH", "OTHER")(idx - 1)
 End Function
 
@@ -21,28 +21,6 @@ End Sub
 
 Private Sub addBASH_Click()
 DoCmd.OpenForm "frmBASH", , , , , acDialog, Name
-End Sub
-
-Private Sub ctlInTime_Exit(cancel As Integer)
-If Not IsNull(ctlInTime) Then
-    If Len(ctlInTime) <> 4 Then
-        cancel = True
-        ctlInTime.BorderColor = RGB(255, 0, 0)
-    Else
-        ctlInTime.BorderColor = RGB(166, 166, 166)
-    End If
-End If
-End Sub
-
-Private Sub ctlOutTime_Exit(cancel As Integer)
-If Not IsNull(ctlOutTime) Then
-    If Len(ctlOutTime) <> 4 Then
-        cancel = True
-        ctlOutTime.BorderColor = RGB(255, 0, 0)
-    Else
-        ctlOutTime.BorderColor = RGB(166, 166, 166)
-    End If
-End If
 End Sub
 
 Private Sub done_Click()
@@ -66,33 +44,24 @@ Dim t As Date
 '    End If
 
     For Each ctl In Controls
-        If TypeOf ctl Is CommandButton Or CheckBox Then ctl.enabled = False
+        If TypeOf ctl Is TextBox Then ctl.Value = UCase(ctl.Value)
+        If TypeOf ctl Is CommandButton Or CheckBox Then ctl.Enabled = False
     Next
     
     Dim fail As Boolean
     For Each ctl In Controls
         If TypeOf ctl Is TextBox Then
             Select Case ctl.Name
-                Case "callsign", "initials"
+                Case "callsign", "initials", "outtime"
                     If IsNull(ctl.Value) Then
                         ctl.BorderColor = RGB(255, 0, 0)
                         fail = True
                     Else
                         ctl.BorderColor = RGB(166, 166, 166)
                     End If
-                    ctl.Value = UCase(ctl.Value)
                 
-                Case "ctlouttime"
-                    If IsNull(ctl.Value) Or Len(ctl.Value) > 4 Then
-                        ctl.BorderColor = RGB(255, 0, 0)
-                        fail = True
-                    Else
-                        ctl.BorderColor = RGB(166, 166, 166)
-                    End If
-                    
-                Case "ctlintime"
-                    If (IsNull(ctl.Value) Or Len(ctl.Value) > 4) _
-                    And Not NewRecord Then
+                Case "intime"
+                    If IsNull(ctl.Value) And Not NewRecord Then
                         ctl.BorderColor = RGB(255, 0, 0)
                         fail = True
                     Else
@@ -109,16 +78,15 @@ Dim t As Date
     End If
     If fail Then GoTo fb
     
-    
-    outTime = checkDate & " " & getTime4Char(Replace(ctlOutTime, ":", ""))
-    If Not IsNull(ctlInTime) Then inTime = checkDate & " " & getTime4Char(Replace(ctlInTime, ":", ""))
+    outTime = Left(Nz(oTime), 2) & IIf(Nz(oTime) <> "", ".", "") & Right(Nz(oTime), 2)
+    inTime = Left(Nz(iTime), 2) & IIf(Nz(iTime) <> "", ".", "") & Right(Nz(iTime), 2)
     
     'TODO: Should not be hard coded......
     If specialCheck <> 0 Then
         Select Case specialCheck
-            Case 1: ctSimple = "OPENING CK"
-            Case 2: ctSimple = "DLY INSP"
-            Case 3: ctSimple = "LGTG CK"
+            Case 1: ctSimple = "PRIOR TO FLYING CK"
+            Case 2: ctSimple = "DAILY INSPECTION"
+            Case 3: ctSimple = "LIGHTING CK"
         End Select
     Else
         For Each c In Split(checkType, ",")
@@ -134,21 +102,21 @@ Dim t As Date
         Next
     End If
     
-
+bClose = True
 log:
     entry = Callsign & "/" & Initials & " ON AFLD " & IIf(specialCheck <> 0, "FOR " & ctSimple, "CK (" & ctSimple & ")")
     'outTime = Format(Left(entryTime, 2) & "." & Right(entryTime, 2), "hh:nn") WTF???
-    t = checkDate & " " & ZToL(outTime)
+    t = checkDate & " " & ZToL(outTime, True)
     If firstEntryComplete Or (Not NewRecord And logOff = 0) Then
         firstEntryComplete = True
         If logOff = 0 Then
             entry = Callsign & "/" & Initials & " OFF AFLD. " & IIf(Nz(Remarks) = Nz(Remarks.OldValue), "NO CHANGES TO REPORT", Nz(Remarks))
         Else
-            entry = Callsign & "/" & Initials & " OFF AFLD. " & Nz(Remarks, "NO CHANGES TO REPORT")
+            entry = Callsign & "/" & Initials & " OFF AFLD. " & Nz(Remarks)
         End If
         'entry = Callsign & "/" & Initials & " OFF AFLD. " & IIf(Nz(Remarks) = "", "NO CHANGES TO REPORT", Nz(Remarks))
         'entry = Callsign & "/" & Initials & " OFF AFLD. " & IIf(Nz(Remarks) = "", "NO CHANGES TO REPORT", "")
-        t = checkDate & " " & ZToL(inTime)
+        t = checkDate & " " & ZToL(inTime, True)
         firstEntry = False
         closed = True
     End If
@@ -165,38 +133,33 @@ log:
             !entryTime = LToZ(t)
             !entry = entry
             !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
-            .update
+            .Update
             .Bookmark = .LastModified
             IIf(Not firstEntryComplete, logOn, logOff) = !ID
         End With
     Else
-        logOn = -1
+        logOn = -1 'Why?
     End If
     
     If Not IsNull(inTime) And Not firstEntryComplete Then
         firstEntryComplete = True
-        bClose = True
-        If Dirty Then Dirty = False
+        Dirty = False
         GoTo log
     End If
+    Dirty = False
     
-    bClose = True
-    If Dirty Then Dirty = False
-    
-sexit:
+sExit:
     'Parent.Parent.Form!sf3616.Form.logView.Requery
-    
+    bClose = True
     Parent!back.Visible = False
-    'DoCmd.save acForm, Me.Name
     Parent.changeView "frmInspectionList", shiftID
     'DoCmd.close acForm, "frmInspections"
     Exit Sub
 fb:
     For Each ctl In Controls
-        If TypeOf ctl Is CommandButton Or CheckBox Then ctl.enabled = True
+        If TypeOf ctl Is CommandButton Or CheckBox Then ctl.Enabled = True
     Next
     Exit Sub
-    Resume Next
 errtrap:
     If err = 3101 Then
         'MsgBox "This 483 is not in the database.", vbInformation, "AF483"
@@ -276,13 +239,13 @@ Private Sub Form_Current()
 bClose = False
 
 '    If IsNull(outTime) Then
-'        ctlOutTime = Format(LToZ(Now), "hhnn")
-'    ElseIf IsNull(ctlInTime) Then
-'        ctlInTime = Format(LToZ(Now), "hhnn")
+'        oTime = Format(LToZ(Now), "hhnn")
+'    ElseIf IsNull(iTime) Then
+'        iTime = Format(LToZ(Now), "hhnn")
 '    End If
-    ctlOutTime = Format(Nz(outTime, LToZ(Now)), "hhnn")
+    oTime = Format(Nz(outTime, LToZ(Now)), "hhnn")
     If Not NewRecord Then
-        ctlInTime = Format(Nz(inTime, LToZ(Now)), "hhnn")
+        iTime = Format(Nz(inTime, LToZ(Now)), "hhnn")
         loadCheckType
     End If
 

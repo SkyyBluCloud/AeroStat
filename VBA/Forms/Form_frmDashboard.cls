@@ -26,7 +26,7 @@ If Nz(lstPending) = "" Then Exit Sub
 End Sub
 
 Private Sub btnBOOT_Click()
-BOOT Nz(users, 0)
+BOOT Nz(users)
 End Sub
 
 Private Sub btnDelete_Click()
@@ -53,7 +53,7 @@ Private Sub Form_Load()
                 !BOOT = False
                 !isLoggedIn = False
             End If
-            .update
+            .Update
             .MoveNext
         Loop
     .Close
@@ -75,7 +75,7 @@ With rst
         Do While Not .EOF
             .edit
             IIf(RS, !RS, !BOOT) = True
-            .update
+            .Update
             .MoveNext
         Loop
         MsgBox "Booted!", vbInformation, "AeroStat"
@@ -90,7 +90,7 @@ With rst
         
         .edit
         IIf(RS, !RS, !BOOT) = True
-        .update
+        .Update
         MsgBox "Done!", vbInformation, "AeroStat"
     End If
     .Close

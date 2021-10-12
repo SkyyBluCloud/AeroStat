@@ -12,8 +12,7 @@ Public bClose As Boolean
 Private currChecklist As Integer
 
 Private Sub btnClear_Click()
-    Me.Filter = "itemID = " & 0
-    Me.FilterOn = True
+    DoCmd.SearchForRecord , , , "itemid = 0"
 End Sub
 
 Private Sub btnDelete_Click()
@@ -87,10 +86,8 @@ Private Sub Form_Current()
 End Sub
 
 Private Sub lstItems_AfterUpdate()
-'    If NewRecord Then DoCmd.SearchForRecord , "", , "itemID = " & lstItems
-'    DoCmd.SearchForRecord , "", , "itemID = " & lstItems
-    Me.Filter = "itemID = " & lstItems
-    Me.FilterOn = True
+    If NewRecord Then DoCmd.SearchForRecord , "", , "itemID = " & lstItems
+    DoCmd.SearchForRecord , "", , "itemID = " & lstItems
 End Sub
 
 'Public Function refreshChecklistEditor()

@@ -8,103 +8,71 @@ Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
-Option Explicit
 Dim bClose As Boolean
 
-Private Sub newCount(Optional ByVal varDate As Variant)
-Dim rsItems As DAO.Recordset: Set rsItems = CurrentDb.OpenRecordset("tblAnalyticsItems")
-Dim rsData As DAO.Recordset: Set rsData = CurrentDb.OpenRecordset("tblAnalyticsData")
-log "New count!", Me.Name & ".newCount"
+Private Sub acount_Click()
+    autocount
+End Sub
 
-    With rsItems: Do While Not .EOF
-        With rsData
-            .AddNew
-            !itemID = rsItems!ID
-            !countDate = varDate
-            .update
-        End With
-        .MoveNext
-    Loop: End With
-    rsData.Close
-    Set rsData = Nothing
-    rsItems.Close
-    Set rsItems = Nothing
+Private Sub done_Click()
+On Error Resume Next
+    If Me.NewRecord And Not CurrentDb.OpenRecordset("SELECT * FROM tblAnalytics WHERE Format(tblAnalytics.countDay,'dd-mmm-yy') = '" & Format(Me.countDay, "dd-mmm-yy") & "'").RecordCount = 0 Then
+        MsgBox "This day should already exist. If this is an error, please report it using the feedback button.", vbInformation, "AeroStat"
+        Exit Sub
+    End If
     
-    lstItems.Requery
-    'Call lstItems_AfterUpdate
+    bClose = True
+
+    For Each ctl In Controls
+        If TypeOf ctl Is TextBox And Not ctl.Name = "countDay" Then
+            If ctl = "" Then ctl = 0
+        End If
+    Next
+    
+    DoCmd.RunCommand acCmdSaveRecord
+    DoCmd.Close acForm, "frmTrafficCountEntry", acSaveYes
+    If Forms!frmMain!view.SourceObject = "frmTrafficCount" Then
+        Forms!frmMain!view!shiftCount.Requery
+        Forms!frmMain!view!shiftCountTotal.Requery
+    End If
+    
 End Sub
 
-Private Sub btnDelete_Click()
-If MsgBox("Delete count for this date?", vbQuestion + vbYesNo, "New Count") = vbYes Then
-    Me.Visible = False
-    CurrentDb.Execute "DELETE FROM tblAnalyticsData WHERE countDate = #" & ctlCountDate & "#"
-    log "Deleted traffic count data for " & ctlCountDate, Me.Name & ".btnDelete_Click", "WARN"
-    DoCmd.Close acForm, Me.Name
-End If
-End Sub
-
-Private Sub btnDone_Click()
-If Dirty Then Dirty = False
-DoCmd.Close acForm, Me.Name
+Private Sub Form_BeforeUpdate(cancel As Integer)
+    If Not bClose Then
+        cancel = True
+        Undo
+        Exit Sub
+    End If
 End Sub
 
 Private Sub Form_Current()
-bClose = False
+    bClose = False
+End Sub
+
+Private Sub Form_Error(DataErr As Integer, response As Integer)
+    If DataErr = 2169 Then response = True
 End Sub
 
 Private Sub Form_Load()
-'Check if count for OpenArgs(or today) exists
-Dim cd As Variant: cd = DLookup("countDate", "tblAnalyticsData", "countDate = #" & Nz(OpenArgs, Date) & "#")
-If IsNull(cd) Then
-    newCount Nz(OpenArgs, Date)
-Else
-    ctlCountDate = cd
-End If
+    If Me.NewRecord Then
+        countDay.Enabled = True
+        countDay = Date
+        autocount True
+        MsgBox "Some totals have been automatically generated." & vbCrLf & "Please ensure their accuracy.", vbInformation, "AeroStat"
+    End If
 End Sub
 
-Private Sub itemCount_KeyDown(KeyCode As Integer, Shift As Integer)
-
-    Select Case KeyCode
-    Case vbKeyReturn, vbKeyDown
-        bClose = True
-        If Dirty Then Dirty = False
-        If lstItems < lstItems.ListCount - 1 Then
-            lstItems = lstItems + 1
-        Else
-            lstItems = 0
+Private Function autocount(Optional ByVal newrec As Boolean)
+    If newrec Then
+        If hazCargo = 0 Then hazCargo = Abs(DSum("hazCargo", "tblTraffic", "Format('" & countDay & "','mm/dd/yyyy') = Format(arrDate,'mm/dd/yyyy') Or Format(tblAnalytics.countDay,'mm/dd/yyyy') = Format(depDate,'mm/dd/yyyy')"))
+        If DVs = 0 Then DVs = DCount("dvCode", "tblTraffic", "Format('" & countDay & "','mm/dd/yyyy') = Format(arrDate,'mm/dd/yyyy') Or Format('" & countDay & "','mm/dd/yyyy') = Format(depDate,'mm/dd/yyyy')")
+        If transientArr = 0 Then transientArr = Abs(DSum("transient", "tblTraffic", "(Format('" & countDay & "','mm/dd/yyyy') = Format(arrDate,'mm/dd/yyyy') Or Format('" & countDay & "','mm/dd/yyyy') = Format(depDate,'mm/dd/yyyy')) And Status = 'Closed'"))
+    Else
+        If MsgBox("Haz Cargo, DVs, and Transient counts will be reset." & vbCrLf & "Proceed?", vbQuestion + vbYesNo, "AeroStat") = vbYes Then
+            hazCargo = Abs(DSum("hazCargo", "tblTraffic", "Format('" & countDay & "','mm/dd/yyyy') = Format(arrDate,'mm/dd/yyyy') Or Format('" & countDay & "','mm/dd/yyyy') = Format(depDate,'mm/dd/yyyy')"))
+            DVs = DCount("dvCode", "tblTraffic", "Format('" & countDay & "','mm/dd/yyyy') = Format(arrDate,'mm/dd/yyyy') Or Format('" & countDay & "','mm/dd/yyyy') = Format(depDate,'mm/dd/yyyy')")
+            transientArr = Abs(DSum("transient", "tblTraffic", "(Format('" & countDay & "','mm/dd/yyyy') = Format(arrDate,'mm/dd/yyyy') Or Format('" & countDay & "','mm/dd/yyyy') = Format(depDate,'mm/dd/yyyy')) And Status = 'Closed'"))
         End If
-        lstItems.Requery
-        Call lstItems_AfterUpdate
-        itemCount.SetFocus
-    
-    Case vbKeyUp
-        bClose = True
-        If Dirty Then Dirty = False
-        
-        If lstItems <> 0 Then
-            lstItems = lstItems - 1
-        End If
-        lstItems.Requery
-        Call lstItems_AfterUpdate
-        itemCount.SetFocus
-    
-     End Select
-        
-        
-End Sub
-
-Private Sub lstItems_AfterUpdate()
-    
-    Me.Filter = "ID = " & lstItems.Column(0)
-    Me.FilterOn = True
-    
-    
-End Sub
-
-Private Sub lstItems_BeforeUpdate(cancel As Integer)
-If Not bClose Then
-    'Cancel = True
-    Undo
-    Exit Sub
-End If
-End Sub
+    End If
+End Function

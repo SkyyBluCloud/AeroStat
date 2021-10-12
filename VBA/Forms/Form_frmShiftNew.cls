@@ -142,7 +142,7 @@ bClose = True
                         .edit
                         !lastShift = Me.shiftID
                         joined = joined & ctl.Value & ";"
-                        .update
+                        .Update
                         Exit Do
                     Else
                         .MoveNext
@@ -190,18 +190,18 @@ bClose = True
             IIf(shiftTitle = "SWINGSHIFT", "RWY " & rwy & " IN USE. RSC " & rsc & ", BWC " & bwc & ". BARRIERS " & IIf(barrier = "WITHDRAWN", "WITHDRAWN", "CONFIGURED FOR RWY " & barrier) & ". ", "") & _
             shiftTitle & " CHECKLIST INITIATED. MONITORING RAMPNET FOR PROPER PHRASEOLOGY THROUGHOUT SHIFT"
             'FUTURE: User customization
-            .update
+            .Update
         End With
         End If
        
         MsgBox msg & vbCrLf & vbCrLf & "Created successfully!", , "New Shift"
         Forms!frmMain.view.SourceObject = "frmShiftManager"
-        'DoCmd.close acForm, "frmShiftSelect"
+        'DoCmd.close acForm, "frmShiftSelect", acSaveYes
     End If
     
-sexit:
+sExit:
     tor = Now
-    'DoCmd.close acForm, "frmShiftNew"
+    'DoCmd.close acForm, "frmShiftNew", acSaveYes
     Exit Sub
 fb:
 '    For Each ctl In Controls
@@ -213,7 +213,7 @@ Private Sub Form_Load()
 nshiftID = Parent.Parent.getShiftID
     If nshiftID <> 0 Then
         Undo
-        Filter = "shiftID = " & nshiftID
+        filter = "shiftID = " & nshiftID
         FilterOn = True
     End If
     'If NewRecord Then log "New Record."

@@ -22,22 +22,21 @@ itemID = Me.lstDetails.Column(1): If Nz(itemID) = "" Then Exit Sub
 checklistID = currentChecklist: If checklistID = 0 Then Exit Sub
 instance = currentInstance: If currentInstance = 0 Then Exit Sub
 si = DLookup("suppInitials", "tblchecklistitems", "itemid = " & itemID)
-
-    If isClosed(currentChecklist, currentInstance) Then
-        MsgBox "This checklist is closed", vbInformation, "Checklists"
-        Exit Sub
-    End If
+If isClosed(currentChecklist, currentInstance) Then
+    MsgBox "This checklist is closed", vbInformation, "Checklists"
+    Exit Sub
+End If
     
     'Check if shift is closed and signed; if true, restrict to amos
-    If DLookup("certifierID", "tblShiftManager", "shiftid = " & shiftID) <> 0 Then
-        If Util.getOpInitials(getUSN) <> DLookup("right(superlead,2)", "tblshiftmanager", "shiftid = " & shiftID) Then
+    If DLookup("closed", "tblShiftManager", "shiftid = " & shiftID) Then
+        If Util.getOpInitials <> DLookup("right(superlead,2)", "tblshiftmanager", "shiftid = " & shiftID) Then
             MsgBox "This shift is closed. Only the AMOS can make changes.", vbInformation, "Checklist"
             Exit Sub
         End If
     End If
     
     'Check if already accomplished
-    If Not IsNull(DLookup("completeDate", "tblChecklistItemsData", "ID = " & ccdID)) Then
+    If Not IsNull(DLookup("completeDate", "tblChecklistCompletionData", "ID = " & ccdID)) Then
         If MsgBox("This item was already completed. Re-accomplish?", vbInformation + vbYesNo, "Checklist") = vbNo Then Exit Sub
     End If
 
@@ -47,13 +46,13 @@ si = DLookup("suppInitials", "tblchecklistitems", "itemid = " & itemID)
         'suppInitials = InputBox("Coordination is required. Enter the initials below:" & vbCrLf & si, "Coordination", join(siArray, "/__, ") & "/__")
         
         For Each s In siarray
-            suppInitials = Nz(suppInitials) & IIf(IsNull(suppInitials), "", ", ") & InputBox("The following information is required: " & vbCrLf & vbCrLf & s, item)
+            suppInitials = Nz(suppInitials) & IIf(IsNull(suppInitials), "", ", ") & InputBox("The following information is required: " & vbCrLf & vbCrLf & s, Item)
         Next
     End If
     
     '???
-    'exe = "UPDATE tblChecklistItemsData " & _
-                "SET opInitials = '" & Util.getOpInitials(getUSN) & "', " & _
+    'exe = "UPDATE tblChecklistCompletionData " & _
+                "SET opInitials = '" & Util.getOpInitials & "', " & _
                 "completeDate = format('" & Now & "','dd-mmm-yy hh:nn')" & _
                 IIf(Not IsNull(si), ", suppInitials = '" & suppInitials & "'", "") & _
             " WHERE ID = " & ccdID
@@ -61,10 +60,9 @@ si = DLookup("suppInitials", "tblchecklistitems", "itemid = " & itemID)
     'Profit
     
     'CurrentDb.Execute exe
-    opInitials = Nz(opInitials, Util.getOpInitials(getUSN))
+    opInitials = Nz(opInitials, Util.getOpInitials)
     completeDate = Format(Now, "dd-mmm-yy hh:nn")
                         
-    bClose = True
     If Dirty Then Dirty = False
     
     'On to the next item
@@ -73,7 +71,6 @@ si = DLookup("suppInitials", "tblchecklistitems", "itemid = " & itemID)
     lstDetails.Requery
     
     cboInitials.SetFocus
-    DoEvents
 End Sub
 
 Private Sub btnClear_Click()
@@ -93,30 +90,29 @@ End Sub
 
 Private Sub btnCloseCklist_Click()
 If currentChecklist = 0 Then Exit Sub
-'If isClosed(shiftID, currentInstance) Then
-'    MsgBox "This checklist is closed", vbInformation, "Checklists"
-'    Exit Sub
-'End If
+If isClosed(currentChecklist, currentInstance) Then
+    MsgBox "This checklist is closed", vbInformation, "Checklists"
+    Exit Sub
+End If
 
     If Not UtilChecklists.isComplete(lstOpenChecklists.Column(0), currentChecklist) Then
-        MsgBox "Cannot close incomplete checklist.", vbCritical, "Checklist"
+        MsgBox "Can not close incomplete checklist.", vbCritical, "Checklist"
         Exit Sub
         
     ElseIf UtilChecklists.isClosed(currentChecklist, currentInstance) Then
         If MsgBox("Un-sign?", vbQuestion + vbYesNo, "Checklist") = vbYes Then
-            CurrentDb.Execute "UPDATE qShiftChecklists SET certifierID = 0 WHERE checklistID = " & currentChecklist & " AND instance = " & currentInstance, dbFailOnError
-            Call populate
+            CurrentDb.Execute "UPDATE tblChecklistCompletionData SET opsig = '' WHERE checklistID = " & currentChecklist & " AND instance = " & currentInstance
             Exit Sub
         End If
         
     Else
         If MsgBox("This will close and sign the current checklist. Continue?", vbQuestion + vbYesNo, "Checklist") = vbYes Then
-            If UtilChecklists.closeChecklist(currentChecklist, currentInstance) Then
-                Call populate
+            If UtilChecklists.closeChecklist(currentChecklist, lstOpenChecklists.Column(0)) Then
+                refreshLists
             End If
         End If
     End If
-    
+    lstOpenChecklists.Requery
 End Sub
 
 Private Sub btnDeleteCklist_Click()
@@ -131,8 +127,8 @@ inst = Me.lstOpenChecklists
 cid = Me.lstOpenChecklists.Column(1)
 
     
-    If Not IsNull(DLookup("reviewSigID", "tblChecklistItemsData", "shiftid = " & shiftID & "AND instance = " & Me.lstOpenChecklists)) Then
-        If Nz(DLookup("reviewSigID", "tblChecklistItemsData", "shiftid = " & shiftID & "AND instance = " & Me.lstOpenChecklists)) <> 0 Then
+    If Not IsNull(DLookup("opsig", "tblchecklistcompletiondata", "instance = " & Me.lstOpenChecklists & " AND checklistID = " & Me.lstOpenChecklists.Column(1))) Then
+        If Nz(DLookup("opsig", "tblchecklistcompletiondata", "instance = " & Me.lstOpenChecklists & " AND checklistID = " & Me.lstOpenChecklists.Column(1))) <> "" Then
             MsgBox "This checklist was already signed. Remove the signature and try again.", vbInformation, "Shift Board"
             Exit Sub
         End If
@@ -147,7 +143,6 @@ cid = Me.lstOpenChecklists.Column(1)
         If ctl.Tag = "itemselected" Then ctl.Visible = (Nz(Me.detailView) <> "")
     Next
     currentChecklist = 0
-    populate
 End Sub
 
 Private Sub btnStartCklist_Click()
@@ -155,29 +150,12 @@ If Nz(Me.lstAvailableChecklists) = "" Then Exit Sub
 Dim inst As Integer
 
     inst = UtilChecklists.startChecklist(Me.lstAvailableChecklists, shiftID)
-    populate
     Me.lstOpenChecklists = inst
-    'refreshLists
+    refreshLists
     lstOpenChecklists_AfterUpdate
     Me.lstAvailableChecklists = ""
     'DoCmd.SearchForRecord , "", acFirst, "checklistID = " & currentChecklist & " AND instance = " & inst
 
-End Sub
-
-Private Sub cboInitials_KeyDown(KeyCode As Integer, Shift As Integer)
-Select Case KeyCode
-Case vbKeyReturn
-    btnCheck_Click
-End Select
-End Sub
-
-Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
-Select Case KeyCode
-Case vbKeyReturn
-    btnCheck.SetFocus
-    DoEvents
-    btnCheck_Click
-End Select
 End Sub
 
 Private Sub Form_Load()
@@ -189,7 +167,7 @@ End Sub
 
 Private Sub lstDetails_AfterUpdate()
 'DoCmd.SearchForRecord , "", acFirst, "ID = " & lstDetails.Column(0)
-Me.Filter = "ID = " & Nz(lstDetails.Column(0), lstDetails.Column(0, 1))
+Me.filter = "ID = " & Nz(lstDetails.Column(0), 0)
 Me.FilterOn = True
 'Me.Remarks = Me.lstDetails.Column(8)
 End Sub
@@ -201,12 +179,12 @@ Next
 End Sub
 
 Private Sub lstOpenChecklists_AfterUpdate()
-currentChecklist = Nz(lstOpenChecklists.Column(1), 0)
-currentInstance = Nz(lstOpenChecklists.Column(0), 0)
+currentChecklist = lstOpenChecklists.Column(1)
+currentInstance = Nz(lstOpenChecklists)
 Me.lblDeatils.Caption = Nz(Me.lstOpenChecklists.Column(3))
-lstDetails.RowSource = "SELECT tblChecklistItemsData.ID, tblChecklistItems.itemID, tblChecklistItemsData.instance, tblChecklistItems.checklistID, tblChecklistItems.order, tblChecklistItemsData.startDate, tblChecklistItemsData.completeDate, tblChecklistItems.item, tblChecklistItemsData.remarks, tblChecklistItemsData.opInitials " & _
-                        "FROM tblChecklistItems INNER JOIN tblChecklistItemsData ON tblChecklistItems.itemID = tblChecklistItemsData.itemID " & _
-                        "WHERE (((tblChecklistItemsData.instance)=" & Nz(lstOpenChecklists, 0) & ")) AND (((tblChecklistItems.checklistID)=" & Nz(lstOpenChecklists.Column(1), 0) & ")) ORDER BY tblChecklistItems.order;"
+lstDetails.RowSource = "SELECT tblChecklistCompletionData.ID, tblChecklistItems.itemID, tblChecklistCompletionData.instance, tblChecklistCompletionData.checklistID, tblChecklistItems.order, tblChecklistCompletionData.startDate, tblChecklistCompletionData.completeDate, tblChecklistItems.item, tblChecklistCompletionData.remarks, tblChecklistCompletionData.opInitials " & _
+                        "FROM tblChecklistItems INNER JOIN tblChecklistCompletionData ON tblChecklistItems.itemID = tblChecklistCompletionData.itemID " & _
+                        "WHERE (((tblChecklistCompletionData.instance)=" & Nz(lstOpenChecklists, 0) & ")) AND (((tblChecklistCompletionData.checklistID)=" & Nz(lstOpenChecklists.Column(1), 0) & ")) ORDER BY tblChecklistItems.order;"
 lstDetails_AfterUpdate
 
 
@@ -222,26 +200,14 @@ Next
 End Sub
 
 Private Sub populate()
-lstOpenChecklists.RowSource = "SELECT tblChecklistItemsData.instance, tblChecklistItems.checklistID, tblChecklistIndex.code, tblChecklistIndex.title, IIf([reviewSigID] <> 0,'SIGNED','') AS Signed " & _
-                                "FROM (tblChecklistIndex INNER JOIN tblChecklistItems ON tblChecklistIndex.checklistID = tblChecklistItems.checklistID) LEFT JOIN tblChecklistItemsData ON tblChecklistItems.itemID = tblChecklistItemsData.itemID  " & _
-                                "WHERE (((tblChecklistItemsData.shiftID)=" & shiftID & ")) " & _
-                                "GROUP BY tblChecklistItemsData.instance, tblChecklistItems.checklistID, tblChecklistIndex.code, tblChecklistIndex.title, IIf([reviewSigID] <> 0,'SIGNED','');"
+lstOpenChecklists.RowSource = "SELECT tblChecklistCompletionData.instance, tblChecklistIndex.checklistID, tblChecklistIndex.code, tblChecklistIndex.title, IIf([opsig] Is Not Null,'SIGNED','') AS Signed " & _
+                                "FROM tblChecklistIndex INNER JOIN tblChecklistCompletionData ON tblChecklistIndex.checklistID = tblChecklistCompletionData.checklistID " & _
+                                "WHERE (((tblChecklistCompletionData.shiftID)=" & shiftID & ")) " & _
+                                "GROUP BY tblChecklistCompletionData.instance, tblChecklistIndex.checklistID, tblChecklistIndex.code, tblChecklistIndex.title, IIf([opsig] Is Not Null,'SIGNED','');"
 cboInitials.RowSource = "SELECT opInitials FROM tblUserAuth WHERE lastShift = " & shiftID
-Dim qdf As DAO.QueryDef: Set qdf = CurrentDb.QueryDefs("qOpenChecklists")
-With qdf
-    .Parameters("shiftID") = shiftID
-    Set lstOpenChecklists.Recordset = .OpenRecordset
-End With
-Set qdf = Nothing
 End Sub
 
 Private Sub rmkSave_Click()
 If Dirty Then Dirty = False
 End Sub
 
-Private Sub remarks_KeyDown(KeyCode As Integer, Shift As Integer)
-Select Case KeyCode
-Case vbKeyReturn
-    btnCheck_Click
-End Select
-End Sub

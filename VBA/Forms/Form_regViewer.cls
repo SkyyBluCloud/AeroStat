@@ -8,3 +8,11 @@ Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
+
+Private Sub Form_Load()
+    regViewer.ControlSource = OpenArgs
+End Sub
+
+Private Sub Form_Open(cancel As Integer)
+    If Nz(OpenArgs) = "" Then cancel = True
+End Sub

@@ -53,7 +53,7 @@ With RS: Do While Not .EOF
         fld = UCase(fld)
     Next
     'On Error GoTo errtrap
-    .update
+    .Update
     .MoveNext
 Loop: End With
 
@@ -62,7 +62,7 @@ DoEvents
 requestBoard.Requery
 sending.Visible = False
 
-sexit:
+sExit:
     Exit Sub
 errtrap:
     ErrHandler err, Error$, Name
@@ -117,7 +117,7 @@ Dim idx As Integer
         c = "qPOV.ID = " & join(s, " OR qPOV.ID = ")
         DoCmd.OpenReport "rPOVPass", acViewReport, , c
     End If
-sexit:
+sExit:
     Exit Sub
 errtrap:
     ErrHandler err, Error$, Name

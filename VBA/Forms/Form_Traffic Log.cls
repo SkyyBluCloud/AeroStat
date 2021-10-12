@@ -16,7 +16,7 @@ Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" 
 With RS
     .edit
     !frmtrafficlogalert = alert.ItemData(alert.ListCount - 1)
-    .update
+    .Update
     refreshAlert
 End With
 End Sub
@@ -112,10 +112,10 @@ Dim initialized As Boolean
             !DOF = DateSerial(Year(rs2.Fields("arrDate")), Month(rs2.Fields("arrDate")), Day(rs2.Fields("arrDate")))
             !ETA = Format(LToZ(TimeSerial(Hour(rs2.Fields("arrDate")), Minute(rs2.Fields("arrDate")), 0)), "hh:nn")
             !entryDate = Now
-            !AMOPS = Util.getOpInitials(getUSN)
+            !AMOPS = Util.getOpInitials
             !Status = "Pending"
-            !Destination = DLookup("data", "tblSettings", "key = 'station'")
-            .update
+            !Destination = DLookup("station", "tblSettings")
+            .Update
         End With
         Me.inbound_aircraft.Requery
         CurrentDb.Execute "UPDATE tblSettings SET frmTrafficLogSync = Now()", dbFailOnError
@@ -178,7 +178,7 @@ Set db = CurrentDb
             RS.edit
             RS!Status = "Cancelled"
             RS!approval = 0
-            RS.update
+            RS.Update
             If DLookup("spAccess", "tblUserAuth", "username = '" & Environ$("username") & "'") And Not IsNull(RS!spID) Then
                 Set qdf = db.QueryDefs("qMissionTrackerByID")
                 qdf.Parameters("mtbid") = RS!spID
@@ -186,7 +186,7 @@ Set db = CurrentDb
                 With rstSP
                     .edit
                     ![Mission/Event Type] = "Cancelled"
-                    .update
+                    .Update
                 End With
             End If
         Else
@@ -198,7 +198,7 @@ Set db = CurrentDb
                 RS.edit
                 RS!Status = IIf(RS!approach, "Approach", "Approved")
                 RS!approval = 1
-                RS.update
+                RS.Update
                 If DLookup("spAccess", "tblUserAuth", "username='" & Environ$("username") & "'") And Not IsNull(RS!spID) Then
                     Set qdf = db.QueryDefs("qMissionTrackerByID")
                     qdf.Parameters("mtbid") = RS!spID
@@ -206,7 +206,7 @@ Set db = CurrentDb
                     With rstSP
                         .edit
                         ![Mission/Event Type] = "PPR"
-                        .update
+                        .Update
                     End With
                     rstSP.Close
                     Set rstSP = Nothing
@@ -276,17 +276,17 @@ End Sub
 'End Sub
 
 Private Sub Form_Load()
-Dim update As DAO.Recordset
-Set update = CurrentDb.OpenRecordset("lclver")
+Dim Update As DAO.Recordset
+Set Update = CurrentDb.OpenRecordset("lclver")
 
     'If Not DLookup("spAccess", "tblUserAuth", "username='" & Environ$("username") & "'") Then sperr.Visible = True
     osReload
     pprlogReload
     refreshAlert
-    With update
+    With Update
         .edit
-        !frmTrafficLogSync = DLookup("data", "tblSettings", "key = ""fr""")
-        .update
+        !frmTrafficLogSync = DLookup("frmTrafficLogSync", "tblsettings")
+        .Update
     End With
     
 '    For Each ctl In Me.Controls
@@ -299,21 +299,29 @@ End Sub
 Private Sub Form_Timer()
 On Error Resume Next
 If isSubFormOpen Then Exit Sub
+Dim Update As DAO.Recordset
+Set Update = CurrentDb.OpenRecordset("lclver")
 
+With Update
     lclClock.Requery
-    
-    If Not FormSyncUtil.isFormSynced(Me.Name) Then
+    If !frmTrafficLogSync <> DLookup("frmTrafficLogSync", "tblSettings") Then
+        .edit
+        !frmTrafficLogSync = DLookup("frmTrafficLogSync", "tblSettings")
+        .Update
+        
+        CurrentDb.Execute "qTrafficFlightStatusUpdate"
+'        For Each ctl In Controls
+'            If TypeOf ctl Is ListBox Then ctl.Requery
+'        Next
+        
         refreshAlert
         osReload
         pprlogReload
         fpReload
-        
-        FormSyncUtil.syncForm Me.Name, True
     End If
-
-Dim db As DAO.Database: Set db = CurrentDb
-db.Execute "qTrafficFlightStatusUpdate"
-If db.RecordsAffected <> 0 Then fpReload
+    .Close
+End With
+Set Update = Nothing
 End Sub
 
 Public Function refreshAlert(Optional All As Boolean)
@@ -354,7 +362,7 @@ With RS
     If alert.Visible Then
         .edit
         !frmtrafficlogalert = DMax("ID", "tblTrafficLogAlert")
-        .update
+        .Update
     End If
     refreshAlert (!frmtrafficlogalert = DMax("ID", "tblTrafficLogAlert"))
 End With
@@ -480,25 +488,25 @@ End Sub
 Private Sub openFlight(Optional ID As Integer, Optional onStation As Boolean)
     DoCmd.OpenForm "quick_input", , , IIf(ID <> 0, "ID = " & ID, ""), IIf(ID <> 0, acFormEdit, acFormAdd), acDialog, IIf(onStation, 4, Null)
     If CurrentProject.AllForms("quick_input").IsLoaded Then
-        fpReload Forms!quick_input.FPType
+        fpReload Forms!quick_input.fpType
         DoCmd.Close acForm, "quick_input"
     End If
 End Sub
 
-Private Sub fpReload(Optional FPType As Integer)
-    Select Case FPType
-    Case 0 ' Nothing received; update all windows
+Private Sub fpReload(Optional fpType As Integer)
+    Select Case fpType
+    Case 0
         For Each ctl In Controls
             If TypeOf ctl Is ListBox Then
                 If ctl.Tag Like "*fp*" Then ctl.Requery
             End If
         Next
     
-    Case 1 'Update inbound only
+    Case 1
         inbound_aircraft.Requery
-    Case 2 'Update outbound only
+    Case 2
         outbound_aircraft.Requery
-    Case 3 'Update local only
+    Case 3
         local_aircraft.Requery
     End Select
     
@@ -662,7 +670,7 @@ tCount = 0
             If !spID = rsSP!ID Then
                 .edit
                 !Spot = rsSP![Parking Spot/Location]
-                .update
+                .Update
                 rsSP.MoveNext
             End If
             .MoveNext
@@ -674,7 +682,7 @@ tCount = 0
     DoEvents
     syncTrafficLog
     
-sexit:
+sExit:
     Exit Sub
 errtrap:
     ErrHandler err, Error$, Name
@@ -686,6 +694,6 @@ Dim RS As DAO.Recordset
 Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & Environ$("username") & "'")
 RS.edit
 RS!spAccess = getAccessSP
-RS.update
+RS.Update
 If RS!spAccess = True Then sperr.Visible = False
 End Sub

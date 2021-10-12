@@ -52,7 +52,7 @@ changeView "frmShiftDetails"
 End Sub
 
 Private Sub return_Click()
-DoCmd.Close acForm, "frmShiftManager"
+DoCmd.Close acForm, "frmShiftManager", acSaveYes
 End Sub
 
 Private Sub shiftView_DblClick(cancel As Integer)

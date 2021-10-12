@@ -20,7 +20,7 @@ Set RS = Me.RecordsetClone
 RS.delete
 sending.Caption = "Success!"
 DoEvents
-DoCmd.Close acForm, "frmPOVAdd"
+DoCmd.Close acForm, "frmPOVAdd", acSaveYes
 
     
 End Sub
@@ -119,10 +119,10 @@ sending.Visible = True
 DoEvents
 If Me.Dirty Then Me.Dirty = False
 
-sexit:
+sExit:
     sending.Caption = "Success!"
     DoEvents
-    DoCmd.Close acForm, "frmPOVAdd"
+    DoCmd.Close acForm, "frmPOVAdd", acSaveYes
     Exit Sub
 errtrap:
     MsgBox Error$

@@ -40,87 +40,7 @@ Private Sub Form_Error(DataErr As Integer, response As Integer)
 End Sub
 
 Private Sub Form_Current()
-On Error GoTo errtrap
-Dim stn As String
-bClose = False
-
-stn = DLookup("data", "tblSettings", "key = 'station'")
-reload:
-    If Status = "Pending" Then
-        If depPoint = Destination Or Not Destination = stn Then
-            TWR_out.Visible = True
-            CP_out.Visible = True
-            
-        ElseIf Not depPoint = stn Then
-            lblor.Visible = True
-            ctlETA.Visible = True
-        End If
-        
-        ctlATD.Visible = True
-        ctlATD = Format(LToZ(Now), "hhnn")
-        ctlATD.SetFocus
-        DOF.Visible = True
-        
-    ElseIf Status = "Enroute" Then
-        If depPoint = Destination Or Not depPoint = stn Then
-            ctlATA.Visible = True
-            ctlATA = Format(LToZ(Now), "hhnn")
-            ctlATA.SetFocus
-            TWR_in.Visible = True
-            CP_in.Visible = True
-            edit.Visible = False
-            undoDep.Visible = True
-            Spot.Visible = True
-            lblSpot.Visible = True
-            If Not IsNull(ctlETA) Then undoDep.Caption = "Reset ATD"
-            
-        ElseIf depPoint = stn Then
-            If MsgBox("This will reset the times. Continue?", vbQuestion + vbYesNo, "Traffic Log") = vbYes Then
-                ctlATA = ""
-                ctlATD = ""
-                ATA = ""
-                ATD = ""
-                Status = "Pending"
-                
-                bClose = True
-                If Dirty Then Dirty = False
-                GoTo reload
-                bClose = False
-            Else
-                DoCmd.Close acForm, "check_in_out"
-            End If
-            
-            Exit Sub
-            
-        End If
-        
-    ElseIf Status = "Closed" Then
-        If MsgBox("This will reset the times. Continue?", vbQuestion + vbYesNo, "Traffic Log") = vbYes Then
-            ctlATA = ""
-            ctlATD = ""
-            ATA = ""
-            ATD = ""
-            Status = "Pending"
-            
-            bClose = True
-            If Dirty Then Dirty = False
-            
-        End If
-        DoCmd.Close acForm, "check_in_out"
-        Exit Sub
-    End If
-sexit:
-    If Not IsNull(ETA) Then ctlETA = Hour(ETA) & ":" & Format(Minute(ETA), "00")
-    If Not IsNull(ATA) Then ctlATA = Hour(ATA) & ":" & Format(Minute(ATA), "00")
-    If Not IsNull(ATD) Then ctlATD = Hour(ETD) & ":" & Format(Minute(ETD), "00")
-    Exit Sub
-errtrap:
-    ErrHandler err, Error$, Me.Name & ".Form_Current"
-    Resume Next
-    
-    
-    
-    
+    bClose = False
 End Sub
 
 Private Sub Form_Close()
@@ -136,92 +56,10 @@ Private Sub Form_Close()
 '    Next
 End Sub
 
-Private Sub ctlATD_BeforeUpdate(cancel As Integer)
-On Error Resume Next
-If Not IsNumeric(ctlATD) Or Len(ctlATD) > 4 Then
-    ctlATD = ""
-    Exit Sub
-End If
-If Nz(ctlATD) = "" Then Exit Sub
-
-ATD = getTime4Char(ctlATD)
-ctlATD = Left(ctlATD, 2) & ":" & Right(ctlATD, 2)
-End Sub
-
-Private Sub ctlATA_BeforeUpdate(cancel As Integer)
-On Error Resume Next
-If Not IsNumeric(ctlATA) Or Len(ctlATA) > 4 Then
-    ctlATA = ""
-    Exit Sub
-End If
-If Nz(ctlATA) = "" Then Exit Sub
-
-ATA = getTime4Char(ctlATA)
-ctlATA = Left(ctlATA, 2) & ":" & Right(ctlATA, 2)
-End Sub
-
-Private Sub ctlETA_BeforeUpdate(cancel As Integer)
-On Error Resume Next
-If Not IsNumeric(ctlETA) Or Len(ctlETA) > 4 Then
-    ctlETA = ""
-    Exit Sub
-End If
-
-If Nz(ctlETA) = "" Then Exit Sub
-
-ETA = getTime4Char(ctlETA)
-ctlETA = Left(ctlETA, 2) & ":" & Right(ctlETA, 2)
-End Sub
-
-Private Sub ctlATD_Exit(cancel As Integer)
-    If IsDate(ctlATD) Then Exit Sub
-    If IsNumeric(ctlATD) And Len(ctlATD) = 3 Then ctlATD = 0 & ctlATD
-    ctlATD.BorderColor = RGB(166, 166, 166)
-    ATD = getTime4Char(Nz(ctlATD))
-    ctlATD = Left(ctlATD, 2) & ":" & Right(ctlATD, 2)
-    
-    If Not IsDate(ctlATD) Then
-        'cancel = True
-        ctlATD = ""
-        ctlATD.BorderColor = RGB(255, 0, 0)
-        'ctlATD.SetFocus
-    End If
-End Sub
-
-Private Sub ctlATA_Exit(cancel As Integer)
-    If IsDate(ctlATA) Or IsNull(ctlATA) Then Exit Sub
-    If IsNumeric(ctlATA) And Len(ctlATA) = 3 Then ctlATA = 0 & ctlATA
-    ctlATA.BorderColor = RGB(166, 166, 166)
-    ATA = getTime4Char(ctlATA)
-    ctlATA = Left(ctlATA, 2) & ":" & Right(ctlATA, 2)
-    
-    If Not IsDate(ctlATA) Then
-        'cancel = True
-        ctlATA = ""
-        ctlATA.BorderColor = RGB(255, 0, 0)
-        'ctlATA.SetFocus
-    End If
-End Sub
-
-Private Sub ctlETA_Exit(cancel As Integer)
-    If IsDate(ctlETA) Then Exit Sub
-    If IsNumeric(ctlETA) And Len(ctlETA) = 3 Then ctlETA = 0 & ctlETA
-    ctlETA.BorderColor = RGB(166, 166, 166)
-    ETA = getTime4Char(ctlETA)
-    ctlETA = Left(ctlETA, 2) & ":" & Right(ctlETA, 2)
-    
-    If Not IsDate(ctlETA) Then
-        'cancel = True
-        ctlETA = ""
-        ctlETA.BorderColor = RGB(255, 0, 0)
-        'ctlETA.SetFocus
-    End If
-End Sub
-
 Private Sub cancel_Click()
 On Error GoTo close_Click_Err
     On Error Resume Next
-    DoCmd.Close acForm, "check_in_out"
+    DoCmd.Close acForm, "check_in_out", acSaveYes
 
 close_Click_Exit:
     Exit Sub
@@ -235,7 +73,7 @@ Private Sub edit_Click()
 On Error GoTo err
     bClose = True
     DoCmd.OpenForm "quick_input", , , "ID=" & ID, acFormEdit
-    DoCmd.Close acForm, "check_in_out"
+    DoCmd.Close acForm, "check_in_out", acSaveYes
     
 err: If err.Number = 2501 Then Resume Next
 End Sub
@@ -248,10 +86,65 @@ On Error Resume Next
     End If
 End Sub
 
+Private Sub Form_Load()
+On Error GoTo errtrap
+Dim stn As String
+
+stn = DLookup("Station", "tblSettings")
+reload:
+    If Status = "Pending" Then
+        If depPoint = Destination Or Not Destination = stn Then
+            TWR_out.Visible = True
+            CP_out.Visible = True
+            
+        ElseIf Not depPoint = stn Then
+            lblor.Visible = True
+            ETA.Visible = True
+        End If
+        
+        ATD.Visible = True
+        ATD = LToZ(Time)
+        ATD.SetFocus
+        DOF.Visible = True
+        
+    ElseIf Status = "Enroute" Then
+        If depPoint = Destination Or Not depPoint = stn Then
+            ATA.Visible = True
+            ATA = LToZ(Time)
+            ATA.SetFocus
+            TWR_in.Visible = True
+            CP_in.Visible = True
+            edit.Visible = False
+            undoDep.Visible = True
+            Spot.Visible = True
+            lblSpot.Visible = True
+            If Not IsNull(ETA) Then undoDep.Caption = "Reset ATD"
+        End If
+        
+    ElseIf Status = "Closed" Then
+        If MsgBox("This will reset the times. Continue?", vbQuestion + vbYesNo, "Traffic Log") = vbYes Then
+            ATA = ""
+            ATD = ""
+            Status = "Pending"
+            GoTo reload
+        Else
+            DoCmd.Close acForm, "check_in_out", acSaveYes
+        End If
+        
+        Exit Sub
+    End If
+sExit:
+    Exit Sub
+errtrap:
+    ErrHandler err, Error$, Me.Name & ".Form_Load"
+    Resume Next
+    
+End Sub
+
 Private Sub submit_Click()
 On Error GoTo save_Click_Err
 For Each ctl In Controls
-    If ctl.Tag = "btn" Then ctl.enabled = False
+    If ctl.Tag = "btn" Then ctl.Enabled = False
 Next
 Dim RS As DAO.Recordset
 Dim qdf As DAO.QueryDef
@@ -264,8 +157,8 @@ Dim tz As Double
 bClose = True
 spAccess = DLookup("spAccess", "tblUserAuth", "username = '" & Environ$("username") & "'")
 If spAccess Then spAccess = sp
-tz = DLookup("data", "tblSettings", "key = ""timezone""")
-stn = DLookup("data", "tblSettings", "key = 'station'")
+tz = DLookup("Timezone", "tblSettings")
+stn = DLookup("Station", "tblSettings")
 sending.Visible = True
 sp.Visible = False
 DoEvents
@@ -300,12 +193,11 @@ DoEvents
     'Open the appropriate traffic count record for the day
     Dim arrordep As String
     If Destination = stn Then
-        'arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "dd-mmm-yy") & " " & Format(ZToL(IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE)), "hh:nn")
-        arrDate = Format(DOF + ZToL(Nz(ATD, ETD) + ETE), "dd-mmm-yy") & " " & Format(ZToL(IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE)), "hh:nn")
+        arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "dd-mmm-yy") & " " & Format(ZToL(IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE), True), "hh:nn")
         arrordep = arrDate
     End If
     If depPoint = stn Then
-        depDate = DOF + ZToL(Nz(ATD, ETD))
+        depDate = ZToL(DOF + Nz(ATD, ETD))
         If arrordep = "" Then arrordep = depDate
     End If
     arrordep = Format(arrordep, "dd-mmm-yy")
@@ -365,8 +257,8 @@ DoEvents
                 rstSP.edit
                 sending.Caption = "Sending to SharePoint...."
                 DoEvents
-                If IsNull(rstSP![Start Now]) Then rstSP![Start Now] = Date
-                If IsNull(rstSP![End Now]) Then rstSP![End Now] = Date
+                If IsNull(rstSP![Start Time]) Then rstSP![Start Time] = Date
+                If IsNull(rstSP![End Time]) Then rstSP![End Time] = Date
                 Exit Do
             End If
             csnospace = Replace(Nz(rstSP![Call Sign]), " ", "")
@@ -375,8 +267,8 @@ DoEvents
                 DoEvents
                 spID = rstSP!ID
                 rstSP.edit
-                If IsNull(rstSP![Start Now]) Then rstSP![Start Now] = Date
-                If IsNull(rstSP![End Now]) Then rstSP![End Now] = Date
+                If IsNull(rstSP![Start Time]) Then rstSP![Start Time] = Date
+                If IsNull(rstSP![End Time]) Then rstSP![End Time] = Date
                 spfound = True
                 Exit Do
             End If
@@ -394,13 +286,13 @@ DoEvents
         'If arrived here
         If Destination = stn Then
             If Not Stationed Then
-                If Not findParentByTail(Nz(Tail), 2) = 0 Then
+                If Not findParentByTail(Tail, 2) = 0 Then
                     Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblTraffic WHERE ID = " & findParentByTail(Tail, 2))
                     With RS
                     If Not .EOF Then
                         .edit
                         !Stationed = True
-                        .update
+                        .Update
                         .Close
                     End If
                     End With
@@ -449,23 +341,17 @@ els:
     
     'If departed ANYWHERE
     ElseIf Not IsNull(ATD) Or Not IsNull(ETA) Then
-        ATA = ""
-        'If Not DateDiff("d", depDate, Now) = 0 Then
-'        If (tz < 0 And DateValue(ZToL(DOF + ATD)) < DateValue(ZToL(DOF + ETD))) Or (tz > 0 And DateValue(ZToL(DOF + ATD)) > DateValue(ZToL(DOF + ETD))) Then
-        If Abs(DateDiff("h", ATD, ETD)) > 6 And _
-            (tz < 0 And DateValue(ZToL(DOF + ATD)) < DateValue(ZToL(DOF + ETD)) Or _
-            tz > 0 And DateValue(ZToL(DOF + ATD)) > DateValue(ZToL(DOF + ETD))) Then
-            
-            'DOF = DOF + 1
+        
+        If Not DateDiff("d", depDate, Now) = 0 Then
             If MsgBox("Confirm DOF:" & vbCrLf & Format(DOF, "dd-mmm-yy") & vbCrLf & vbCrLf & "Is this correct?" & vbCrLf & "(You may have to change the DOF if the departure was past 0000Z)", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
                 GoTo fb
             End If
-            depDate = DOF + ZToL(Nz(ATD, ETD))
+            depDate = ZToL(DOF & " " & Format(Nz(ATD, ETD), "hh.nn"))
         End If
         
         Status = "Enroute"
         'arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "mm/dd/yy") & " " & Format(ZToL(cETA, True), "hh:nn")
-        arrDate = DateAdd("n", (60 * Format(ETE, "h")) + Format(ETE, "nn"), DOF + ZToL(Nz(ATD, ETD)))
+        arrDate = DateAdd("n", (60 * Format(ETE, "h")) + Format(ETE, "nn"), ZToL(DOF & " " & Format(Nz(ATD, ETD), "hh.nn")))
         'if departed here
         If depPoint = stn Then
             
@@ -477,14 +363,14 @@ els:
                 If Not .EOF Then
                     .edit
                     !Stationed = False
-                    .update
+                    .Update
                     .Close
                 End If
                 End With
             End If
             'rstCount.Fields(countType & "dep") = 'rstCount.Fields(countType & "dep") + Me.Number
             'If Not checkParking(Callsign, Nz(Tail)) = 0 Then ParentID = checkParking(Callsign, Nz(Tail))
-            'If Destination = stn Then arrDate = DOF + DateAdd("h", DLookup('data','tblSettings','key = ""timezone""'), IIf(Status = "Enroute" Or Status = "Closed", IIf(Status = "Enroute", cETA, ATA), cETA))
+            'If Destination = stn Then arrDate = DOF + DateAdd("h", DLookup("Timezone", "tblSettings"), IIf(Status = "Enroute" Or Status = "Closed", IIf(Status = "Enroute", cETA, ATA), cETA))
             
             
             If spfound Then
@@ -493,7 +379,7 @@ els:
             End If
         Else
             If spfound Then
-                rstSP![ETA (Z)] = DateAdd("h", -DLookup("data", "tblSettings", "key = ""timezone"""), arrDate)
+                rstSP![ETA (Z)] = DateAdd("h", -DLookup("Timezone", "tblSettings"), arrDate)
             End If
         End If
     Else
@@ -502,7 +388,7 @@ els:
     
     'rstCount.Update
     If spfound Then
-        rstSP.update
+        rstSP.Update
         sending.Caption = "Success!"
     Else
         sending.Caption = "Not Found"
@@ -515,8 +401,8 @@ els:
     If Not Destination = depPoint Then ' Not a local flt
     
         'This is probably redundant...
-        'If Destination = stn Then arrDate = DOF + DateAdd("h", DLookup('data','tblSettings','key = ""timezone""'), IIf(Status = "Enroute" Or Status = "Closed", IIf(Status = "Enroute", cETA, ATA), cETA))
-        'If depPoint = stn Then depDate = DOF + DateAdd("h", DLookup('data','tblSettings','key = ""timezone""'), IIf(Status = "Enroute", ATD, ETD))
+        'If Destination = stn Then arrDate = DOF + DateAdd("h", DLookup("Timezone", "tblSettings"), IIf(Status = "Enroute" Or Status = "Closed", IIf(Status = "Enroute", cETA, ATA), cETA))
+        'If depPoint = stn Then depDate = DOF + DateAdd("h", DLookup("Timezone", "tblSettings"), IIf(Status = "Enroute", ATD, ETD))
 
         If Not Nz(PPR) = "" Then
             Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblPPR WHERE tblPPR.PPR = '" & PPR & "'")
@@ -530,7 +416,7 @@ els:
                 Else
                     RS!Spot = Spot
                 End If
-                RS.update
+                RS.Update
 '                Set rs = CurrentDb.OpenRecordset("SELECT tblTraffic.ID, tblTraffic.Stationed, tblTraffic.Status FROM tblTraffic WHERE tblTraffic.ID = " & rs!ParentID)
 '                rs.edit
 '                If rs!Stationed Then rs!Stationed = False
@@ -548,11 +434,11 @@ els:
     Set qdf = Nothing
     Set rstSP = Nothing
 
-save_Click_Exit:
-    'syncTrafficLog ID, "Traffic", False
-    FormSyncUtil.syncForm "Traffic Log"
+    
 
-    DoCmd.Close acForm, "check_in_out"
+save_Click_Exit:
+    syncTrafficLog ID, "Traffic", False
+    DoCmd.Close acForm, "check_in_out", acSaveYes
     If Forms!frmMain!view.SourceObject = "Traffic Log" Then
         For Each ctl In Forms!frmMain!view.Controls
             If TypeOf ctl Is ListBox Then ctl.Requery
@@ -567,7 +453,7 @@ fb:
     sp.Visible = True
     bClose = False
     For Each ctl In Controls
-        If ctl.Tag = "btn" Then ctl.enabled = True
+        If ctl.Tag = "btn" Then ctl.Enabled = True
     Next
     Exit Sub
 
@@ -592,10 +478,10 @@ reopen = ID
         Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblTraffic WHERE tblTraffic.ID = " & ParentID)
         RS.edit
         'rs!Status = "Pending"
-        RS.update
+        RS.Update
     End If
 
-    DoCmd.Close acForm, "check_in_out"
-    'DoCmd.OpenForm "check_in_out", , , "ID = " & reopen, acFormEdit
+    DoCmd.Close acForm, "check_in_out", acSaveYes
+    DoCmd.OpenForm "check_in_out", , , "ID = " & reopen, acFormEdit
 End Sub
 

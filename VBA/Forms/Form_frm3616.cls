@@ -25,13 +25,12 @@ Attribute VB_Exposed = False
 '   limitations under the License.
 
 Option Compare Database
-Public verbose As Boolean
 
 Private Sub addEntry_Click()
 On Error GoTo errtrap
 Dim ex As Boolean
 Dim RS As DAO.Recordset
-Dim oi As String: oi = getOpInitials(getUSN)
+Dim oi As String: oi = getOpInitials
     For Each ctl In Controls
         If TypeOf ctl Is TextBox Then
             If Nz(ctl.Value) = "" Then
@@ -46,61 +45,53 @@ Dim oi As String: oi = getOpInitials(getUSN)
     
     If Left(Right(entry, 3), 1) = "…" Then entry = Left(entry, Len(entry) - 3)
     If Left(Right(entry, 5), 3) = "..." Then
-        oi = IIf(Right(entry, 2) = getOpInitials(getUSN), getOpInitials(getUSN), IIf(DLookup("authlevel", "tblUserAuth", "username = '" & getUSN & "'") > 3, Right(entry, 2) & "*", Right(entry, 2)))
+        oi = IIf(Right(entry, 2) = getOpInitials, getOpInitials, Right(entry, 2) & "*")
         entry = Left(entry, Len(entry) - 5)
     End If
     If Right(entry, 1) = "." Then entry = Left(entry, Len(entry) - 1)
     entry = UCase(entry)
-    
-    Dim entryValue As String: entryValue = entry
-    If optAutoContract Then 'If "Auto-Contract" is selected (TODO)
-    
-        Dim rsCTR As DAO.Recordset: Set rsCTR = CurrentDb.OpenRecordset("@CONTRACTIONS")
-        With rsCTR: Do While Not .EOF
-        
-            If InStr(1, !decode, ";") <> 0 Then
-                Dim i: For Each i In Split(!decode, ";")
-                    entryValue = Replace(entryValue, Trim(i), !contraction)
-                Next i
-            Else
-                entryValue = Replace(entry, !decode, !contraction)
-            End If
-            'If verbose
-            
-            If (entryValue <> entry) Then
-                log "Replaced '" & !decode & "' with '" & !contraction & "'", Name & ".addEntry_Click"
-                entry = entryValue
-            End If
-            .MoveNext
-        Loop: End With
-        rsCTR.Close
-        Set rsCTR = Nothing
-    End If
-    
-    entryTime = ZToL(TimeSerial(Left(entryTime, 2), Right(entryTime, 2), 0))
 
+'    Set rs = CurrentDb.OpenRecordset(logView.RowSource)
+'    With rs
+'    Do While Not .EOF
+'        If !entryTime = LToZ(Format(edate, "dd-mmm-yy") & " " & ZToL(Format(Left(entryTime, 2) & "." & Right(entryTime, 2), "hh:nn"), True)) Then
+'            If MsgBox("The following entry will be replaced:" & vbCrLf & Me.entryTime & ": " & !entry & vbCrLf & vbCrLf & "Replace?", vbQuestion + vbYesNo, "Events Log") = vbYes Then
+'                .edit
+'                !entry = UCase(Me.entry)
+'                .update
+'                GoTo sexit
+'            Else
+'                Exit Sub
+'            End If
+'        End If
+'        .MoveNext
+'    Loop
+    
+    entryTime = Format(ZToL(TimeSerial(Left(entryTime, 2), Right(entryTime, 2), 0), True), "hhnn")
+    
+'    .AddNew
+'    !entryTime = LToZ(Format(edate, "dd-mmm-yy") & " " & Format(Left(entryTime, 2) & "." & Right(entryTime, 2), "hh:nn"))
+'    If !entryTime < LToZ(DLookup("shiftstart", "tblshiftmanager", "shiftid = " & shiftID)) Then !entryTime = DateAdd("d", 1, !entryTime)
+'    'edate & " " & Left(entryTime, 2) & "." & Right(entryTime, 2)
+'    !shiftID = shiftID
+'    !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
+'    !entry = entry
+'    .update
     Dim midFix As Date: midFix = edate
-    If LToZ(DateSerial(Year(edate), Month(edate), Day(edate)) + TimeSerial(Hour(entryTime), Minute(entryTime), 0)) _
+    If LToZ(DateSerial(Year(edate), Month(edate), Day(edate)) & " " & TimeSerial(Left(entryTime, 2), Right(entryTime, 2), 1)) _
             < DLookup("shiftstart", "tblshiftmanager", "shiftid = " & shiftID) Then
         midFix = DateAdd("d", 1, edate)
     End If
 
-    If optLateEntry Then 'If "Late Entry" is checked off
-        If MsgBox("The ""Late Entry"" button is selected. This will insert the entry before* the first entry of the log. Continue?", vbQuestion + vbYesNo, "Events Log") = vbYes Then
-            midFix = DateSerial(Year(IIf(edate <> midFix, midFix, edate)), Month(IIf(edate <> midFix, midFix, edate)), Day(IIf(edate <> midFix, midFix, edate)) - 1)
-        Else
-            Exit Sub
-        End If
-    End If
 
-    UtilForm3616.newEntry shiftID, LToZ(DateSerial(Year(midFix), Month(midFix), Day(midFix)) + TimeSerial(Hour(entryTime), Minute(entryTime), 0)), UCase(entry), oi
+    UtilForm3616.newEntry shiftID, LToZ(DateSerial(Year(midFix), Month(midFix), Day(midFix)) & " " & TimeSerial(Left(entryTime, 2), Right(entryTime, 2), 0)), entry, oi
+
     
 'End With
 
-sexit:
+sExit:
     entryTime = ""
     entry = ""
-    FormSyncUtil.syncForm Me.Name
     logView.Requery
     Exit Sub
 errtrap:
@@ -113,21 +104,22 @@ Private Sub checkInsp_Click()
 logView.Requery
 End Sub
 
-Private Sub btnNewWx_Click()
-Forms!WWADaemon.updateWWAs
-End Sub
-
 Private Sub btnTemplateSettings_Click()
-DoCmd.OpenForm "frm3616template", , , , , acDialog
-cboTemplate.Requery
+'Open some edit for thingy
 End Sub
 
 Private Sub cboTemplate_AfterUpdate()
-On Error Resume Next
 entryTime = IIf(Nz(entryTime) = "", Format(LToZ(Now), "hhnn"), entryTime)
 entry.SetFocus
 entry = DLookup("verbiage", "tbl3616template", "ID = " & cboTemplate)
 cboTemplate = ""
+End Sub
+
+Private Sub cboTemplate_Change()
+'entryTime = Format(LToZ(Now), "hhnn")
+'entry.SetFocus
+'entry = DLookup("verbiage", "tbl3616template", "ID = " & cboTemplate)
+'cboTemplate = ""
 End Sub
 
 Private Sub clear_Click()
@@ -171,20 +163,20 @@ Dim closeSt As Boolean
     With rss
         .edit
         !closed = True
-        .update
+        .Update
         .Close
     End With
     
     If MsgBox("Log closed successfully. Generate PDF?", vbQuestion + vbYesNo, "Events Log") = vbYes Then
         DoCmd.OpenReport "new3616", acViewReport, , "format(shiftstart,'dd-mmm-yy') = format('" & edate & "','dd-mmm-yy')"
     Else
-        DoCmd.Close acForm, "frm3616"
+        DoCmd.Close acForm, "frm3616", acSaveYes
     End If
     Set RS = Nothing
     
 End Sub
 
-Private Sub btn483_Click()
+Private Sub Ctl483_Click()
     DoCmd.OpenForm "frm483CompCheck", , , , acFormAdd, , shiftID
     logView.Requery
 End Sub
@@ -200,13 +192,7 @@ Dim RS As DAO.Recordset
     Set RS = CurrentDb.OpenRecordset("SELECT * FROM tbl3616 WHERE ID = " & logView)
     With RS
     If Not .EOF Then
-        If MsgBox("Delete entry?", vbQuestion + vbYesNo, "Events Log") = vbYes Then
-            .edit
-            !archive = True
-            !archiveBy = getOpInitials(getUSN)
-            .update
-            '.delete
-        End If
+        If MsgBox("Delete entry?", vbQuestion + vbYesNo, "Events Log") = vbYes Then .delete
     Else
         MsgBox "Select an entry to delete.", vbInformation, "Events Log"
     End If
@@ -227,19 +213,11 @@ For Each ctl In Controls
 Next
 End Sub
 
-Private Sub entry_GotFocus()
-Me.TimerInterval = 0
-End Sub
-
 Private Sub entry_KeyDown(KeyCode As Integer, Shift As Integer)
     Select Case KeyCode
     Case VBA.vbKeyReturn 'Enter key
-        bClose = True
-        If Dirty Then Dirty = False
-        addEntry.SetFocus
-        
-        Call addEntry_Click
-        
+        Dirty = False
+        addEntry_Click
         entryTime = ""
         entryTime.SetFocus
     
@@ -273,10 +251,6 @@ Private Sub entry_KeyUp(KeyCode As Integer, Shift As Integer)
     End Select
 End Sub
 
-Private Sub entry_LostFocus()
-Me.TimerInterval = 5000
-End Sub
-
 Private Sub entryTime_KeyDown(KeyCode As Integer, Shift As Integer)
 If KeyCode = VBA.vbKeyN Then '"N"
     entryTime = Format(LToZ(Now), "hhnn")
@@ -296,16 +270,12 @@ If shiftID = 0 Then
     End If
 End If
 Dim RS As DAO.Recordset
-logView.RowSource = "SELECT ID, entryTime, entry, initials, shiftID FROM tbl3616 WHERE shiftID = " & shiftID & " AND Not archive ORDER BY entryTime;"
-
-al = DLookup("authlevel", "tblUserAuth", "username = '" & Environ$("username") & "'")
-Dim ctl: For Each ctl In Me.Controls
-    If ctl.Tag Like "*admin*" Then ctl.Visible = (al < 5)
-Next
+logView.RowSource = "SELECT ID, entryTime, entry, initials, shiftID FROM tbl3616 WHERE shiftID = " & shiftID & " ORDER BY entryTime;"
 
 edate = Format(DLookup("shiftStart", "tblShiftManager", "shiftID = " & shiftID), "dd-mmm-yy")
 
-syncForm Me.Name, True
+btnTemplateSettings = (DLookup("authlevel", "tbluserauth", "username = '" & getUSN & "'") > 5)
+
 'closeShift.Visible = Not DLookup("closed", "tblShiftManager", "shiftid=" & shiftID)
 End Sub
 
@@ -320,13 +290,6 @@ End Sub
 Private Sub report_Click()
     DoCmd.OpenReport "new3616", acViewPreview, , "Format(ZToL([entryTime]),'mm/dd/yy') = Format('" & dateSelect.Column(1) & "', 'mm/dd/yy') AND [shiftID] = " & dateSelect.Column(0)
 
-End Sub
-
-Private Sub Form_Timer()
-If Not isFormSynced(Me.Name) Then
-    logView.Requery
-    syncForm Me.Name, True
-End If
 End Sub
 
 'Private Sub Form_Open(cancel As Integer)
@@ -437,7 +400,7 @@ Private Sub newNotam_Click()
 End Sub
 
 Private Sub preview_Click()
-    DoCmd.OpenReport "new3616", acViewReport, , , , DateValue(edate)
+    DoCmd.OpenReport "new3616", acViewReport, , , , edate
 End Sub
 
 Private Sub timeNow_Click()

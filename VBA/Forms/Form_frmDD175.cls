@@ -8,7 +8,7 @@ Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
-Public FPType As Integer
+Public fpType As Integer
 Dim bClose As Boolean
 Dim pprSelect As Boolean
 
@@ -24,7 +24,7 @@ Private Sub cancel_flt_Click()
 bClose = True
     DoCmd.RunCommand acCmdSaveRecord
     If cnlFlight(Me.RecordsetClone) Then
-        DoCmd.Close acForm, "quick_input"
+        DoCmd.Close acForm, "quick_input", acSaveYes
         DoEvents
         DoCmd.RunCommand acCmdRefresh
     End If
@@ -40,7 +40,7 @@ Dim RS As DAO.Recordset
 Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblPPR WHERE ((nz(tblPPR.PPR)<>'-') AND ((Format('" & ZToL(DOF + ETD) & "','mm/dd/yyyy')) Between Format([arrDate],'mm/dd/yyyy') And Format([depDate],'mm/dd/yyyy'))) ORDER BY tblPPR.ID;")
     
     Do While Not RS.EOF
-        If Nz(PPR) = "" And depPoint <> Destination And (RS!Callsign = Callsign Or RS!Tail = Tail) And ((Destination = DLookup("data", "tblSettings", "key = 'station'"))) Then
+        If Nz(PPR) = "" And depPoint <> Destination And (RS!Callsign = Callsign Or RS!Tail = Tail) And ((Destination = DLookup("station", "tblSettings") And Nz(RS!arrID, 0) = 0) Or depPoint = DLookup("station", "tblSettings")) Then
             PPR = RS!PPR
             Exit Do
         End If
@@ -54,11 +54,11 @@ Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblPPR WHERE ((nz(tblPPR.PPR)<>'
 End Sub
 
 Private Sub depPoint_LostFocus()
-    If IsNull(depPoint) Then depPoint = DLookup("data", "tblSettings", "key = 'station'")
+    If IsNull(depPoint) Then depPoint = DLookup("station", "tblSettings")
 End Sub
 
 Private Sub Destination_LostFocus()
-    If IsNull(Destination) Then Destination = DLookup("data", "tblSettings", "key = 'station'")
+    If IsNull(Destination) Then Destination = DLookup("station", "tblSettings")
 End Sub
 
 Private Sub DOF_GotFocus()
@@ -98,17 +98,17 @@ If spAccess Then
     spAccess = sp
 End If
 
-stn = DLookup("data", "tblSettings", "key = 'station'")
+stn = DLookup("Station", "tblSettings")
 Set db = CurrentDb
 On Error GoTo save_Click_Err
 
 bClose = True
 
 sending.Visible = True
-sp.enabled = False
-done.enabled = False
-cancel_flt.enabled = False
-cPPR.enabled = False
+sp.Enabled = False
+done.Enabled = False
+cancel_flt.Enabled = False
+cPPR.Enabled = False
 DoEvents
 
 10  ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -150,9 +150,9 @@ DoEvents
     Me.acType = Replace(Me.acType, "/", "")
     Me.Tail = Replace(Me.Tail, "-", "")
     
-    If IsNull(DLookup("acType", "[@AIRCRAFT]", "acType = '" & Me.acType & "'")) Then 'Type is not valid
+    If IsNull(DLookup("acType", "AIRCRAFT", "acType = '" & Me.acType & "'")) Then 'Type is not valid
     
-        If Not IsNull(DLookup("acType", "[@AIRCRAFT]", "synonym = '" & Me.acType & "'")) Then 'A correction can be suggested
+        If Not IsNull(DLookup("acType", "AIRCRAFT", "synonym = '" & Me.acType & "'")) Then 'A correction can be suggested
             DoCmd.OpenForm "frmEnforceAcType", , , , , acDialog, Me.acType
             Me.acType = Forms!frmEnforceAcType.response
             DoCmd.Close acForm, "frmEnforceAcType"
@@ -171,7 +171,7 @@ DoEvents
     '''''DOF error check''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     If Destination = stn Then
-        arrDate = Format(DOF + ZToL(Nz(ATD, ETD) + ETE), "dd-mmm-yy") & " " & Format(ZToL(Nz(ATA, IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE))), "hh:nn")
+        arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "dd-mmm-yy") & " " & Format(ZToL(Nz(ATA, IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE)), True), "hh:nn")
         arrordep = arrDate
         If Not Status = "Closed" And Not DateDiff("d", arrDate, Now) = 0 Then
             If MsgBox("Calculated ETA as " & arrDate & " (L). Is this correct?" & vbCrLf & "(DOF: " & DOF & ")", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
@@ -181,7 +181,7 @@ DoEvents
         End If
     End If
     If depPoint = stn Then
-        depDate = DOF + ZToL(Nz(ATD, ETD))
+        depDate = ZToL(DOF + Nz(ATD, ETD))
         If arrordep = "" Then arrordep = depDate
         If Not Status = "Closed" And Not DateDiff("d", depDate, Now) = 0 Then
             If MsgBox("Calculated ETD as " & depDate & " (L). Is this correct?" & vbCrLf & "(DOF: " & DOF & ")", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
@@ -195,14 +195,14 @@ DoEvents
 
     If depPoint = stn Then
         If Destination = stn Then
-            Me.FPType = 3
+            Me.fpType = 3
         Else
-            Me.FPType = 2
+            Me.fpType = 2
         End If
     Else
-        Me.FPType = 1
+        Me.fpType = 1
     End If
-    If OpenArgs = 4 Then Me.FPType = 4
+    If OpenArgs = 4 Then Me.fpType = 4
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     '''''On Station Check'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -329,7 +329,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                 !Callsign = Callsign
                             End If
                         End If
-                        .update
+                        .Update
                         Exit Do
                     Else
                         .MoveNext
@@ -487,7 +487,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                 .edit
                                 rstSP![Tail Number] = Me.Tail
                                 !Tail = Me.Tail
-                                .update
+                                .Update
                                 .Bookmark = .LastModified
                             End With
                         End If
@@ -498,7 +498,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                 .edit
                                 Me.Tail = rstSP![Tail Number]
                                 !Tail = Me.Tail
-                                .update
+                                .Update
                                 .Bookmark = .LastModified
                             End With
                         End If
@@ -571,7 +571,7 @@ els:
                             '.Bookmark = .LastModified
                             .edit
                             !Spot = Spot
-                            .update
+                            .Update
                             .Bookmark = .LastModified
                         End With
                     End If
@@ -585,9 +585,9 @@ els:
                 'Departure
                 If depPoint = stn Then
                     rstSP![Next ICAO] = Destination
-                    'If LToZ(depDate) > Nz(rstSP![ETD (Z)], 0) Then rstSP![ETD (Z)] = DateAdd("h", -DLookup('data','tblSettings','key = ""timezone""'), depDate)
+                    'If LToZ(depDate) > Nz(rstSP![ETD (Z)], 0) Then rstSP![ETD (Z)] = DateAdd("h", -DLookup("Timezone", "tblSettings"), depDate)
                     If Format(LToZ(depDate), "dd") = Format(Nz(rstSP![ETD (Z)], 32), "dd") Then
-                        'rstSP![ETD (Z)] = DateAdd("h", -DLookup('data','tblSettings','key = ""timezone""'), depDate)
+                        'rstSP![ETD (Z)] = DateAdd("h", -DLookup("Timezone", "tblSettings"), depDate)
                         rstSP![ETD (Z)] = LToZ(Nz(depDate))
                         If Not IsNull(ATD) Then rstSP![ATD (Z)] = LToZ(Nz(depDate))
                     End If
@@ -600,7 +600,7 @@ els:
                             '.Bookmark = .LastModified
                             .edit
                             !depDate = depDate
-                            .update
+                            .Update
                             .Bookmark = .LastModified
                         End With
                     End If
@@ -608,7 +608,7 @@ els:
                 rstSP![AM Initials] = AMOPS
                 If IsNull(rstSP![Start Time]) Then rstSP![Start Time] = Date
                 If IsNull(rstSP![End Time]) Then rstSP![End Time] = Date
-                rstSP.update
+                rstSP.Update
                 sending.Caption = "Success!"
                 DoEvents
             Else
@@ -646,10 +646,10 @@ done_exit:
 done_fb:
     bClose = False
     sending.Visible = False
-    sp.enabled = True
-    done.enabled = True
-    cancel_flt.enabled = True
-    cPPR.enabled = True
+    sp.Enabled = True
+    done.Enabled = True
+    cancel_flt.Enabled = True
+    cPPR.Enabled = True
     Exit Sub
 
 save_Click_Err:
@@ -839,7 +839,7 @@ If Number > 1 And NewRecord Then
     longTail = Tail.RowSource
 End If
 
-sexit:
+sExit:
     Exit Sub
 errtrap:
     Debug.Print "(" & err & "): " & Error$

@@ -46,7 +46,7 @@ On Error GoTo errtrap
         bs = ""
     End If
     populate , , bs
-sexit:
+sExit:
     Exit Sub
 errtrap:
     MsgBox Error$
@@ -121,7 +121,7 @@ Private Sub optDate_Click()
 End Sub
 
 Private Sub return_Click()
-    DoCmd.Close acForm, "checked_flts"
+    DoCmd.Close acForm, "checked_flts", acSaveYes
 End Sub
 
 Private Function populate(Optional Direction As String, Optional qstatus As String, Optional qsearch As String)
@@ -135,23 +135,23 @@ Dim RS As DAO.Recordset
     
     qsearch = IIf(qsearch = "", IIf(Nz(search) = "", "", bs), qsearch)
 
-    qaf = "SELECT tblTraffic.ID, IIf([depPoint]=DLookup('data','tblSettings','key = ""station""'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival') AS Direction, tblTraffic.DOF, tblTraffic.flightRule, tblTraffic.Callsign, IIf([number]>1,[number] & '/','') & [acType] AS Type, tblTraffic.Tail, tblTraffic.depPoint, tblTraffic.altitude, tblTraffic.ETD, tblTraffic.ATD, tblTraffic.ETE, tblTraffic.Destination, format(IIf(IsNull(ATD),IIf(Not ETA=0,ETA,ETD+ETE),ATD+ETE),'hh:nn') AS cETA, tblTraffic.ATA, tblTraffic.Status, tblTraffic.TWR_In, tblTraffic.TWR_Out " & _
+    qaf = "SELECT tblTraffic.ID, IIf([depPoint]=DLookUp('Station','tblSettings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival') AS Direction, tblTraffic.DOF, tblTraffic.flightRule, tblTraffic.Callsign, IIf([number]>1,[number] & '/','') & [acType] AS Type, tblTraffic.Tail, tblTraffic.depPoint, tblTraffic.altitude, tblTraffic.ETD, tblTraffic.ATD, tblTraffic.ETE, tblTraffic.Destination, format(IIf(IsNull(ATD),IIf(Not ETA=0,ETA,ETD+ETE),ATD+ETE),'hh:nn') AS cETA, tblTraffic.ATA, tblTraffic.Status, tblTraffic.TWR_In, tblTraffic.TWR_Out " & _
     "FROM tblTraffic " & _
-    "WHERE (((IIf([depPoint]=DLookup('data','tblSettings','key = ""station""'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival')) " & Direction & ") " & _
+    "WHERE (((IIf([depPoint]=DLookUp('Station','tblSettings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival')) " & Direction & ") " & _
     qstatus & _
-    "AND ((tblTraffic.depPoint) Not Like DLookup('data','tblSettings','key = ""station""')) " & _
-    "AND ((tblTraffic.Destination) Like DLookup('data','tblSettings','key = ""station""')) " & _
-    "AND ((Format((DateAdd('h',DLookup('data','tblSettings','key = ""timezone""'),[dof]+IIf([atd] Is Null,[etd],[atd]))+[ete]),'mmddyy')) [magic])) " & qsearch & _
-    "OR (((IIf([depPoint]=DLookup('data','tblSettings','key = ""station""'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival')) " & Direction & ") " & _
+    "AND ((tblTraffic.depPoint) Not Like DLookUp('Station','tblSettings')) " & _
+    "AND ((tblTraffic.Destination) Like DLookUp('Station','tblSettings')) " & _
+    "AND ((Format((DateAdd('h',DLookUp('Timezone','tblSettings'),[dof]+IIf([atd] Is Null,[etd],[atd]))+[ete]),'mmddyy')) [magic])) " & qsearch & _
+    "OR (((IIf([depPoint]=DLookUp('Station','tblSettings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival')) " & Direction & ") " & _
     qstatus & _
-    "AND ((tblTraffic.depPoint) Like DLookup('data','tblSettings','key = ""station""')) " & _
-    "AND ((tblTraffic.Destination) Not Like DLookup('data','tblSettings','key = ""station""')) " & _
-    "AND ((Format(DateAdd('h',DLookup('data','tblSettings','key = ""timezone""'),[dof]+[etd]),'mmddyy')) [magic])) " & qsearch & _
-    "OR (((IIf([depPoint]=DLookup('data','tblSettings','key = ""station""'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival')) " & Direction & ") " & _
+    "AND ((tblTraffic.depPoint) Like DLookUp('Station','tblSettings')) " & _
+    "AND ((tblTraffic.Destination) Not Like DLookUp('Station','tblSettings')) " & _
+    "AND ((Format(DateAdd('h',DLookUp('Timezone','tblSettings'),[dof]+[etd]),'mmddyy')) [magic])) " & qsearch & _
+    "OR (((IIf([depPoint]=DLookUp('Station','tblSettings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival')) " & Direction & ") " & _
     qstatus & _
-    "AND ((tblTraffic.depPoint) Like DLookup('data','tblSettings','key = ""station""')) " & _
-    "AND ((tblTraffic.Destination) Like DLookup('data','tblSettings','key = ""station""')) " & _
-    "AND ((Format((DateAdd('h',DLookup('data','tblSettings','key = ""timezone""'),[dof]+IIf([atd] Is Null,[etd],[atd]))+[ete]),'mmddyy')) [magic])) " & qsearch & _
+    "AND ((tblTraffic.depPoint) Like DLookUp('Station','tblSettings')) " & _
+    "AND ((tblTraffic.Destination) Like DLookUp('Station','tblSettings')) " & _
+    "AND ((Format((DateAdd('h',DLookUp('Timezone','tblSettings'),[dof]+IIf([atd] Is Null,[etd],[atd]))+[ete]),'mmddyy')) [magic])) " & qsearch & _
     "ORDER BY tblTraffic.DOF DESC, IIf(tblTraffic.ATD Is Null,tblTraffic.ETD,tblTraffic.ATD) DESC;"
     '"ORDER BY IIf(IIf([depPoint]=DLookUp('Station','settings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival') Not Like 'Local',IIf(IIf([depPoint]=DLookUp('Station','settings'),IIf([Destination]=[depPoint],'Local','Departure'),'Arrival') Like 'Arrival',tblTraffic.arrDate,tblTraffic.depDate),tblTraffic.depDate) DESC;"
 

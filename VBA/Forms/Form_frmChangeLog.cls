@@ -20,7 +20,7 @@ With RS
             Do While Not .EOF
                 .edit
                 !BOOT = True
-                .update
+                .Update
                 .MoveNext
             Loop
             MsgBox "Done!", vbInformation, "BOOT"
@@ -40,7 +40,7 @@ With RS
                 
                 .edit
                 !BOOT = True
-                .update
+                .Update
                 MsgBox !rankID & " " & !lastName & " has been booted!", vbInformation, "BOOT"
                 Exit Do
                 
@@ -87,17 +87,17 @@ bClose = True
             .edit
             !Minor = !Minor + 1
             !Build = !Build + 1
-            .update
+            .Update
             .Bookmark = .LastModified
             Set RS = CurrentDb.OpenRecordset("tblSettings")
             RS.edit
             RS!LastVer = !version
             version = RS!LastVer
-            RS.update
+            RS.Update
         End With
         
         'DoCmd.RunCommand acCmdSaveRecord
         MsgBox "Version " & version & " pushed successfully!", vbInformation, "Change Success"
-        DoCmd.Close acForm, "frmChangeLog"
+        DoCmd.Close acForm, "frmChangeLog", acSaveYes
     End If
 End Sub

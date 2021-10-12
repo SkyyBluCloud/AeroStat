@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Option Compare Database
 
 Private Sub done_Click()
-    DoCmd.Close acForm, "frmChangeLogDisplay"
+    DoCmd.Close acForm, "frmChangeLogDisplay", acSaveYes
 End Sub
 
 Private Sub Form_Load()

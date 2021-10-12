@@ -5,61 +5,44 @@ Const mName As String = "UtilChecklists"
 Public Function isComplete(ByVal instance As Integer, ByVal checklistID As Integer) As Boolean
 Dim rCount, cCount As Integer
 Dim criteria As String
-
-    criteria = "instance = " & instance
-    rCount = DCount("ID", "tblChecklistItemsData", criteria)
-    cCount = DCount("opInitials", "tblChecklistItemsData", criteria & " AND nz(opInitials) <> ''")
-    
-    isComplete = (rCount <> 0) And (rCount = cCount)
+criteria = "checklistID = " & checklistID & " AND instance = " & instance
+rCount = DCount("ID", "tblChecklistCompletionData", criteria)
+cCount = DCount("opInitials", "tblChecklistCompletionData", criteria & " AND nz(opInitials) <> ''")
+isComplete = (rCount <> 0) And (rCount = cCount)
 End Function
 
-Public Function isClosed(ByVal checklistID As Integer, ByVal instance As Integer) As Variant
-isClosed = DLookup("certifierID", "qShiftChecklists", "checklistID = " & checklistID & " AND instance = " & instance) <> 0
+Public Function isClosed(ByVal checklistID As Integer, ByVal instance As Integer) As Boolean
+isClosed = Not IsNull(DLookup("opSig", "tblChecklistCompletionData", "checklistID = " & checklistID & " AND instance = " & instance))
 End Function
 
 Public Function startChecklist(ByVal checklistID As Integer, ByVal shiftID As Integer) As Integer
 'Initiate the <checklistID> for <shiftID>
-'Returns the instance of newly started checklist; returns 0 if unsuccessful
+'Returns: True if successful, False if not
 On Error GoTo errtrap
 Dim rsItems As DAO.Recordset
 Dim rsCD As DAO.Recordset
-
-If IsNull(DLookup("shiftid", "tblshiftmanager", "shiftid = " & shiftID)) Then GoTo fexit
-
 Dim instance As Integer
-instance = Nz(CurrentDb.OpenRecordset("SELECT Max([instance]) FROM qShiftChecklists WHERE checklistID = " & checklistID).Fields(0), 0) + 1
+If IsNull(DLookup("shiftid", "tblshiftmanager", "shiftid = " & shiftID)) Then GoTo fExit
+instance = Nz(DMax("instance", "tblChecklistCompletionData", "checklistID = " & checklistID), 0) + 1
+Set rsItems = CurrentDb.OpenRecordset("SELECT * FROM tblCheckListItems WHERE checklistID = " & checklistID & " ORDER BY tblChecklistItems.order")
+Set rsCD = CurrentDb.OpenRecordset("tblChecklistCompletionData")
 
-'Set rsItems = CurrentDb.OpenRecordset("SELECT * FROM tblCheckListItems WHERE checklistID = " & checklistID & " ORDER BY tblChecklistItems.order")
-'Set rsCD = CurrentDb.OpenRecordset("tblChecklistItemsData")
-
-    Dim db As DAO.Database: Set db = CurrentDb
-    db.Execute _
-    "INSERT INTO tblChecklistItemsData (instance, itemID, shiftID, startDate) " & _
-    "SELECT " & instance & ", tblChecklistItems.itemID, " & shiftID & ", Now() " & _
-    "FROM tblChecklistItems WHERE checklistID = " & checklistID & " ORDER BY tblChecklistItems.order", dbFailOnError
-
-'    With rsItems: Do While Not .EOF
-'        With rsCD
-'            .AddNew
-'            !instance = instance
-'            !itemID = rsItems!itemID
-'            !shiftID = shiftID
-'            !startDate = Now
-'            .update
-'        End With
-'        .MoveNext
-'    Loop: End With
+    With rsItems: Do While Not .EOF
+        With rsCD
+            .AddNew
+            !instance = instance
+            !checklistID = checklistID
+            !itemID = rsItems!itemID
+            !shiftID = shiftID
+            !startDate = Now
+            .Update
+        End With
+        .MoveNext
+    Loop: End With
     
     startChecklist = instance
     
-fexit:
-    'rsItems.Close
-    'Set rsItems = Nothing
-    
-    'rsCD.Close
-    'Set rsCD = Nothing
-    Set db = Nothing
-    
+fExit:
     log "Started instance " & instance & " of checklist " & checklistID & " for shift " & shiftID, "UtilChecklists.startChecklist"
     Exit Function
     
@@ -69,22 +52,14 @@ errtrap:
 End Function
 
 Public Function closeChecklist(ByVal checklistID As Integer, ByVal instance As Integer, Optional ByVal opInitials As String) As Boolean
-On Error GoTo fErr
-If IsNull(instance) Then Exit Function
-If IsNull(opInitials) Then opInitials = Util.getOpInitials(getUSN)
-Dim db As DAO.Database: Set db = CurrentDb
-    
-    Dim cert As Variant: cert = UtilCertifier.newCert(getUSN)
-    db.Execute "UPDATE tblChecklistItemsData INNER JOIN tblChecklistItems ON tblChecklistItemsData.itemID = tblChecklistItems.itemID " & _
-                "SET certifierID = " & cert & " WHERE checklistID = " & checklistID & " AND instance = " & instance & ";", dbFailOnError
-                
+If IsNull(instance) Then instance = DMax("instance", "tblChecklistCompletionData", "checklistID = " & checklistID)
+If IsNull(opInitials) Then opInitials = Util.getOpInitials
+Dim db As DAO.Database
+Set db = CurrentDb
+
+    opSig = Util.getUSN(opInitials)
+    db.Execute "UPDATE tblChecklistCompletionData SET opSig = '" & opSig & "' WHERE checklistID = " & checklistID & " AND instance = " & instance, dbFailOnError
     closeChecklist = db.RecordsAffected <> 0
-    
-fexit:
-    Set db = Nothing
-    Exit Function
-fErr:
-    ErrHandler err, Error$, "UtilChecklists.closeChecklist"
     
 End Function
 
@@ -92,7 +67,7 @@ Public Function deleteChecklist(ByVal checklistID As Integer, ByVal shiftID As I
 'Delete [instance|last instance] version of <checklistID> within <shiftID>
 'Returns: True if successful, False if not
 'Dim rs As DAO.Recordset
-'Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblChecklistItemsData WHERE checklistID = " & checklistID & " AND shiftID = " & shiftID & " AND instance = " & instance)
+'Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblChecklistCompletionData WHERE checklistID = " & checklistID & " AND shiftID = " & shiftID & " AND instance = " & instance)
 
 '    With rs
 '        If .EOF Then Exit Function
@@ -105,18 +80,18 @@ On Error GoTo errtrap
 Dim db As DAO.Database
 Set db = CurrentDb
 
-    If instance = 0 Then instance = Nz(DMax("instance", "tblChecklistItemsData", "checklistID = " & checklistID), 0)
-    If instance = 0 Then GoTo fexit
+    If instance = 0 Then instance = Nz(DMax("instance", "tblChecklistCompletionData", "checklistID = " & checklistID), 0)
+    If instance = 0 Then GoTo fExit
 
-    db.Execute ("DELETE * FROM tblChecklistItemsData WHERE shiftID = " & shiftID & " AND instance = " & instance)
+    db.Execute ("DELETE * FROM tblChecklistCompletionData WHERE checklistID = " & checklistID & " AND shiftID = " & shiftID & " AND instance = " & instance)
     deleteChecklist = db.RecordsAffected <> 0
     
-fexit:
-    'log CStr(deleteChecklist), "UtilChecklists.startChecklist"
+fExit:
+    log CStr(deleteChecklist), "UtilChecklists.startChecklist"
     Exit Function
 
 errtrap:
     ErrHandler err, Error$, mName & ".deleteChecklist"
-    GoTo fexit
+    GoTo fExit
 End Function
 

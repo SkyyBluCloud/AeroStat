@@ -63,7 +63,7 @@ errText.Visible = False
     '''For now, we will just continue'''''''''''
     
     isLoggedIn = True
-    DoCmd.Close acForm, "frmUserInfo"
+    DoCmd.Close acForm, "frmUserInfo", acSaveYes
     MsgBox "Your information has been saved.", vbInformation, "AeroStat"
     DoCmd.OpenForm "frmMain"
 End Sub

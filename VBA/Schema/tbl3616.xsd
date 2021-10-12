@@ -16,26 +16,6 @@
 <xsd:sequence>
 <xsd:element name="ID" minOccurs="1" od:jetType="autonumber" od:sqlSType="int" od:autoUnique="yes" od:nonNullable="yes" type="xsd:int"/>
 <xsd:element name="shiftID" minOccurs="0" od:jetType="longinteger" od:sqlSType="int" type="xsd:int"/>
-<xsd:element name="certifierID" minOccurs="0" od:jetType="longinteger" od:sqlSType="int" type="xsd:int"/>
-<xsd:element name="atlasID" minOccurs="0" od:jetType="longinteger" od:sqlSType="int" type="xsd:int"/>
-<xsd:element name="originalEntryTime" minOccurs="0" od:jetType="datetime" od:sqlSType="datetime" type="xsd:dateTime"/>
-<xsd:element name="originalOpInitials" minOccurs="0" od:jetType="text" od:sqlSType="nvarchar">
-<xsd:simpleType>
-<xsd:restriction base="xsd:string">
-<xsd:maxLength value="255"/>
-</xsd:restriction>
-</xsd:simpleType>
-</xsd:element>
-<xsd:element name="archive" minOccurs="1" od:jetType="yesno" od:sqlSType="bit" od:nonNullable="yes" type="xsd:boolean"/>
-<xsd:element name="archiveBy" minOccurs="0" od:jetType="text" od:sqlSType="nvarchar">
-<xsd:simpleType>
-<xsd:restriction base="xsd:string">
-<xsd:maxLength value="255"/>
-</xsd:restriction>
-</xsd:simpleType>
-</xsd:element>
-<xsd:element name="archiveTime" minOccurs="0" od:jetType="datetime" od:sqlSType="datetime" type="xsd:dateTime"/>
-<xsd:element name="reviewInitials" minOccurs="0" od:jetType="longinteger" od:sqlSType="int" type="xsd:int"/>
 <xsd:element name="entryTime" minOccurs="0" od:jetType="datetime" od:sqlSType="datetime" type="xsd:dateTime"/>
 <xsd:element name="entry" minOccurs="0" od:jetType="memo" od:sqlSType="ntext">
 <xsd:simpleType>
@@ -58,6 +38,7 @@
 </xsd:restriction>
 </xsd:simpleType>
 </xsd:element>
+<xsd:element name="key" minOccurs="0" od:jetType="longinteger" od:sqlSType="int" type="xsd:int"/>
 </xsd:sequence>
 </xsd:complexType>
 </xsd:element>
