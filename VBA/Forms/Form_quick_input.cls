@@ -8,23 +8,27 @@ Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
-Public fpType As Integer
+Public FPLType As Integer
 Dim bClose As Boolean
 Dim pprSelect As Boolean
 
-Private Sub ATActime_Click()
-    DoCmd.OpenForm "check_in_out", , , "ID = " & ID, acFormEdit
-End Sub
-
-Private Sub ATDctime_Click()
-    DoCmd.OpenForm "check_in_out", , , "ID = " & ID, acFormEdit
+Private Sub btnReg_Click()
+    DoCmd.OpenForm "frmListBoxDialog", , , , , acDialog, "qBaseAcft"
+    
+    If CurrentProject.AllForms("frmListBoxDialog").IsLoaded Then
+    With Forms!frmListBoxDialog!ctlListBox
+        Tail = .Column(1)
+        acType = .Column(2)
+        DoCmd.Close acForm, "frmListBoxDialog"
+    End With
+    End If
 End Sub
 
 Private Sub cancel_flt_Click()
 bClose = True
     DoCmd.RunCommand acCmdSaveRecord
     If cnlFlight(Me.RecordsetClone) Then
-        DoCmd.Close acForm, "quick_input", acSaveYes
+        DoCmd.Close acForm, "quick_input"
         DoEvents
         DoCmd.RunCommand acCmdRefresh
     End If
@@ -37,10 +41,10 @@ End Sub
 Private Sub cPPR_LostFocus()
 If NewRecord Then Exit Sub
 Dim RS As DAO.Recordset
-Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblPPR WHERE ((nz(tblPPR.PPR)<>'-') AND ((Format('" & ZToL(DOF + ETD) & "','mm/dd/yyyy')) Between Format([arrDate],'mm/dd/yyyy') And Format([depDate],'mm/dd/yyyy'))) ORDER BY tblPPR.ID;")
+Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblPPR WHERE ((nz(tblPPR.PPR)<>'-') AND ((Format('" & DOF + ZToL(ETD) & "','mm/dd/yyyy')) Between Format([arrDate],'mm/dd/yyyy') And Format([depDate],'mm/dd/yyyy'))) ORDER BY tblPPR.ID;")
     
     Do While Not RS.EOF
-        If Nz(PPR) = "" And depPoint <> Destination And (RS!Callsign = Callsign Or RS!Tail = Tail) And ((Destination = DLookup("station", "tblSettings") And Nz(RS!arrID, 0) = 0) Or depPoint = DLookup("station", "tblSettings")) Then
+        If Nz(PPR) = "" And depPoint <> Destination And (RS!Callsign = Callsign Or RS!Tail = Tail) And ((Destination = DLookup("data", "tblSettings", "key = 'station'"))) Then
             PPR = RS!PPR
             Exit Do
         End If
@@ -53,12 +57,100 @@ Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblPPR WHERE ((nz(tblPPR.PPR)<>'
     End If
 End Sub
 
+Private Sub ctlATA_Click()
+    If Not shiftKeyPressed Then
+        movetime = getTime4Char(InputBox("Enter the ARR (Z) time for:" & vbCrLf & _
+            subject, _
+            "ARR", Format(LToZ(Now), "hhnn")))
+    Else
+        movetime = TimeValue(LToZ(Now))
+    End If
+    
+    If IsNull(movetime) Then
+        log "Invalid value for moveTime. (" & CStr(Nz(movetime, "<NULL>")) & ")", Me.Name & ".handleMovement", "WARN"
+        Beep
+        Exit Sub
+    End If
+    
+    ATA = movetime
+    Status = "Closed"
+    Stationed = True
+    arrDate = ZToL(cETA(DOF, ETD, ETE, Null, Null, TimeValue(movetime)))
+    
+'    db.Execute "UPDATE tblTraffic " & _
+        "SET ATA = #" & movetime & "#, " & _
+        "Status = 'Closed', " & _
+        "Stationed = True, " & _
+        "arrDate = ztol(cETA(DOF,ETD,ETE,Null,Null,TimeValue(#" & movetime & "#))) WHERE ID = " & selectedFlight, dbFailOnError
+End Sub
+
+Private Sub ctlATD_Click()
+
+    If Not shiftKeyPressed Then
+        movetime = getTime4Char(InputBox("Enter the DEP (Z) time for:" & vbCrLf & _
+            subject, _
+            "DEP", Format(LToZ(Now), "hhnn")))
+    Else
+        movetime = TimeValue(LToZ(Now))
+    End If
+    
+    If Not IsDate(movetime) Then
+        log "Invalid value for moveTime. (" & CStr(Nz(movetime, "<NULL>")) & ")", Me.Name & ".handleMovement", "WARN"
+        Beep
+        Exit Sub
+    End If
+    
+    ATD = movetime
+    Status = "Enroute"
+    Stationed = False
+    depDate = ZToL(cETA(DOF, ETD, ETE, Null, TimeValue(movetime)))
+    
+'    db.Execute "UPDATE tblTraffic " & _
+        "SET ATD = #" & movetime & "#, " & _
+        "Status = 'Enroute', " & _
+        "Stationed = False, " & _
+        "depDate = ztol(cETA(DOF,ETD,ETE,Null,TimeValue(#" & movetime & "#))) WHERE ID = " & ID, dbFailOnError
+        
+End Sub
+
+Private Sub ctlETD_Exit(cancel As Integer)
+    If Nz(ctlETD) = "" Then Exit Sub
+    If IsDate(ctlETD) Then ctlETD = Format(ctlETD, "hhnn")
+    If IsNumeric(ctlETD) And Len(ctlETD) = 3 Then ctlETD = 0 & ctlETD
+    ctlETD.BorderColor = RGB(166, 166, 166)
+    ETD = getTime4Char(ctlETD)
+    ctlETD = Left(Format(ctlETD, "0000"), 2) & ":" & Right(Format(ctlETD, "0000"), 2)
+    
+    If Not IsDate(ctlETD) Then
+        'cancel = True
+        ctlETD = ""
+        ctlETD.BorderColor = RGB(255, 0, 0)
+        ctlETD.SetFocus
+    End If
+End Sub
+
+Private Sub ctlETE_Exit(cancel As Integer)
+    If Nz(ctlETD) = "" Then Exit Sub
+    If IsDate(ctlETE) Then ctlETE = Format(ctlETD, "hhnn")
+    If IsNumeric(ctlETE) And Len(ctlETE) = 3 Then ctlETE = 0 & ctlETE
+    ctlETE.BorderColor = RGB(166, 166, 166)
+    ETE = getTime4Char(IIf(Nz(ctlETE) = "", "0000", Nz(ctlETE)))
+    ctlETE = Left(Format(ctlETE, "0000"), 2) & ":" & Right(Format(ctlETE, "0000"), 2)
+    
+    If Not IsDate(ctlETE) Then
+        'cancel = True
+        ctlETE = ""
+        ctlETE.BorderColor = RGB(255, 0, 0)
+        ctlETE.SetFocus
+    End If
+End Sub
+
 Private Sub depPoint_LostFocus()
-    If IsNull(depPoint) Then depPoint = DLookup("station", "tblSettings")
+    If IsNull(depPoint) Then depPoint = DLookup("data", "tblSettings", "key = 'station'")
 End Sub
 
 Private Sub Destination_LostFocus()
-    If Nz(Destination) = "" Then Destination = DLookup("station", "tblSettings")
+    If Nz(Destination) = "" Then Destination = DLookup("data", "tblSettings", "key = 'station'")
 End Sub
 
 Private Sub DOF_GotFocus()
@@ -79,7 +171,7 @@ Private Sub DOF_KeyDown(KeyCode As Integer, Shift As Integer)
 End Sub
 
 Private Sub done_Click()
-'This needs a SERIOUS cleanup
+'TODO: This needs a SERIOUS cleanup
 Dim db As Database
 Dim RS As DAO.Recordset
 Dim rsPPR As DAO.Recordset
@@ -98,17 +190,17 @@ If spAccess Then
     spAccess = sp
 End If
 
-stn = DLookup("Station", "tblSettings")
+stn = DLookup("data", "tblSettings", "key = 'station'")
 Set db = CurrentDb
 On Error GoTo save_Click_Err
 
 bClose = True
 
 sending.Visible = True
-sp.Enabled = False
-done.Enabled = False
-cancel_flt.Enabled = False
-cPPR.Enabled = False
+sp.enabled = False
+done.enabled = False
+cancel_flt.enabled = False
+cPPR.enabled = False
 DoEvents
 
 10  ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -125,8 +217,11 @@ DoEvents
     End If
     
     If IsNull(Tail) Then
-        MsgBox "Please enter a Tail Number.", vbCritical, "Flight Plan"
-        GoTo done_fb
+        Tail = Nz(DLookup("tail", "tblppr", "ppr= '" & PPR & "'"))
+        If IsNull(Tail) Then
+            MsgBox "Please enter a Tail Number.", vbCritical, "Flight Plan"
+            GoTo done_fb
+        End If
     Else
         If Not IsNumeric(Left(Tail, 1)) Then
 '            If isMil = 0 Then
@@ -140,8 +235,15 @@ DoEvents
     Tail = Right(Tail, 7)
     
     If Not depPoint = stn And Not Destination = stn Then
-        MsgBox "If this aircraft is not landing here, a flight tracker entry is not needed." & vbCrLf & "Otherwise, please enter as two seperate flight plans.", vbInformation, "AeroStat"
+        MsgBox "If this aircraft is not landing here (full stop), a flight tracker entry is not needed." & vbCrLf & "Otherwise, please enter as two seperate flight plans.", vbInformation, "AeroStat"
         GoTo done_fb
+    End If
+    
+    If IsNull(opFPType) Then
+        opFPType.BorderColor = vbRed
+        GoTo done_fb
+    Else
+        opFPType.BorderColor = RGB(166, 166, 166)
     End If
     
     If IsNumeric(altitude) Then altitude = IIf(altitude <= 140, "A", "F") & altitude
@@ -150,18 +252,20 @@ DoEvents
     Me.acType = Replace(Me.acType, "/", "")
     Me.Tail = Replace(Me.Tail, "-", "")
     
-    If IsNull(DLookup("acTypeID", "AIRCRAFT", "acTypeid = '" & Me.acType & "'")) Then 'Type is not valid
-    
-        If Not IsNull(DLookup("acTypeID", "AIRCRAFT", "synonym = '" & Me.acType & "'")) Then 'A correction can be suggested
-            DoCmd.OpenForm "frmEnforceAcType", , , , , acDialog, Me.acType
-            Me.acType = Forms!frmEnforceAcType.response
-            DoCmd.Close acForm, "frmEnforceAcType"
-            
-        Else 'DB has no clue what the type is.
-            MsgBox "Invalid Aircraft Type.", vbCritical, "Flight Plan"
-            GoTo done_fb
-        End If
-    End If
+'    If IsNull(DLookup("acTypeID", "[@AIRCRAFTDB]", "ICAO = '" & Me.acType & "'")) Then 'Type is not valid
+'
+'        If Not IsNull(DLookup("acTypeID", "[@AIRCRAFT]", "synonym = '" & Me.acType & "'")) Then 'A correction can be suggested
+'            DoCmd.OpenForm "frmEnforceAcType", , , , , acDialog, Me.acType
+'            Me.acType = Forms!frmEnforceAcType.response
+'            DoCmd.Close acForm, "frmEnforceAcType"
+'
+'        Else 'DB has no clue what the type is.
+'            If MsgBox("This is not a known ICAO aircraft type. would you like to add it?", vbCritical, "Flight Plan") Then
+'
+'            End If
+'            GoTo done_fb
+'        End If
+'    End If
     
     transient = isT(Me.Tail, Me.acType)
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -171,38 +275,40 @@ DoEvents
     '''''DOF error check''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     If Destination = stn Then
-        arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "dd-mmm-yy") & " " & Format(ZToL(Nz(ATA, IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE)), True), "hh:nn")
+        'arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "dd-mmm-yy") & " " & Format(ZToL(Nz(ATA, IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE))), "hh:nn")
+        arrDate = ZToL(Util.cETA(DOF, ETD, ETE, ETA, ATD))
         arrordep = arrDate
-        If Not Status = "Closed" And Not DateDiff("d", arrDate, Now) = 0 Then
-            If MsgBox("Calculated ETA as " & arrDate & " (L). Is this correct?" & vbCrLf & "(DOF: " & DOF & ")", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
-                GoTo done_fb
-                Exit Sub
-            End If
-        End If
+'        If Not Status = "Closed" And Not DateDiff("d", arrDate, Now) = 0 Then
+'            If MsgBox("Calculated ETA as " & arrDate & " (L). Is this correct?" & vbCrLf & "(DOF: " & DOF & ")", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
+'                GoTo done_fb
+'                Exit Sub
+'            End If
+'        End If
     End If
+    
     If depPoint = stn Then
-        depDate = ZToL(DOF + Nz(ATD, ETD))
+        depDate = DOF + ZToL(TimeValue(Nz(ATD, ETD)))
         If arrordep = "" Then arrordep = depDate
-        If Not Status = "Closed" And Not DateDiff("d", depDate, Now) = 0 Then
-            If MsgBox("Calculated ETD as " & depDate & " (L). Is this correct?" & vbCrLf & "(DOF: " & DOF & ")", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
-                GoTo done_fb
-                Exit Sub
-            End If
-        End If
+'        If Not Status = "Closed" And Not DateDiff("d", depDate, Now) = 0 Then
+'            If MsgBox("Calculated ETD as " & depDate & " (L). Is this correct?" & vbCrLf & "(DOF: " & DOF & ")", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
+'                GoTo done_fb
+'                Exit Sub
+'            End If
+'        End If
     End If
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
     If depPoint = stn Then
         If Destination = stn Then
-            Me.fpType = 3
+            Me.FPLType = 3
         Else
-            Me.fpType = 2
+            Me.FPLType = 2
         End If
     Else
-        Me.fpType = 1
+        Me.FPLType = 1
     End If
-    If OpenArgs = 4 Then Me.fpType = 4
+    If OpenArgs = 4 Then Me.FPLType = 4
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     '''''On Station Check'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -213,13 +319,13 @@ DoEvents
     Dim edo As Boolean
     If depPoint = stn Then
         Do While Not RS.EOF
-            If Right(RS!Tail, 4) = Right(Me.Tail, 4) Or RS!Callsign = Me.Callsign Then
+            If (Nz(Me.Tail) <> "" And Right(RS!Tail, 4) = Right(Me.Tail, 4)) Or RS!Callsign = Me.Callsign Then
                 If RS!ID <> ID Then
                     'rs.edit
                     If IsNull(ParentID) Then ParentID = RS!ID
                     'rs!Stationed = False
                     With db
-                        .Execute "UPDATE tblTraffic SET Stationed = False WHERE Stationed = True AND ID <> " & ID & " AND (Right(Tail, 4) = '" & Right(Me.Tail, 4) & "' Or Callsign = '" & Callsign & "')"
+                        .Execute "UPDATE tblTraffic SET Stationed = False WHERE Stationed = True AND ID <> " & ID & " AND ((Nz(Tail) <> '' And (Right(Tail, 4) = '" & Right(Me.Tail, 4) & "') Or Callsign = '" & Callsign & "'))"
                         log "Updated " & .RecordsAffected & " records", Me.Name & ".done_Click"
                     End With
                     Stationed = True
@@ -276,7 +382,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
         'Set rsPPR = db.OpenRecordset("SELECT * FROM tblPPR WHERE (((tblPPR.PPR)<>'-') AND ((Format(Date(),'mm/dd/yyyy')) Between Format([arrDate],'mm/dd/yyyy') And Format([depDate],'mm/dd/yyyy'))) ORDER BY tblPPR.ID;")
         
             With rsPPR: Do While Not .EOF
-                If ((!Callsign = Callsign Or !Tail = Tail) Or !PPR = PPR) And !Status <> "Cancelled" Then
+                If ((!Callsign = Callsign Or (Nz(Me.Tail) <> "" And Right(!Tail, 4) = Right(Me.Tail, 4))) Or !PPR = PPR) And !Status <> "Cancelled" Then
                     If pprSelect Or (Not pprSelect And ((Destination = stn And (!arrID = 0 Or !arrID = ID)) Xor depPoint = stn)) Then 'Found PPR based on Callsign, Tail, or previous PPR assignment
                         .edit
                         spID = rsPPR!spID
@@ -286,7 +392,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                             !arrID = ID
                             spID = !spID
                             PPR = !PPR
-                            !Tail = Tail
+                            '!Tail = Tail
                             dvCode = !dvCode
                             If Nz(Spot) = "" Then
                                 Spot = !Spot
@@ -302,7 +408,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                         ElseIf depPoint = stn Or Nz(PPR) = "" Then
                             
                             PPR = !PPR
-                            !Tail = Tail
+                            '!Tail = Tail
                             spID = !spID
                             dvCode = !dvCode
                             If Nz(Spot) = "" Then
@@ -329,7 +435,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                 !Callsign = Callsign
                             End If
                         End If
-                        .Update
+                        .update
                         Exit Do
                     Else
                         .MoveNext
@@ -339,7 +445,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                     .MoveNext
                 End If
             Loop: End With
-            If DLookup("flightPlansRequirePPR", "tblsettings") And transient And Nz(PPR, "-") = "-" Then
+            If DLookup("data", "tblSettings", "key = ""flightPlansRequirePPR""") And transient And Nz(PPR, "-") = "-" Then
                 If Not pprSelect Then
     '               If MsgBox("This flight plan is missing a PPR. Continue?", vbQuestion + vbYesNo, "Flight Plan") = vbNo Then
     '                    GoTo done_fb
@@ -375,23 +481,23 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 30  ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     '''''Dupe protection''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-    Set RS = db.OpenRecordset("SELECT * FROM tblTraffic WHERE (tblTraffic.Callsign = '" & Callsign & "' OR tblTraffic.Tail = '" & Tail & "') AND (tblTraffic.depPoint Like '" & depPoint & "' OR tblTraffic.Destination Like '" & Destination & "') AND Format([DOF],'mmddyy') = '" & Format(DOF, "mmddyy") & "' AND (Format([ETD],'hhnn') Between '" & Format(LToZ(Nz(arrDate, depDate)), "hhnn") & "' And '" & Format(LToZ(Nz(depDate, arrDate)), "hhnn") & "' OR Format(IIf(IsNull(ATD),IIf(Not ETA=0,ETA,ETD+ETE),ATD+ETE),'hhnn') Between '" & Format(LToZ(Nz(arrDate, depDate)), "hhnn") & "' And '" & Format(LToZ(Nz(depDate, arrDate)), "hhnn") & "')")
-    Do While Not RS.EOF
-        If Not ID = RS!ID And RS!Status <> "Closed" Then
-            If RS!Status = "Cancelled" Then
-                Stationed = RS!Stationed
-                RS.delete
-                Exit Do
-            ElseIf MsgBox("A duplicate flight plan was found. Would you like to update it?" & vbCrLf & "(This flight plan will be discarded)", vbQuestion + vbYesNo, "Update Existing?") = vbYes Then
-                Undo
-                DoCmd.OpenForm "quick_input", , , "ID = " & RS!ID, acFormEdit
-                GoTo done_fb
-            ElseIf MsgBox("This flight plan conflicts with another flight plan. Continue?", vbQuestion + vbYesNo, "Confirm") = vbNo Then
-                GoTo done_fb
-            End If
-        End If
-        RS.MoveNext
-    Loop
+'    Set RS = db.OpenRecordset("SELECT * FROM tblTraffic WHERE (tblTraffic.Callsign = '" & Callsign & "' OR tblTraffic.Tail = '" & Tail & "') AND (tblTraffic.depPoint Like '" & depPoint & "' OR tblTraffic.Destination Like '" & Destination & "') AND Format([DOF],'mmddyy') = '" & Format(DOF, "mmddyy") & "' AND (Format([ETD],'hhnn') Between '" & Format(LToZ(Nz(arrDate, depDate)), "hhnn") & "' And '" & Format(LToZ(Nz(depDate, arrDate)), "hhnn") & "' OR Format(IIf(IsNull(ATD),IIf(Not ETA=0,ETA,ETD+ETE),ATD+ETE),'hhnn') Between '" & Format(LToZ(Nz(arrDate, depDate)), "hhnn") & "' And '" & Format(LToZ(Nz(depDate, arrDate)), "hhnn") & "')")
+'    Do While Not RS.EOF
+'        If Not ID = RS!ID And RS!Status <> "Closed" Then
+'            If RS!Status = "Cancelled" Then
+'                Stationed = RS!Stationed
+'                RS.delete
+'                Exit Do
+'            ElseIf MsgBox("A duplicate flight plan was found. Would you like to update it?" & vbCrLf & "(This flight plan will be discarded)", vbQuestion + vbYesNo, "Update Existing?") = vbYes Then
+'                Undo
+'                DoCmd.OpenForm "quick_input", , , "ID = " & RS!ID, acFormEdit
+'                GoTo done_fb
+'            ElseIf MsgBox("This flight plan conflicts with another flight plan. Continue?", vbQuestion + vbYesNo, "Confirm") = vbNo Then
+'                GoTo done_fb
+'            End If
+'        End If
+'        RS.MoveNext
+'    Loop
     
 
     If Status = "-" Then Status = "Pending"
@@ -487,7 +593,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                 .edit
                                 rstSP![Tail Number] = Me.Tail
                                 !Tail = Me.Tail
-                                .Update
+                                .update
                                 .Bookmark = .LastModified
                             End With
                         End If
@@ -498,7 +604,7 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                                 .edit
                                 Me.Tail = rstSP![Tail Number]
                                 !Tail = Me.Tail
-                                .Update
+                                .update
                                 .Bookmark = .LastModified
                             End With
                         End If
@@ -571,7 +677,7 @@ els:
                             '.Bookmark = .LastModified
                             .edit
                             !Spot = Spot
-                            .Update
+                            .update
                             .Bookmark = .LastModified
                         End With
                     End If
@@ -585,9 +691,9 @@ els:
                 'Departure
                 If depPoint = stn Then
                     rstSP![Next ICAO] = Destination
-                    'If LToZ(depDate) > Nz(rstSP![ETD (Z)], 0) Then rstSP![ETD (Z)] = DateAdd("h", -DLookup("Timezone", "tblSettings"), depDate)
+                    'If LToZ(depDate) > Nz(rstSP![ETD (Z)], 0) Then rstSP![ETD (Z)] = DateAdd("h", -DLookup('data','tblSettings','key = ""timezone""'), depDate)
                     If Format(LToZ(depDate), "dd") = Format(Nz(rstSP![ETD (Z)], 32), "dd") Then
-                        'rstSP![ETD (Z)] = DateAdd("h", -DLookup("Timezone", "tblSettings"), depDate)
+                        'rstSP![ETD (Z)] = DateAdd("h", -DLookup('data','tblSettings','key = ""timezone""'), depDate)
                         rstSP![ETD (Z)] = LToZ(Nz(depDate))
                         If Not IsNull(ATD) Then rstSP![ATD (Z)] = LToZ(Nz(depDate))
                     End If
@@ -600,7 +706,7 @@ els:
                             '.Bookmark = .LastModified
                             .edit
                             !depDate = depDate
-                            .Update
+                            .update
                             .Bookmark = .LastModified
                         End With
                     End If
@@ -608,7 +714,7 @@ els:
                 rstSP![AM Initials] = AMOPS
                 If IsNull(rstSP![Start Time]) Then rstSP![Start Time] = Date
                 If IsNull(rstSP![End Time]) Then rstSP![End Time] = Date
-                rstSP.Update
+                rstSP.update
                 sending.Caption = "Success!"
                 DoEvents
             Else
@@ -630,9 +736,13 @@ els:
     Set RS = Nothing
     
 done_exit:
-    Dirty = False
+    If btnAtlas Then atlasID = linkAtlas(NewRecord, Nz(atlasID, 0))
+    If Dirty Then Dirty = False
     sending.Visible = False
-    syncTrafficLog ID, "Traffic", NewRecord
+    'syncTrafficLog ID, "Traffic", NewRecord
+
+    FormSyncUtil.syncForm "frmTrafficLog"
+    FormSyncUtil.syncForm "frmFlightMonitor"
     
     Me.Visible = False
 '    If Forms!frmMain!view.SourceObject = "Traffic Log" Then
@@ -646,10 +756,10 @@ done_exit:
 done_fb:
     bClose = False
     sending.Visible = False
-    sp.Enabled = True
-    done.Enabled = True
-    cancel_flt.Enabled = True
-    cPPR.Enabled = True
+    sp.enabled = True
+    done.enabled = True
+    cancel_flt.enabled = True
+    cPPR.enabled = True
     Exit Sub
 
 save_Click_Err:
@@ -657,7 +767,7 @@ save_Click_Err:
     If err = 3201 Then
      
     End If
-    ErrHandler err, Error$, Me.Name & ".done_Click"
+    ErrHandler err, Error$, "quick_input.done_Click"
     sperr = IIf(err = 3011, True, False)
     Resume Next
     GoTo done_fb
@@ -706,6 +816,8 @@ Private Sub Form_Close()
 End Sub
 
 Private Sub Form_Current()
+    'If NewRecord Then rwy = DLast("rwy", "tblshiftmanager")
+    
     bClose = False
     sp = NewRecord Or Not IsNull(spID)
     If Status = "Cancelled" Then
@@ -758,6 +870,10 @@ Private Sub Form_Current()
     
     cancel_flt.Visible = Not NewRecord
     Tail.RowSource = Nz(longTail)
+    
+    
+    If Not IsNull(ETD) Then ctlETD = Hour(ETD) & ":" & Format(Minute(ETD), "00")
+    If Not IsNull(ETE) Then ctlETE = Hour(ETE) & ":" & Format(Minute(ETE), "00")
 End Sub
 
 Private Sub Form_Error(DataErr As Integer, response As Integer)
@@ -766,62 +882,9 @@ End Sub
 
 Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
     If KeyCode = 13 And Shift = acShiftMask Then
-        done.SetFocus
+        'done.SetFocus
         done_Click
     End If
-End Sub
-
-Private Sub Form_Load()
-'    bClose = False
-'    sp = NewRecord Or Not IsNull(spID)
-'    If Status = "Cancelled" Then
-'        For Each ctl In Controls
-'            If ctl.Name Like "*ctime*" Then ctl.Visible = True
-'            If ctl.Name Like "*clr*" Then ctl.BackColor = RGB(255, 0, 0)
-'            FormHeader.BackColor = RGB(255, 0, 0)
-'            FormFooter.BackColor = RGB(255, 0, 0)
-'        Next
-'        cancel_flt.Visible = True
-'        cancel_flt.Caption = "Re-Activate"
-' '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-' '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-'    ElseIf Status = "Enroute" Then
-'        For Each ctl In Controls
-'            If ctl.Name Like "*ctime*" Then ctl.Visible = True
-'            If ctl.Name Like "*clr*" Then ctl.BackColor = RGB(0, 255, 0)
-'            FormHeader.BackColor = RGB(0, 255, 0)
-'            FormFooter.BackColor = RGB(0, 255, 0)
-'            cancelled.Visible = True
-'            cancelled.Caption = Replace(cancelled.Caption, "Cancelled", "Enroute")
-'        Next
-' '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-' '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-'    ElseIf Status = "Closed" Then
-'        For Each ctl In Controls
-'            If ctl.Name Like "*ctime*" Then ctl.Visible = True
-'            If ctl.Name Like "*clr*" Then ctl.BackColor = RGB(190, 190, 190)
-'            FormHeader.BackColor = RGB(190, 190, 190)
-'            FormFooter.BackColor = RGB(190, 190, 190)
-'            cancelled.Visible = True
-'            cancelled.Caption = Replace(cancelled.Caption, "Cancelled", "Closed")
-'        Next
-'    Else
-'        cancel_flt.Visible = True
-'    End If
-'    Dim rs As DAO.Recordset
-'    Set rs = CurrentDb.OpenRecordset(cPPR.RowSource)
-'    Do While Not rs.EOF
-'        If PPR = rs!PPR Then
-'            cPPR = rs!PPR
-'            Exit Do
-'        End If
-'        rs.MoveNext
-'    Loop
-'    rs.close
-'    Set rs = Nothing
-'
-'    cancel_flt.Visible = Not NewRecord
-'    Tail.RowSource = Nz(longTail)
 End Sub
 
 Private Sub openPPR_Click()
@@ -874,7 +937,7 @@ With RS
                     Exit For
                     
                 Case "depPoint"
-                    c.Value = !coordFixicao
+                    'c.Value = !coordFixICAO
                     Exit For
                     
                 Case "flightRule"
@@ -901,13 +964,13 @@ On Error GoTo errtrap
 Dim res() As String
 
 If Number > 1 And NewRecord Then
-    res = Split(InputBox("Please enter the tail numbers, separated by spaces:" & vbCrLf & "(Ex: 1234 5678 1212...)", "Enter Tails"), " ")
+    res = Split(InputBox("Please enter the tail numbers, separated by spaces:" & vbCrLf & "(Ex: 1234 5678 101...)", "Enter Tails"), " ")
     For Each t In res: Tail.AddItem t: Next
     Tail = Nz(res(0))
     longTail = Tail.RowSource
 End If
 
-sExit:
+sexit:
     Exit Sub
 errtrap:
     Debug.Print "(" & err & "): " & Error$

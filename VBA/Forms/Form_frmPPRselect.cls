@@ -26,7 +26,7 @@ Private Sub custom_Click()
         End If
     End With
     
-    DoCmd.Close acForm, "frmPPRselect", acSaveYes
+    DoCmd.Close acForm, "frmPPRselect"
 End Sub
 
 Private Sub newPPR_Click()
@@ -41,5 +41,5 @@ If IsNull(pprList.Column(2)) Then Exit Sub
         !PPR = pprList.Column(2)
     End With
     
-    DoCmd.Close acForm, "frmPPRselect", acSaveYes
+    DoCmd.Close acForm, "frmPPRselect"
 End Sub

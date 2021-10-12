@@ -69,9 +69,9 @@ Private Sub Command11_Click()
         For Each ctl In .Controls
             If TypeOf ctl Is TextBox Then ctl.Requery
         Next
-        DoCmd.Close acForm, "frmAMC", acSaveYes
+        DoCmd.Close acForm, "frmAMC"
     End With
-sExit:
+sexit:
     Exit Sub
 fb:
     Exit Sub
@@ -93,7 +93,7 @@ Private Sub Form_Load()
         ddate = parseDateToJ(Nz(!depDate))
         Callsign = !Callsign
         isCallsign = Nz(Callsign) <> "" Or Not Nz(Right(!MSN, 7)) = Nz(!Callsign)
-        Callsign.Enabled = isCallsign
+        Callsign.enabled = isCallsign
         Me.Type = !Type
         depPoint = !depPoint
         Destination = !Destination
@@ -103,6 +103,6 @@ Private Sub Form_Load()
 End Sub
 
 Private Sub isCallsign_AfterUpdate()
-    Callsign.Enabled = isCallsign
+    Callsign.enabled = isCallsign
     If isCallsign Then Callsign = Forms!new_ppr!Callsign
 End Sub

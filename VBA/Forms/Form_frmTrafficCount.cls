@@ -10,40 +10,45 @@ Attribute VB_Exposed = False
 Option Compare Database
 Option Explicit
 
-Dim qdf As DAO.QueryDef
+Dim qdfWC As DAO.QueryDef
+Dim qdfIC As DAO.QueryDef
+Dim qdfAC As DAO.QueryDef
+Dim qdfICTotals As DAO.QueryDef
 Dim dateChange As Boolean
 
 Private Sub acCount_DblClick(cancel As Integer)
-    DoCmd.OpenForm "frmTrafficCountDetails", , , , , , _
-        "SELECT tblTraffic.ID, tblTraffic.Callsign, tblTraffic.Type, tblTraffic.Tail, tblTraffic.countType AS [Counted As], tblTraffic.depPoint, tblTraffic.depDate, tblTraffic.Destination, tblTraffic.arrDate " & _
+    Dim oa As String: oa = "SELECT tblTraffic.ID, tblTraffic.Callsign, tbltraffic.number & '/' & tblTraffic.acType AS Type, tblTraffic.Tail, tblTraffic.countType AS [Counted As], tblTraffic.depPoint, tblTraffic.depDate, tblTraffic.Destination, tblTraffic.arrDate " & _
         "FROM tblTraffic " & _
-        "WHERE ((tblTraffic.ATD is not null And tblTraffic.depPoint = dlookup('station','settings') And ((IIf(IsDate(tblTraffic.depDate), DateValue(tblTraffic.depDate), Null) Between CDate('" & date1 & "') And CDate('" & date2 & "')))) " & _
-        "OR (tblTraffic.ATA is not null And tblTraffic.Destination = dlookup('station','settings') And ((IIf(IsDate(tblTraffic.arrDate), DateValue(tblTraffic.arrDate), Null) Between CDate('" & date1 & "') And CDate('" & date2 & "'))))) " & _
+        "WHERE ((tblTraffic.ATD is not null And tblTraffic.depPoint = DLookup('data','tblSettings','key = ""station""') And ((IIf(IsDate(tblTraffic.depDate), DateValue(tblTraffic.depDate), Null) Between CDate('" & date1 & "') And CDate('" & date2 & "')))) " & _
+        "OR (tblTraffic.ATA is not null And tblTraffic.Destination = DLookup('data','tblSettings','key = ""station""') And ((IIf(IsDate(tblTraffic.arrDate), DateValue(tblTraffic.arrDate), Null) Between CDate('" & date1 & "') And CDate('" & date2 & "'))))) " & _
         "AND tblTraffic.countType Like '" & acCount.Column(0) & "' " & _
         "ORDER BY tblTraffic.arrDate DESC, tblTraffic.depDate DESC;"
-'    Forms!frmTrafficCountDetails!details.RowSource = _
-'        "SELECT tblTraffic.ID, tblTraffic.Callsign, tblTraffic.Type, tblTraffic.Tail, tblTraffic.countType AS [Counted As], tblTraffic.depPoint, tblTraffic.depDate, tblTraffic.Destination, tblTraffic.arrDate " & _
-'        "FROM tblTraffic " & _
-'        "WHERE ((tblTraffic.ATD is not null And tblTraffic.depPoint = dlookup('station','settings')) OR (tblTraffic.ATA is not null And tblTraffic.Destination = dlookup('station','settings'))) " & _
-'        "AND tblTraffic.countType Like '" & acCount.Column(0) & "' " & _
-'        "AND ((Format(Nz(tblTraffic.arrDate),'mm/dd/yyyy') Between Format('" & date1 & "','mm/dd/yyyy') And  Format('" & date2 & "','mm/dd/yyyy')) " & _
-'        "OR (Format(Nz(tblTraffic.depDate), 'mm/dd/yyyy') Between Format('" & date1 & "','mm/dd/yyyy') And  Format('" & date2 & "','mm/dd/yyyy'))) " & _
-'        "ORDER BY tblTraffic.arrDate DESC, tblTraffic.depDate DESC;"
 
-'FIX
-'    Forms!frmTrafficCountDetails!details.RowSource = _
-'        "SELECT tblTraffic.ID, tblTraffic.Callsign, tblTraffic.Type, tblTraffic.Tail, tblTraffic.countType AS [Counted As], tblTraffic.depPoint, tblTraffic.depDate, tblTraffic.Destination, tblTraffic.arrDate " & _
-'        "FROM tblTraffic " & _
-'        "WHERE ((tblTraffic.ATD is not null And tblTraffic.depPoint = dlookup('station','settings') And tblTraffic.depDate Between Format('" & date1 & "','mm/dd/yyyy') And  Format('" & date2 & "','mm/dd/yyyy')) " & _
-'        "OR (tblTraffic.ATA is not null And tblTraffic.Destination = dlookup('station','settings') And tblTraffic.arrDate Between Format('" & date1 & "','mm/dd/yyyy') And  Format('" & date2 & "','mm/dd/yyyy'))) " & _
-'        "AND tblTraffic.countType Like '" & acCount.Column(0) & "' " & _
-'        "ORDER BY tblTraffic.arrDate DESC, tblTraffic.depDate DESC;"
+    DoCmd.OpenForm "frmTrafficCountDetails", , , , , , oa
 
+End Sub
+
+Private Sub btnAllFlights_Click()
+    DoCmd.OpenForm "checked_flts"
+End Sub
+
+Private Sub btnDeleteCount_Click()
+If IsNull(shiftCount) Then Exit Sub
+    Dim db As DAO.Database: Set db = CurrentDb
+    db.Execute "DELETE FROM tblAnalyticsData WHERE countDate = #" & shiftCount.Column(0) & "#"
+    log "Deleted " & db.RecordsAffected & " records", Me.Name & ".btnDeleteCount_Click"
+    Set db = Nothing
+    populate
+End Sub
+
+Private Sub btnEdit_Click()
+    DoCmd.OpenForm "frmTrafficCountEdit"
 End Sub
 
 Private Sub btnNewCount_Click()
     'If Not DMax("countDay", "tblAnalytics") >= Date Then
-        DoCmd.OpenForm "frmTrafficCountEntry", , , , acFormAdd
+        DoCmd.OpenForm "frmTrafficCountEntry", , , , , acDialog
+        populate
     'Else
         'MsgBox "This day should already exist. If this is an error, please report it using the feedback button.", vbInformation, "AeroStat"
     'End If
@@ -62,15 +67,6 @@ Private Sub date1_AfterUpdate()
         cbYear = Year(date1)
     End If
 End Sub
-
-'Private Sub alltime_Click()
-'    alltime = True
-'    timeToday = False
-'    date1 = DMin("countDay", "tblAnalytics")
-'    date2 = Date
-'
-'    populate
-'End Sub
 
 Private Sub date1_Change()
     timeBlock = ""
@@ -150,17 +146,19 @@ Dim ctl As Control
 End Sub
 
 Private Sub Form_Load()
-    Set qdf = CurrentDb.QueryDefs("qWeightCategory")
+    Set qdfWC = CurrentDb.QueryDefs("qWeightCategory")
+    Set qdfIC = CurrentDb.QueryDefs("qAnalyticsItemCountSORT")
+    Set qdfAC = CurrentDb.QueryDefs("qAnalyticsACCount")
+    Set qdfICTotals = CurrentDb.QueryDefs("qAnalyticsItemCountTotals")
+    
     populate
 End Sub
 
 Private Sub isTransient_AfterUpdate()
     Me.lblLoadingPasses.Visible = True
     DoEvents
-'    qdf.Parameters("date1") = date1
-'    qdf.Parameters("date2") = date2
-    qdf.Parameters("isTransient") = Nz(isTransient, False)
-    Set lstPassCategory.Recordset = qdf.OpenRecordset
+    qdfWC.Parameters("isTransient") = Nz(isTransient, False)
+    Set lstPassCategory.Recordset = qdfWC.OpenRecordset
     Me.lblLoadingPasses.Visible = False
     Me.lblPassCat.Caption = IIf(isTransient, "Transient", "Local") & " Passes"
     DoEvents
@@ -179,95 +177,109 @@ Private Function populate()
 On Error GoTo poperr
 Dim RS As DAO.Recordset
 Dim sc, sct, ac, qh As String
+date1 = Nz(date1, Nz(DMin("countDate", "tblAnalyticsData"), DateSerial(Year(Date), 1, 1)))
+date2 = Nz(date2, DMax("countDate", "tblAnalyticsData"))
 
+On Error Resume Next
+    Dim totals As Variant
+    totals = sortPivotColumns("qAnalyticsItemCount", _
+                        "qAnalyticsItemCountSORT", _
+                        "tblAnalyticsItems", _
+                        "itemName", _
+                        "order", 1, _
+                        date1, date2)
+On Error GoTo poperr
 
-date1 = Nz(date1, Nz(DMin("countDay", "tblAnalytics"), DateSerial(Year(Date), 1, 1)))
-date2 = Nz(date2, DMax("countDay", "tblAnalytics"))
-
-qdf.Parameters("date1") = date1
-qdf.Parameters("date2") = date2
-qdf.Parameters("isTransient") = isTransient
-Set lstPassCategory.Recordset = qdf.OpenRecordset
-
-    sc = "SELECT  tblAnalytics.ID, tblAnalytics.countDay, tblAnalytics.IFE, tblAnalytics.GE, tblAnalytics.DD1801, tblAnalytics.DD1801Stereo, tblAnalytics.transientArr, tblAnalytics.DVs, tblAnalytics.hazCargo, tblAnalytics.Inspections, tblAnalytics.Checks, tblAnalytics.AF483, tblAnalytics.BASH, tblAnalytics.fireStreamers, tblAnalytics.fireBanger, tblAnalytics.fireLive, tblAnalytics.Depredation " & _
-        "FROM tblAnalytics " & _
-        "WHERE tblAnalytics.countDay Between Format('" & date1 & "','mm/dd/yyyy') And Format('" & date2 & "','mm/dd/yyyy') " & _
-        "ORDER BY tblAnalytics.countDay DESC;"
-        
-    sct = "SELECT Sum(tblAnalytics.IFE) AS SumOfIFE, Sum(tblAnalytics.GE) AS SumOfGE, Sum(tblAnalytics.DD1801) AS SumOfDD1801, Sum(tblAnalytics.DD1801Stereo) AS SumOfDD1801Stereo, Sum(tblAnalytics.transientArr) AS SumOftransientArr, Sum(tblAnalytics.DVs) AS SumOfDVs, Sum(tblAnalytics.hazCargo) AS SumOfhazCargo, Sum(tblAnalytics.Inspections) AS SumOfInspections, Sum(tblAnalytics.Checks) AS SumOfChecks, Sum(tblAnalytics.AF483) AS SumOfAF483, Sum(tblAnalytics.BASH) AS SumOfBASH, Sum(tblAnalytics.fireStreamers) AS SumOffireStreamers, Sum(tblAnalytics.fireBanger) AS SumOffireBanger, Sum(tblAnalytics.fireLive) AS SumOffireLive, Sum(tblAnalytics.Depredation) AS SumOfDepredation " & _
-        "FROM tblAnalytics " & _
-        "WHERE tblAnalytics.countDay Between Format('" & date1 & "','mm/dd/yyyy') And Format('" & date2 & "','mm/dd/yyyy');"
-
-'This counts INDIVIDUAL records
-'    ac = "SELECT qArr.Type, qArr.Arrivals, qDep.Departures " & _
-'            "FROM (SELECT tblTraffic.countType AS Type, Count(tblTraffic.ATA) AS Arrivals FROM tblTraffic WHERE (((tblTraffic.Destination)=DLookUp('station','settings')) AND ((Format(tblTraffic.arrDate,'mm/dd/yyyy') Between Format('" & date1  & "','mm/dd/yyyy') And  Format('" & date2  & "','mm/dd/yyyy')))) AND ((tblTraffic.Status) Like 'Closed') GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qArr " & _
-'            "LEFT JOIN (SELECT tblTraffic.countType AS Type, Count(tblTraffic.ATD) AS Departures FROM tblTraffic WHERE (((tblTraffic.depPoint)=DLookUp('station','settings')) AND ((Format(tblTraffic.depDate,'mm/dd/yyyy')) Between Format('" & date1  & "','mm/dd/yyyy') And Format('" & date2  & "','mm/dd/yyyy')) AND ((tblTraffic.Status) Like 'Closed' Or (tblTraffic.Status) Like 'Enroute')) GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qDep " & _
-'            "ON qArr.Type = qDep.Type " & _
-'        "UNION " & _
-'            "SELECT qDep.Type, qArr.Arrivals, qDep.Departures " & _
-'            "FROM (SELECT tblTraffic.countType AS Type, Count(tblTraffic.ATA) AS Arrivals FROM tblTraffic WHERE (((tblTraffic.Destination)=DLookUp('station','settings')) AND ((Format(tblTraffic.arrDate,'mm/dd/yyyy') Between Format('" & date1  & "','mm/dd/yyyy') And  Format('" & date2  & "','mm/dd/yyyy')))) AND ((tblTraffic.Status) Like 'Closed') GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qArr " & _
-'            "RIGHT JOIN (SELECT tblTraffic.countType AS Type, Count(tblTraffic.ATD) AS Departures FROM tblTraffic WHERE (((tblTraffic.depPoint)=DLookUp('station','settings')) AND ((Format(tblTraffic.depDate,'mm/dd/yyyy')) Between Format('" & date1  & "','mm/dd/yyyy') And Format('" & date2  & "','mm/dd/yyyy')) AND ((tblTraffic.Status) Like 'Closed' Or (tblTraffic.Status) Like 'Enroute')) GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qDep " & _
-'            "ON qDep.Type = qArr.Type " & _
-'        "WHERE qArr.Type IS NULL;"
-
-'This counts NUMBER of acft per flight plan | 26 Jul: Removed Format() from arrDate and depDate
-'    ac = "SELECT qArr.Type, qArr.Arrivals, qDep.Departures " & _
-            "FROM (SELECT tblTraffic.countType AS Type, Sum(tblTraffic.Number) AS Arrivals FROM tblTraffic WHERE (((tblTraffic.Destination)=DLookUp('station','settings')) AND ((IIf(IsDate(tblTraffic.arrDate), DateValue(tblTraffic.arrDate), Null) Between CDate(" & date1 & ") And CDate(" & date2 & ")) AND ((tblTraffic.Status) Like 'Closed') GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qArr " & _
-            "LEFT JOIN (SELECT tblTraffic.countType AS Type, Sum(tblTraffic.Number) AS Departures FROM tblTraffic WHERE (((tblTraffic.depPoint)=DLookUp('station','settings')) AND ((IIf(IsDate(tblTraffic.depDate),DateValue(tblTraffic.depDate), Null) Between CDate(" & date1 & ") And CDate(" & date2 & ")) AND ((tblTraffic.Status) Like 'Closed' Or (tblTraffic.Status) Like 'Enroute')) GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qDep " & _
-            "ON qArr.Type = qDep.Type " & _
-        "UNION " & _
-            "SELECT qDep.Type, qArr.Arrivals, qDep.Departures " & _
-            "FROM (SELECT tblTraffic.countType AS Type, Sum(tblTraffic.Number) AS Arrivals FROM tblTraffic WHERE (((tblTraffic.Destination)=DLookUp('station','settings')) AND ((IIf(IsDate(tblTraffic.arrDate), DateValue(tblTraffic.arrDate), Null) Between CDate(" & date1 & ") And CDate(" & date2 & ")) AND ((tblTraffic.Status) Like 'Closed') GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qArr " & _
-            "RIGHT JOIN (SELECT tblTraffic.countType AS Type, Sum(tblTraffic.Number) AS Departures FROM tblTraffic WHERE (((tblTraffic.depPoint)=DLookUp('station','settings')) AND ((IIf(IsDate(tblTraffic.depDate),DateValue(tblTraffic.depDate),Null) Between CDate(" & date1 & ") And CDate(" & date2 & ")) AND ((tblTraffic.Status) Like 'Closed' Or (tblTraffic.Status) Like 'Enroute')) GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qDep " & _
-            "ON qDep.Type = qArr.Type " & _
-        "WHERE qArr.Type IS NULL;"
-        
-    ac = "SELECT qArr.Type, qArr.Arrivals, qDep.Departures  FROM (SELECT tblTraffic.countType AS Type, Sum(tblTraffic.Number) AS Arrivals FROM tblTraffic " & _
-            "WHERE (((tblTraffic.Destination)=DLookUp('station','tblSettings'))) " & _
-            "AND ((IIf(IsDate(tblTraffic.arrDate), DateValue(tblTraffic.arrDate), Null) Between CDate('" & date1 & "') And CDate('" & date2 & "'))) " & _
-            "AND ((tblTraffic.Status) Like 'Closed') GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qArr LEFT JOIN (SELECT tblTraffic.countType AS Type, Sum(tblTraffic.Number) AS Departures FROM tblTraffic WHERE(((tblTraffic.depPoint)=DLookUp('station','tblSettings'))) " & _
-            "AND ((IIf(IsDate(tblTraffic.depDate), DateValue(tblTraffic.depDate), Null) Between CDate('" & date1 & "') And CDate('" & date2 & "'))) " & _
-            "AND ((tblTraffic.Status) Like 'Closed' Or (tblTraffic.Status) Like 'Enroute') GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qDep ON qArr.Type = qDep.Type UNION SELECT qDep.Type, qArr.Arrivals, qDep.Departures  FROM (SELECT tblTraffic.countType AS Type, Sum(tblTraffic.Number) AS Arrivals FROM tblTraffic " & _
-            "WHERE (((tblTraffic.Destination)=DLookUp('station','tblSettings'))) " & _
-            "AND ((IIf(IsDate(tblTraffic.arrDate), DateValue(tblTraffic.arrDate), Null) Between CDate('" & date1 & "') And CDate('" & date2 & "'))) " & _
-            "AND ((tblTraffic.Status) Like 'Closed')GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qArr RIGHT JOIN (SELECT tblTraffic.countType AS Type, Sum(tblTraffic.Number) AS Departures  FROM tblTraffic  WHERE (((tblTraffic.depPoint)=DLookUp('station','tblSettings')))  AND ((IIf(IsDate(tblTraffic.depDate), DateValue(tblTraffic.depDate), Null) Between CDate('" & date1 & "') And CDate('" & date2 & "')))   AND ((tblTraffic.Status) Like 'Closed' Or (tblTraffic.Status) Like 'Enroute') " & _
-            "GROUP BY tblTraffic.countType  HAVING (((tblTraffic.countType) Is Not Null))) as qDep ON qDep.Type = qArr.Type   WHERE qArr.Type IS NULL;"
-
-'    qh = "SELECT tblTraffic.ID, tblTraffic.Callsign, tblTraffic.Type, tblTraffic.Tail, Format(IIf([Destination] Like DLookUp('station','settings'),[arrdate],''),'dd-mmm-yy hh:nn') AS [Arrival Date (L)], Format(IIf([depPoint] Like DLookUp('station','settings'),[depDate],''),'dd-mmm-yy hh:nn') AS [Departure Date (L)], IIf(([ATA] Between Format(ltoz('22:00'),'Short Time') And Format(ltoz('06:00'),'Short Time')) And ([Destination] Like DLookUp('station','settings')),IIf(([ATD] Between Format(ltoz('22:00'),'Short Time') And Format(ltoz('06:00'),'Short Time')) And ([depPoint] Like DLookUp('station','settings')),'Both','Arrival'),'Departure') AS Movement " & _
-'        "FROM tblTraffic " & _
-'        "WHERE (((tblTraffic.ATA) Between Format(ltoz('22:00'),'Short Time') And Format(ltoz('06:00'),'Short Time')) AND ((Format(tblTraffic.arrDate,'mm/dd/yyyy') Between Format('" & date1 & "','mm/dd/yyyy') And Format('" & date2 & "','mm/dd/yyyy')) And (tblTraffic.Destination)=DLookUp('station','settings'))) OR (((tblTraffic.ATD) Between Format(ltoz('22:00'),'Short Time') And Format(ltoz('06:00'),'Short Time')) AND ((Format(tblTraffic.depDate,'mm/dd/yyyy')) Between Format('" & date1 & "' ,'mm/dd/yyyy') And Format('" & date2 & "','mm/dd/yyyy')) And (tblTraffic.depPoint)=DLookUp('station','settings'));"
-        
-    qh = "SELECT tblTraffic.ID, tblTraffic.Callsign, tblTraffic.acType, tblTraffic.Tail, Format(IIf([Destination] Like DLookUp('station','tblSettings'),[arrdate],''),'dd-mmm-yy hh:nn') AS [Arrival Date (L)], Format(IIf([depPoint] Like DLookUp('station','tblSettings'),[depDate],''),'dd-mmm-yy hh:nn') AS [Departure Date (L)], IIf(([ATA] Between Format(ltoz('22:00'),'Short Time') And Format(ltoz('06:00'),'Short Time')) And ([Destination] Like DLookUp('station','tblSettings')),IIf(([ATD] Between Format(ltoz('22:00'),'Short Time') And Format(ltoz('06:00'),'Short Time')) And ([depPoint] Like DLookUp('station','tblSettings')),'Both','Arrival'),'Departure') AS Movement " & _
-        "FROM tblTraffic " & _
-        "WHERE ((Format([ATA],'Short Time') Between Format('" & LToZ("22:00") & "','Short Time') And Format('" & LToZ("06:00") & "','Short Time')) AND ((Format(tblTraffic.arrDate,'mm/dd/yyyy') Between Format('" & date1 & "','mm/dd/yyyy') And Format('" & date2 & "','mm/dd/yyyy')) And (tblTraffic.Destination)=DLookUp('station','tblSettings'))) " & _
-        "OR ((Format([ATD],'Short Time') Between Format('" & LToZ("22:00") & "','Short Time') And Format('" & LToZ("06:00") & "','Short Time')) AND ((Format(tblTraffic.depDate,'mm/dd/yyyy')) Between Format('" & date1 & "' ,'mm/dd/yyyy') And Format('" & date2 & "','mm/dd/yyyy')) And (tblTraffic.depPoint)=DLookUp('station','tblSettings'));"
+    lstShiftCountTotals.RowSource = totals & "#" & date1 & "# And #" & date2 & "#"
     
-        
-    shiftCount.RowSource = sc
+    qdfWC.Parameters("date1") = date1
+    qdfWC.Parameters("date2") = date2
+    qdfWC.Parameters("isTransient") = isTransient
+    Set lstPassCategory.Recordset = qdfWC.OpenRecordset
+    
+    qdfIC.Parameters("date1") = date1
+    qdfIC.Parameters("date2") = date2
+    Set shiftCount.Recordset = qdfIC.OpenRecordset
+    
+    qdfICTotals.Parameters("date1") = date1
+    qdfICTotals.Parameters("date2") = date2
+    Set lstShiftCountTotals.Recordset = qdfICTotals.OpenRecordset
+    
+    qdfAC.Parameters("date1") = date1
+    qdfAC.Parameters("date2") = date2
+    Set acCount.Recordset = qdfAC.OpenRecordset
+    
+    If qdfIC.Fields.Count <> 0 Then
+        shiftCount.ColumnCount = qdfIC.Fields.Count
+        lstShiftCountTotals.ColumnCount = qdfIC.Fields.Count
+    End If
+    
+    Dim strTotals As Variant: strTotals = Null
+    Dim f: For Each f In qdfIC.Fields
+        If f.Name <> "Date" Then
+            strTotals = IIf(Not IsNull(strTotals), strTotals & ", sum([" & f.Name & "])", "sum([" & f.Name & "])")
+        End If
+    Next f
+    
+    strTotals = "SELECT " & strTotals & " FROM qAnalyticsItemCount WHERE countDate Between #" & date1 & "# And #" & date2 & "#"
+    lstShiftCountTotals.RowSource = strTotals
+    
+    Dim cw As String: cw = "1"""
+    Dim i: For i = 1 To qdfIC.Fields.Count + 1
+        cw = cw & ";1.3"""
+    Next i
+    shiftCount.ColumnWidths = cw
+    lstShiftCountTotals.ColumnWidths = Right(cw, Len(cw) - 3)
 
-    shiftCountTotal.RowSource = sct
+    'ac = "SELECT qArr.Type, qArr.Arrivals, qDep.Departures  FROM (SELECT tblTraffic.countType AS Type, Sum(tblTraffic.Number) AS Arrivals FROM tblTraffic " & _
+            "WHERE (((tblTraffic.Destination)=DLookup("data","tblSettings","key = 'station'"))) " & _
+            "AND ((IIf(IsDate(tblTraffic.arrDate), DateValue(tblTraffic.arrDate), Null) Between CDate('" & date1 & "') And CDate('" & date2 & "'))) " & _
+            "AND ((tblTraffic.Status) Like 'Closed') GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qArr LEFT JOIN (SELECT tblTraffic.countType AS Type, Sum(tblTraffic.Number) AS Departures FROM tblTraffic WHERE(((tblTraffic.depPoint)=DLookup("data","tblSettings","key = 'station'"))) " & _
+            "AND ((IIf(IsDate(tblTraffic.depDate), DateValue(tblTraffic.depDate), Null) Between CDate('" & date1 & "') And CDate('" & date2 & "'))) " & _
+            "AND ((tblTraffic.Status) Like 'Closed' Or (tblTraffic.Status) Like 'Enroute') GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qDep ON qArr.Type = qDep.Type " & _
+            "UNION SELECT qDep.Type, qArr.Arrivals, qDep.Departures  FROM (SELECT tblTraffic.countType AS Type, Sum(tblTraffic.Number) AS Arrivals FROM tblTraffic " & _
+            "WHERE (((tblTraffic.Destination)=DLookup("data","tblSettings","key = 'station'"))) " & _
+            "AND ((IIf(IsDate(tblTraffic.arrDate), DateValue(tblTraffic.arrDate), Null) Between CDate('" & date1 & "') And CDate('" & date2 & "'))) " & _
+            "AND ((tblTraffic.Status) Like 'Closed')GROUP BY tblTraffic.countType HAVING (((tblTraffic.countType) Is Not Null))) as qArr RIGHT JOIN (SELECT tblTraffic.countType AS Type, Sum(tblTraffic.Number) AS Departures  FROM tblTraffic  WHERE (((tblTraffic.depPoint)=DLookup("data","tblSettings","key = 'station'")))  AND ((IIf(IsDate(tblTraffic.depDate), DateValue(tblTraffic.depDate), Null) Between CDate('" & date1 & "') And CDate('" & date2 & "')))   AND ((tblTraffic.Status) Like 'Closed' Or (tblTraffic.Status) Like 'Enroute') " & _
+            "GROUP BY tblTraffic.countType  HAVING (((tblTraffic.countType) Is Not Null))) as qDep ON qDep.Type = qArr.Type   WHERE qArr.Type IS NULL;"
+ 
+    qh = "SELECT tblTraffic.ID, tblTraffic.Callsign, tblTraffic.acType, tblTraffic.Tail, Format(IIf([Destination] Like DLookup('data','tblSettings','key = ""station""'),[arrdate],''),'dd-mmm-yy hh:nn') AS [Arrival Date (L)], Format(IIf([depPoint] Like DLookup('data','tblSettings','key = ""station""'),[depDate],''),'dd-mmm-yy hh:nn') AS [Departure Date (L)], IIf(([ATA] Between Format(ltoz('22:00'),'Short Time') And Format(ltoz('06:00'),'Short Time')) And ([Destination] Like DLookup('data','tblSettings','key = ""station""')),IIf(([ATD] Between Format(ltoz('22:00'),'Short Time') And Format(ltoz('06:00'),'Short Time')) And ([depPoint] Like DLookup('data','tblSettings','key = ""station""')),'Both','Arrival'),'Departure') AS Movement " & _
+        "FROM tblTraffic " & _
+        "WHERE ((Format([ATA],'Short Time') Between Format('" & LToZ("22:00") & "','Short Time') And Format('" & LToZ("06:00") & "','Short Time')) AND ((Format(tblTraffic.arrDate,'mm/dd/yyyy') Between Format('" & date1 & "','mm/dd/yyyy') And Format('" & date2 & "','mm/dd/yyyy')) And (tblTraffic.Destination)=DLookup('data','tblSettings','key = ""station""'))) " & _
+        "OR ((Format([ATD],'Short Time') Between Format('" & LToZ("22:00") & "','Short Time') And Format('" & LToZ("06:00") & "','Short Time')) AND ((Format(tblTraffic.depDate,'mm/dd/yyyy')) Between Format('" & date1 & "' ,'mm/dd/yyyy') And Format('" & date2 & "','mm/dd/yyyy')) And (tblTraffic.depPoint)=DLookup('data','tblSettings','key = ""station""'));"
 
-    acCount.RowSource = ac
+    'acCount.RowSource = ac
     
     qhList.RowSource = qh
     
     qhTotal = IIf(qhList.ListCount <= 0, 1, qhList.ListCount) - 1
     
-    CurrentDb.QueryDefs("qTrafficCount").sql = ac
-    acArr = DSum("qArr.Arrivals", "qTrafficCount")
-    acDep = DSum("qDep.Departures", "qTrafficCount")
+    'CurrentDb.QueryDefs("qTrafficCount").sql = ac
+    
+    acArr = colSum(acCount, 1)
+    acDep = colSum(acCount, 2)
 
 popexit:
     Exit Function
     Resume Next
 poperr:
     MsgBox Error$
-   
+   Exit Function
+End Function
+
+Private Function colSum(ByRef ctl As Control, col As Integer) As Integer
+'If IsNull(ctl) Then Exit Function
+
+    Dim i: For i = 1 To ctl.ListCount - 1
+        colSum = colSum + IIf(ctl.Column(col, i) = "", 0, ctl.Column(col, i))
+    Next i
+    
 End Function
 
 Private Sub shiftCount_DblClick(cancel As Integer)
     If IsNull(shiftCount.Column(0)) Then Exit Sub
-    DoCmd.OpenForm "frmTrafficCountEntry", , , "ID=" & shiftCount.Column(0), acFormEdit
+    DoCmd.OpenForm "frmTrafficCountEntry", , , , , acDialog, shiftCount.Column(0)
+    populate
 End Sub
 
 Private Sub timeBlock_Click()
@@ -275,7 +287,7 @@ Private Sub timeBlock_Click()
     Select Case timeBlock
     Case 1 'All Time
         cbYear = Null
-        date1 = DMin("countDay", "tblAnalytics")
+        date1 = DMin("countDate", "tblAnalyticsData")
         date2 = Date
         populate
         
@@ -313,6 +325,126 @@ Private Sub timeBlock_Click()
     End Select
 End Sub
 
+Public Function sortPivotColumns(querynameSource As String, queryname As String, SortName As String, SortColumnNameField As String, SortIndexName As String, NonPivotFieldCount As Integer, ParamArray ParamArr() As Variant) As String
+
+' This sub goes through several steps to effectively adds an In list that sorts the 'Columns' of a crosstab query in MS Access
+' 13 November 2012
+' E Easterly
+'
+' This technique uses several components.
+' 1) The original unmodified cross tab query (querynameSource)
+' 2) The resulting, columns-have-been-sorted query (query)
+' 3) An index table which has two columns, a numeric index used for sorting and the column name
+' 4) A table or query that can be joined on the column names of the cross tab query to update the index table
+'    The name of the table or query would be 'SortName'
+'    The field in 'SortName' that the crosstab query columns are joined against is the 'SortColumnNameField'
+'    The field in 'SortName' that has the desired order is the SortIndexName
+' 5) A number which specifies the count of non-pivot/row heading columns (NonPivotFieldCount)
+' 6) An optional array that contains any parameters needed for the query
+'
+'
+'   USE:
+'
+'   SortPivotColumns "qryCrosstab_Initial", _
+'                 "qryCrosstab_Sorted", _
+'                 "tblKeyDescriptions", _
+'                 "Descriptions", _
+'                 "NumericIndexForSorting", _
+'                  1
+'
+'
+'
+'
+Dim RS As DAO.Recordset
+Dim db As Database
+Dim fld As DAO.Field
+Dim sql As String
+Dim ColumnHeading As Variant
+Dim qdf As QueryDef
+Dim qdfSRC As QueryDef
+Dim UpdateIndexSQL As Variant
+    
+    DoCmd.SetWarnings False 'Turn off warnings
+    
+    Set db = CurrentDb
+    
+    Set qdfSRC = db.QueryDefs(querynameSource)
+    Set qdf = db.QueryDefs(queryname)
+    qdf.sql = qdfSRC.sql
+    
+    If Not (IsEmpty(ParamArr)) Then
+        Dim i As Integer
+        For i = 0 To UBound(ParamArr)
+            qdf.Parameters(i) = ParamArr(i)
+        Next
+    End If
+    
+    
+    ' First, get the list of fields from the query
+    
+    Set RS = qdf.OpenRecordset
+    
+    ' Then, create a temporary indexing table
+    If Not IsNull(DLookup("Name", "MSysObjects", "Name='ttblSortCrosstabColumns' And Type In (1,4,6)")) Then
+        db.Execute "DROP TABLE ttblSortCrosstabColumns"
+    End If
+    
+    db.Execute "CREATE TABLE ttblSortCrosstabColumns (FieldIndex INTEGER , ColumnName TEXT(250))"
+    
+    ' And populate it with the current index and column names from queryname
+      For Each fld In RS.Fields
+        If fld.OrdinalPosition > (NonPivotFieldCount - 1) Then
+            DoCmd.RunSQL "Insert into ttblSortCrosstabColumns VALUES(" & fld.OrdinalPosition & ", """ & fld.Name & """)"
+        End If
+      Next fld
+      Set fld = Nothing
+      RS.Close
+      Set RS = Nothing
+    
+    
+    ' Now, the temporary table is joined with the sort table/query and the indexes are updated
+    UpdateIndexSQL = ("  UPDATE ttblSortCrosstabColumns " & _
+                      "  INNER JOIN " & SortName & " ON ttblSortCrosstabColumns.ColumnName=" & SortName & "." & SortColumnNameField & _
+                      "  Set ttblSortCrosstabColumns.FieldIndex = [" & SortIndexName & "]")
+    DoCmd.RunSQL (UpdateIndexSQL)
+    
+    
+    ' Then, the column headings are added to a string to prepare the In list
+    sql = "SELECT ttblSortCrosstabColumns.ColumnName FROM ttblSortCrosstabColumns ORDER BY ttblSortCrosstabColumns.FieldIndex"
+    Set RS = db.OpenRecordset(sql)
+        RS.MoveFirst
+        ColumnHeading = "'" & RS.Fields(0).Value & "'"
+        sortPivotColumns = "SELECT Sum([" & RS.Fields(0).Value & "])"
+        RS.MoveNext
+    
+        Do While Not RS.EOF
+        ColumnHeading = ColumnHeading & ", '" & RS.Fields(0).Value & "'"
+        sortPivotColumns = sortPivotColumns & ", Sum([" & RS.Fields(0).Value & "])"
+        RS.MoveNext
+        Loop
+        
+        sortPivotColumns = sortPivotColumns & " FROM " & queryname
+    
+    RS.Close
+    Set RS = Nothing
+    db.Execute "DROP TABLE ttblSortCrosstabColumns"
+    
+    Dim cs As Variant
+    
+    ' Set qdf = db.QueryDefs(queryname)   ' may not need this
+    
+    ' The query is updated with the In list
+    cs = Left$(qdf.sql, Len(qdf.sql) - 3) & " In(" & ColumnHeading & ");"
+    
+    qdf.sql = cs
+    
+    
+    ' Take a look at the resulting query sql by uncommenting the below section
+    'Debug.Print cs
+    
+    DoCmd.SetWarnings True  'Turn warnings back on
+
+End Function
 'Private Sub timeToday_Click()
 '    timeToday = True
 '    alltime = False

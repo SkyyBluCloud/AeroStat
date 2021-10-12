@@ -33,7 +33,7 @@ End If
     DoCmd.OpenForm "frmShiftBoard", , , "shiftID = " & listShift.Column(0), acFormEdit, , listShift.Column(0)
     DoCmd.Close acForm, "frmShiftSelect"
     
-sExit:
+sexit:
     Exit Sub
 errtrap:
     MsgBox Error$
@@ -43,6 +43,8 @@ errtrap:
 End Sub
 
 Private Sub new_Click()
+On Error Resume Next
+DoCmd.Close acForm, "frmShiftBoard"
 DoCmd.Close acForm, "frmShiftSelect"
 DoCmd.OpenForm "frmShiftBoard", , , , acFormAdd
 End Sub

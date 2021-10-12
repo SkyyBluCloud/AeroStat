@@ -9,12 +9,50 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
 Public bClose As Boolean
-Dim lstOnShiftChange As New Collection
+Dim collOnShiftChanges As New Collection
+
+Private Sub btnCommentDelete_Click()
+On Error GoTo errtrap
+If Nz(lstComments, 0) = 0 Then Exit Sub
+
+    CurrentDb.Execute "UPDATE tblShiftPassDown SET archive = True WHERE ID = " & lstComments, dbFailOnError
+    lstComments.Requery
+sexit:
+    FormSyncUtil.syncForm Me.Name
+    Exit Sub
+errtrap:
+    ErrHandler err, Error$, Me.Name & ".btnCommentDelete_Click"
+    
+End Sub
+
+Private Sub btnCommentNew_Click()
+On Error GoTo errtrap
+Dim comment As String: comment = InputBox("Enter a comment:", "Shift Comment")
+Dim sel As String: sel = shiftID & ", """ & comment & """, """ & getOpInitials(getUSN) & """"
+
+    CurrentDb.Execute "INSERT INTO tblShiftPassDown (shiftID, comment, opInitials) SELECT " & sel & ";", dbFailOnError
+    lstComments.Requery
+
+sexit:
+    FormSyncUtil.syncForm Me.Name
+    Exit Sub
+
+errtrap:
+    ErrHandler err, Error$, Me.Name & ".btnCommentNew_Click"
+    Beep
+End Sub
+
+Private Sub btnNewShift_Click()
+'CurrentDb.Execute "UPDATE tblUserAuth SET onShift = False WHERE username = '" & Util.getUSN & "'"
+DoCmd.OpenForm "frmshiftselect", , , , , acDialog
+'DoCmd.Close acForm, "frmShiftBOARD"
+'DoCmd.OpenForm "frmShiftBoard", , , "shiftid = " & sid, acFormEdit, , sid
+End Sub
 
 Private Sub btnReloadNOTAMs_Click()
 notamM = DCount("NOTAM", "qNOTAMM", "left([NOTAM],1) = 'M'")
 notamL = DCount("NOTAM", "qNOTAML", "left([NOTAM],1) = 'L'")
-
+FormSyncUtil.syncForm Me.Name
 End Sub
 
 Private Function dirtyCheck()
@@ -32,19 +70,22 @@ lstOsSel = getSelection(lstOnShift)
     
     Dim authLevel As Integer
     For Each a In lstOsSel
-        lstOnShift.RemoveItem (a)
-        authLevel = DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(a, 2) & "'")
-        lstOnShiftChange.add (a & " " & IIf(authLevel = 8, "(TRAINEE)", "(AMOC)") & " OFF SHIFT")
         
+        authLevel = DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(a, 2) & "'")
+        'collOnShiftChanges.add (a & " " & IIf(authLevel = 8, "(TRAINEE)", "(AMOC)") & " OFF SHIFT")
+        collOnShiftChanges.add (a & " OFF DUTY")
+        lstOnShift.RemoveItem (a)
     Next
     
     CurrentDb.Execute "UPDATE tblUserAuth SET onShift = False WHERE ([rankID] & ' ' & Left([firstName],1) & '. ' & [lastName] & '/' & [opInitials]) = '" & join(lstOsSel, "' OR ([rankID] & ' ' & Left([firstName],1) & '. ' & [lastName] & '/' & [opInitials]) = '") & "'"
     
     Me.superLead.SetFocus
     Me.amoc = lstOnShift.RowSource
+    log amoc, Me.Name
     Me.Dirty = True
     btnSave = Dirty
     bClose = False
+    FormSyncUtil.syncForm Me.Name
 End Sub
 
 Private Sub btnReview_Click()
@@ -64,22 +105,19 @@ Private Sub btnSave_Click()
         idx = idx + 1
     Next
     
-    If lstOnShiftChange.Count <> 0 Then
+    If collOnShiftChanges.Count <> 0 Then
         idx = 0
-        For Each s In lstOnShiftChange
+        For Each s In collOnShiftChanges
             ReDim Preserve changes(0 To idx) As String
             changes(idx) = s
             idx = idx + 1
         Next
-        
-        
-        
+
         If MsgBox("Add log entry?" & vbCrLf & vbCrLf & UCase(join(changes, ". ")), vbQuestion + vbYesNo, "Shift Board") = vbYes Then
             UtilForm3616.newEntry shiftID, LToZ(Now), UCase(join(changes, ". "))
         End If
     End If
-        
-    
+            
     'Update users on shift
     CurrentDb.Execute "UPDATE tblUserAuth SET lastShift = " & shiftID & ", onShift = True WHERE opInitials = '" & Right(superLead, 2) & "' OR opInitials = '" & _
         join(onShiftInitials, "' OR opInitials = '") & "'"
@@ -87,12 +125,13 @@ Private Sub btnSave_Click()
     'Update users who are no longer on the shift
     CurrentDb.Execute "UPDATE tblUserAuth SET onShift = False WHERE lastShift = " & shiftID & " AND (opInitials <> '" & Right(superLead, 2) & "' AND opInitials <> '" & _
         join(onShiftInitials, "' AND opInitials <> '") & "')"
-        
-    
-            
+                    
     If Me.Dirty Then Me.Dirty = False
     btnSave = Me.Dirty
-    Set lstOnShiftChange = New Collection
+    
+    FormSyncUtil.syncForm Me.Name
+    
+    Set collOnShiftChanges = New Collection 'Changes were saved; reset the collection object
     dirtyCheck
     
 End Sub
@@ -102,19 +141,35 @@ Select Case btnStartStop
 Case True
     btnStartStop.Caption = "Close and Sign"
 Case False
-    btnStartStop.Enabled = Not Me.closed
+    btnStartStop.enabled = Not Me.closed
     btnStartStop.Caption = "Start Shift"
 End Select
 End Sub
 
 Private Sub btnStartStop_Click()
-Dim recsrc As String
+Dim recsrc As String: recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
 Dim RS As DAO.Recordset
 Dim inc As Boolean
-
-recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
-
+    
+    For Each ctl In Controls
+        If TypeOf ctl Is TextBox Then
+            If ctl.Tag Like "*nonull*" Then
+                If Nz(ctl.Value) = "" Then
+                    inc = True
+                    ctl.BorderColor = RGB(255, 0, 0)
+                Else
+                    ctl.BorderColor = RGB(166, 166, 166)
+                End If
+            End If
+            If ctl.Tag Like "*caps*" Then
+                ctl.Value = UCase(ctl.Value)
+            End If
+        End If
+    Next
+    If inc Then GoTo fallback
+        
     Select Case btnStartStop
+    
     Case True 'Shift start
         If Nz(superLead) = "" Then
             btnStartStop = False
@@ -123,6 +178,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
         End If
         
         btnReloadNOTAMs_Click
+        
         If Nz(shiftTitle) = "" Then
             shiftTitle.BorderColor = RGB(255, 0, 0)
             btnStartStop = False
@@ -132,9 +188,10 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
             shiftTitle.BorderColor = RGB(166, 166, 166)
         End If
         
-        es = DLookup("shiftID", "tblShiftManager", "Format(shiftStart,'dd-mmm-yy hh:nn') = Format('" & shiftStart & "','dd-mmm-yy hh:nn')")
+        'es = DLookup("shiftID", "tblShiftManager", "Format(shiftStart,'dd-mmm-yy hh:nn') = Format('" & shiftStart & "','dd-mmm-yy hh:nn')")
+        es = DLookup("shiftID", "tblShiftManager", "shiftStart Between #" & shiftStart & "# And #" & DateAdd("n", -1, shiftEnd) & "#")
         If Not IsNull(es) Then
-            If MsgBox("This shift was already started. Would you like to view it?", vbQuestion + vbYesNo, "AeroStat") = vbYes Then
+            If MsgBox("This shift was already started. Would you like to view it?" & vbCrLf & vbCrLf & shiftTitle & ": " & DLookup("superlead", "tblshiftmanager", "shiftid = " & es) & vbCrLf & shiftStart & " - " & shiftEnd, vbQuestion + vbYesNo, "AeroStat") = vbYes Then
                 Undo
                 DoCmd.OpenForm "frmShiftBOARD", , , "shiftID = " & es, acFormEdit
                 Exit Sub
@@ -151,7 +208,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
     '    Next
         '''''
         
-        '''''Null check
+        'Null check
         For Each ctl In Controls
             If TypeOf ctl Is TextBox Then
                 If ctl.Tag Like "*nonull*" Then
@@ -167,13 +224,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
                 End If
             End If
         Next
-        If inc Then
-            btnStartStop = False
-            btnStartStop_AfterUpdate
-            Exit Sub
-        End If
-
-
+        If inc Then GoTo fallback
 
         Dim msg As String
         Dim idx As Integer
@@ -210,6 +261,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
             Dim args As New Collection
             entry = Nz(DLookup("openstatement", "tblshiftdef", "shifttitle = '" & shiftTitle & "'"))
             a = InStr(1, entry, "[")
+            
             Do While a <> 0
                 b = InStr(a, entry, "]")
                 args.add Mid(entry, a, b - (a - 1))
@@ -217,7 +269,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
             Loop
             
             'Iterate through args and replace with relevant data
-            
+            'TODO: Shouldn't be hard-coded
             For Each arg In args
                 Dim result As String
                 Select Case arg
@@ -230,7 +282,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
                     For Each c In Split(lstOnShift.RowSource, ";")
                         authLevel = DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(c, 2) & "'")
                         'result = result & ", " & Right(c, 2) & "/" & IIf(authLevel = 8, "TRAINEE", "AMOC")
-                        result = result & ", " & Right(c, 2) & " " & IIf(authLevel = 8, "(TRAINEE)", "(AMOC)")
+                        result = result & ", " & c & " " & IIf(authLevel = 8, "(TRAINEE)", "(AMOC)")
                     Next
                     
                     result = result & " ON DUTY"
@@ -241,6 +293,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
                     Dim oldSuperLead, oldAmoc As String
                     Set rsOld = CurrentDb.OpenRecordset("SELECT * FROM tblShiftManager WHERE #" & DateAdd("s", -2, shiftStart) & "# Between shiftStart and shiftEnd")
                     With rsOld
+                    
                         If .RecordCount <> 0 Then
                             .MoveLast
                             .MoveFirst
@@ -250,12 +303,12 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
                             'oldSuperLead = Replace(!superLead, Right(!superLead, 3), "")
                             oldSuperLead = !superLead
                             For Each a In Split(Nz(!amoc), ";")
-                                oldAmoc = IIf(Nz(oldAmoc) = "", Right(a, 2), oldAmoc & ", " & Right(a, 2))
+                                If Nz(InStr(1, lstOnShift.RowSource, a), 0) = 0 Then oldAmoc = IIf(Nz(oldAmoc) = "", a, oldAmoc & ", " & a)
                             Next
                         End If
                         
                         If Not .EOF Then
-                            result = UCase(oldSuperLead) & ", " & oldAmoc & " OFF DUTY"
+                            result = UCase(oldSuperLead) & IIf(Nz(oldAmoc) = "", "", ", " & oldAmoc) & " OFF DUTY"
                         Else
                             result = "__/__ OFF DUTY"
                         End If
@@ -294,7 +347,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
                     Else
                         openCall = Split(DLookup("opencall", "tblshiftdef", "shifttitle = '" & shiftTitle & "'"), ",")
                         For Each oc In openCall
-                            ocInitials = Nz(ocInitials) & IIf(Nz(ocInitials) = "", "", ", ") & oc & "/" & InputBox("Call/notify and enter initials for " & oc, "Coordination Required")
+                            ocInitials = Nz(ocInitials) & IIf(Nz(ocInitials) = "", "", ", ") & oc & "/" & InputBox("Call/notify and enter initials for " & oc, "Coordination Required") ' TODO: Don't hard-code
                         Next
                         result = ocInitials & " NOTIFIED."
                         'entry = Replace(entry, arg, result)
@@ -302,7 +355,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
                 
                 
                 Case Else 'Argument not found
-                    log "Argument not found: " & arg, "frmShiftBoard.btnStartStop_Click", "WARN"
+                    log "Argument <" & arg & "> not found when starting the shift (" & shiftTitle & " #" & shiftID & ")", "frmShiftBoard.btnStartStop_Click (Start)", "WARN"
                     result = ""
                 
                 End Select
@@ -313,6 +366,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
             If Dirty Then Dirty = False
             
             'Send it.
+            'If Not IsNull(entry) Then UtilForm3616.newEntry shiftID, DateSerial(Year(shiftStart), Month(shiftStart), Day(shiftStart)) + LToZ(shiftStart), entry
             If Not IsNull(entry) Then UtilForm3616.newEntry shiftID, LToZ(shiftStart), entry
         
 '            '''''AUTOLOG
@@ -344,7 +398,7 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
 '            End With
 '            End If
            
-            MsgBox msg & vbCrLf & vbCrLf & "Created successfully!", , "New Shift"
+            MsgBox msg & vbCrLf & vbCrLf & "Created successfully!", vbInformation, "New Shift"
             'Me.AF3616.SourceObject = "frm3616"
             Dim sid As Integer
             sid = shiftID
@@ -357,26 +411,35 @@ recsrc = "SELECT * FROM tblshiftmanager WHERE shiftID = " & shiftID
 '----------------------------------------------------------------------------------------------------
 
     Case False 'Shift end
-        If shiftTitle Like "*swingshift*" Then
-            If MsgBox("Close the aerodrome?", vbQuestion + vbYesNo, "Shift Board") = vbYes Then rwy = "AD CLSD"
-        End If
-        If MsgBox("This will apply your digital signature to all paperwork regarding this shift. Continue?", vbInformation + vbYesNo, "Shift Board") = vbNo Then
+'        If shiftTitle Like "*swingshift*" Then
+'            If MsgBox("Close the aerodrome?", vbQuestion + vbYesNo, "Shift Board") = vbYes Then rwy = "AD CLSD"
+'        End If
+        If MsgBox("Close and sign for shift?", vbInformation + vbYesNo, "Shift Board") = vbNo Then
             btnStartStop = True
             btnStartStop_AfterUpdate
             Exit Sub
         End If
         
-        On Error Resume Next
-        If Not UtilForm3616.signLog(shiftID, recsrc, 2) Then
-            btnStartStop = True
-            btnStartStop_AfterUpdate
-            Exit Sub
-        End If
         
         Me.closed = True
+        bClose = True
         If Dirty Then Dirty = False
+        On Error Resume Next
+        If Not UtilForm3616.signLog(shiftID, 1) Then
+            btnStartStop = True
+            btnStartStop_AfterUpdate
+            Exit Sub
+        End If
+
         DoCmd.Close acForm, "frmShiftBoard"
     End Select
+    
+sexit:
+    FormSyncUtil.syncForm Me.Name
+    Exit Sub
+fallback:
+    btnStartStop = Not btnStartStop
+    btnStartStop_AfterUpdate
 End Sub
 
 Private Sub Detail_Click()
@@ -400,6 +463,10 @@ btnSave = Me.Dirty
     bClose = False
 End Sub
 
+Private Sub Form_Close()
+Set collOnShiftChanges = Nothing
+End Sub
+
 Private Sub Form_Current()
 bClose = False
 btnStartStop = Not NewRecord
@@ -412,19 +479,25 @@ Dim offshift() As String
     
     If NewRecord And IsNull(Me.shiftID) Then
         'Get data from previous shift.
+        Me.TimerInterval = 0
+        
         lstOnShift.RowSource = ""
         btnStartStop.Caption = "Start Shift"
         Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblShiftManager WHERE shiftid = " & Nz(DMax("shiftid", "tblshiftmanager"), 0))
         With RS
             On Error Resume Next
             For Each ctl In Me.Controls
-                If ctl.Tag Like "*lastShift*" Then
+            
+                If ctl.Name = "amoc" Then
+                    lstOnShift.RowSource = !amoc
+                    ctl.Value = !amoc
+                ElseIf ctl.Tag Like "*lastShift*" Then
                     If Not IsNull(.Fields(ctl.Name)) Then ctl.Value = .Fields(ctl.Name)
                 End If
             Next
         End With
     Else
-    
+        Me.TimerInterval = 5000
         
         btnStartStop.Caption = "Close and Sign"
         btnSave.Visible = True
@@ -432,8 +505,10 @@ Dim offshift() As String
         
         AF3616.SourceObject = "frm3616"
     End If
-    shiftTitle.Enabled = NewRecord
+    
+    shiftTitle.enabled = NewRecord
     tcMain.Visible = Not NewRecord
+    btnSave.Visible = Not NewRecord
     
 Set RS = Nothing
 End Sub
@@ -476,7 +551,7 @@ lstAmocSel = getSelection(lstAMOCs)
     For Each a In lstAmocSel
         lstAMOCs.RemoveItem (a)
         authLevel = DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(a, 2) & "'")
-        lstOnShiftChange.add (a & " " & IIf(authLevel = 8, "(TRAINEE)", "(AMOC)") & " ON SHIFT")
+        collOnShiftChanges.add (a & " " & IIf(authLevel = 8, "(TRAINEE)", "(AMOC)") & " ON DUTY")
     Next
     If Left(lstOnShift.RowSource, 5) = "Empty" Then lstOnShift.RemoveItem "Empty"
     
@@ -485,26 +560,30 @@ lstAmocSel = getSelection(lstAMOCs)
     Me.Dirty = True
     btnSave = Dirty
     bClose = False
-    
+    FormSyncUtil.syncForm Me.Name
     'TODO Handle changes after shift has already started
 End Sub
 
 Private Sub Form_Load()
 On Error Resume Next
-If Nz(shiftID, 0) = 0 Then
-    If Nz(Parent.Name) <> "frmShiftDash" And IsNull(Parent.OpenArgs) Then
-        'Silent fail
-    ElseIf Parent.Name = "frmShiftDash" And Not IsNull(Parent.OpenArgs) Then
-        shiftID = Parent.OpenArgs
-        'Undo
-        bClose = True
-        filter = "shiftID = " & shiftID
-        FilterOn = True
-        btnSave.Visible = True
+    
+    If Nz(shiftID, 0) = 0 Then
+        If Nz(Parent.Name) <> "frmShiftDash" And IsNull(Parent.OpenArgs) Then
+            'Silent fail
+        ElseIf Parent.Name = "frmShiftDash" And Not IsNull(Parent.OpenArgs) Then
+            shiftID = Parent.OpenArgs
+            'Undo
+            bClose = True
+            Filter = "shiftID = " & shiftID
+            FilterOn = True
+            btnSave.Visible = True
+        End If
+    Else
+        Form.TimerInterval = 5000
+        FormSyncUtil.syncForm Me.Name, True
     End If
-End If
 
-rwy.RowSource = join(Split(DLookup("rwyconfig", "tblsettings"), ";"), ";")
+'rwy.RowSource = join(Split(DLookup("rwyconfig", "tblsettings"), ";"), ";")
 End Sub
 
 Private Sub refreshAmocList()
@@ -515,7 +594,7 @@ Dim offshift() As String
 
     If Not IsNull(Me.amoc) Then lstOnShift.RowSource = Me.amoc
     
-    Set rsAmoc = CurrentDb.OpenRecordset("SELECT RANK.rank & ' ' & Left(tblUserAuth.firstname,1) & '. ' & tblUserAuth.lastname & '/' & tblUserAuth.opinitials AS Expr1 FROM RANK INNER JOIN tblUserAuth ON RANK.ID = tblUserAuth.rankID WHERE (((tblUserAuth.authLevel)<=8)) ORDER BY RANK.order DESC, tblUserAuth.lastName;")
+    Set rsAmoc = CurrentDb.OpenRecordset("SELECT IIf([@AGENCY].useRankAsTitle,[@RANK].rank & ' ' & Left(tblUserAuth.firstname,1),Left(tblUserAuth.firstname,1)) & '. ' & tblUserAuth.lastname & '/' & tblUserAuth.opinitials AS Expr1 FROM ([@AGENCY] INNER JOIN [@RANK] ON [@RANK].agencyID = [@AGENCY].agencyID) INNER JOIN tblUserAuth  ON [@RANK].ID = tblUserAuth.rankID WHERE (((tblUserAuth.authLevel)<=8)) ORDER BY [@RANK].order DESC, tblUserAuth.lastName;")
     With rsAmoc: Do While Not .EOF
     'For Each a In Split(lstOnShift.RowSource, ";")
     If !Expr1 <> Nz(superLead) Then
@@ -550,14 +629,23 @@ Next
 End Sub
 
 Private Sub Form_Timer()
-Form.Requery
-AF3616.Form.Requery
-frmInspections.Form.Requery
-btnReloadNOTAMs_Click
+If Not FormSyncUtil.isFormSynced(Me.Name) Then
+    Form.Requery
+    AF3616.Form.Requery
+    'frmInspections.Form.Requery
+    btnReloadNOTAMs_Click
+    
+    FormSyncUtil.syncForm Me.Name, True
+End If
 End Sub
 
 Private Sub lstAMOCs_Click()
 lstOnShift = ""
+End Sub
+
+Private Sub lstComments_DblClick(cancel As Integer)
+If IsNull(lstComments) Then Exit Sub
+MsgBox lstComments.Column(2) & ": " & lstComments.Column(3) & "..." & lstComments.Column(4), , "Other Info"
 End Sub
 
 Private Sub lstOnShift_Click()
@@ -577,7 +665,8 @@ If Not IsNull(shiftTitle) Then
     If shiftEnd < shiftStart Then shiftEnd = DateAdd("d", 1, shiftEnd)
     
     tcMain.Visible = True
-    tcMain.Pages(1).SetFocus
+    'tcMain.Pages(1).SetFocus
+    superLead.SetFocus
     
     refreshAmocList
 
@@ -589,7 +678,7 @@ Dim authLevel(2) As Integer
 If Not NewRecord Then
     authLevel(0) = Nz(DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(Nz(superLead.OldValue), 2) & "'"))
     authLevel(1) = Nz(DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(superLead, 2) & "'"))
-    lstOnShiftChange.add superLead.OldValue & " " & IIf(authLevel(0) < 6, "(AMOS)", "(AMSL)") & " OFF SHIFT. " & _
+    collOnShiftChanges.add superLead.OldValue & " " & IIf(authLevel(0) < 6, "(AMOS)", "(AMSL)") & " OFF SHIFT. " & _
                             superLead & " " & IIf(authLevel(1) < 6, "(AMOS)", "(AMSL)") & " ON SHIFT. "
 End If
 refreshAmocList

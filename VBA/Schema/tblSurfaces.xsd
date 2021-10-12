@@ -14,7 +14,7 @@
 </xsd:annotation>
 <xsd:complexType>
 <xsd:sequence>
-<xsd:element name="ID" minOccurs="1" od:jetType="autonumber" od:sqlSType="int" od:autoUnique="yes" od:nonNullable="yes" type="xsd:int"/>
+<xsd:element name="sfcID" minOccurs="1" od:jetType="autonumber" od:sqlSType="int" od:autoUnique="yes" od:nonNullable="yes" type="xsd:int"/>
 <xsd:element name="sfcName" minOccurs="0" od:jetType="text" od:sqlSType="nvarchar">
 <xsd:simpleType>
 <xsd:restriction base="xsd:string">
@@ -22,7 +22,13 @@
 </xsd:restriction>
 </xsd:simpleType>
 </xsd:element>
-<xsd:element name="sfcType" minOccurs="0" od:jetType="longinteger" od:sqlSType="int" type="xsd:int"/>
+<xsd:element name="sfcType" minOccurs="0" od:jetType="text" od:sqlSType="nvarchar">
+<xsd:simpleType>
+<xsd:restriction base="xsd:string">
+<xsd:maxLength value="255"/>
+</xsd:restriction>
+</xsd:simpleType>
+</xsd:element>
 <xsd:element name="length" minOccurs="0" od:jetType="longinteger" od:sqlSType="int" type="xsd:int"/>
 <xsd:element name="width" minOccurs="0" od:jetType="longinteger" od:sqlSType="int" type="xsd:int"/>
 <xsd:element name="PCN" minOccurs="0" od:jetType="longinteger" od:sqlSType="int" type="xsd:int"/>

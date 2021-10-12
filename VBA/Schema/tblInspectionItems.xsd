@@ -14,7 +14,8 @@
 </xsd:annotation>
 <xsd:complexType>
 <xsd:sequence>
-<xsd:element name="itemID" minOccurs="1" od:jetType="text" od:sqlSType="nvarchar" od:nonNullable="yes">
+<xsd:element name="ID" minOccurs="1" od:jetType="autonumber" od:sqlSType="int" od:autoUnique="yes" od:nonNullable="yes" type="xsd:int"/>
+<xsd:element name="item" minOccurs="1" od:jetType="text" od:sqlSType="nvarchar" od:nonNullable="yes">
 <xsd:simpleType>
 <xsd:restriction base="xsd:string">
 <xsd:maxLength value="255"/>

@@ -10,6 +10,27 @@ Attribute VB_Exposed = False
 Option Compare Database
 Dim bClose As Boolean
 
+Private Sub endEvent_Exit(cancel As Integer)
+cancel = False
+    If Nz(endEvent) = "" Then Exit Sub
+    If IsDate(endEvent) Then endEvent = Format(endEvent, "hhnn")
+    If IsNumeric(endEvent) And Len(endEvent) = 3 Then endEvent = 0 & endEvent
+    endEvent.BorderColor = RGB(166, 166, 166)
+    Dim cTime As Variant: cTime = getTime4Char(endEvent)
+    
+    If Not IsDate(cTime) Then
+        cancel = True
+        endEvent = ""
+        endEvent.BorderColor = RGB(255, 0, 0)
+        Exit Sub
+        'endEvent.SetFocus
+    End If
+    
+    endEvent = Format(cTime, "hh:nn")
+    
+    
+End Sub
+
 Private Sub Form_BeforeUpdate(cancel As Integer)
     If Not bClose Then
         cancel = True
@@ -44,7 +65,7 @@ bClose = True
     sscope = GetNum(sscope)
     
     DoCmd.RunCommand acCmdSaveRecord
-    DoCmd.Close acForm, "frmAnnounceSet", acSaveYes
+    DoCmd.Close acForm, "frmAnnounceSet"
     
 End Sub
 
@@ -131,4 +152,23 @@ End Sub
 
 Private Sub startDate_LostFocus()
     rrefresh
+End Sub
+
+Private Sub startEvent_Exit(cancel As Integer)
+cancel = False
+    If Nz(startEvent) = "" Then Exit Sub
+    If IsDate(startEvent) Then startEvent = Format(startEvent, "hhnn")
+    If IsNumeric(startEvent) And Len(startEvent) = 3 Then startEvent = 0 & startEvent
+    startEvent.BorderColor = RGB(166, 166, 166)
+    Dim cTime As Variant: cTime = getTime4Char(startEvent)
+    
+    If Not IsDate(cTime) Then
+        cancel = True
+        startEvent = ""
+        startEvent.BorderColor = RGB(255, 0, 0)
+        Exit Sub
+        'endEvent.SetFocus
+    End If
+    
+    startEvent = Format(cTime, "hh:nn")
 End Sub

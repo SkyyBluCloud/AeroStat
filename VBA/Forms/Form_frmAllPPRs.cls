@@ -11,12 +11,37 @@ Option Compare Database
 Dim dateChange As Boolean
 Dim bs As String
 
+Private Sub btnC2imera_Click()
+If ppr_list.ItemsSelected.Count = 0 Then Exit Sub
+Dim PPRs() As String, idx As Integer
+Dim i: For Each i In ppr_list.ItemsSelected
+    ReDim Preserve PPRs(0 To idx) As String
+    PPRs(idx) = ppr_list.Column(1, i)
+    idx = idx + 1
+Next i
+
+C2IMERA.getCSV "'" & join(PPRs, "')) OR (((tblPPR.PPR)='") & "'"
+End Sub
+
+Private Sub btnNextDay_Click()
+date1 = DateAdd("d", 1, date1)
+date2 = DateAdd("d", 1, date2)
+date1_Change
+End Sub
+
+Private Sub btnPrevDay_Click()
+date1 = DateAdd("d", -1, date1)
+date2 = DateAdd("d", -1, date2)
+date1_Change
+End Sub
+
 Private Sub btnSearch_Click()
     If Not Nz(search) = "" Then
         bs = "AND ((((tblPPR.PPR) Like '*" & search & "*')) OR (((tblPPR.Callsign) Like '*" & search & "*')) OR (((tblPPR.Type) Like '*" & search & "*')) OR (((tblPPR.Tail) Like '*" & search & "*')) OR (((tblPPR.pocName) Like '*" & search & "*')) OR (((tblPPR.ctcInfo) Like '*" & search & "*')) OR (((tblPPR.Services) Like '*" & search & "*')) OR (((tblPPR.Remarks) Like '*" & search & "*'))) "
         timeBlock = 1
         timeBlock_Click
         Exit Sub
+        
     Else
         bs = ""
     End If
@@ -167,14 +192,16 @@ ppr_list.RowSource = "SELECT tblPPR.ID, tblPPR.PPR, tblPPR.Status, tblPPR.arrDat
         
         
         DoCmd.OpenReport "rPPR", acViewReport, , , , ppr_list.RowSource
-
+        DoEvents
+        Reports!rPPR!btnClose.Visible = True
+        
         Reports("rPPR").hLight = join(s, ",")
         Reports("rppr").Requery
         
 '    ElseIf rs.RecordCount = 1 Then
 '        DoCmd.OpenForm "new_ppr", , , "PPR = '" & rs!PPR & "'", acFormEdit
     End If
-fExit:
+fexit:
     Exit Function
 errtrap:
     MsgBox Error$
@@ -192,7 +219,8 @@ Private Sub timeBlock_Click()
     Select Case timeBlock
     Case 1
         date1 = Format(DMin("arrdate", "tblppr"), "dd-mmm-yy")
-        date2 = Format(DateSerial(Year(Now), 12, 31), "dd-mmm-yy")
+        date2 = Format(DMax("arrdate", "tblppr"), "dd-mmm-yy")
+        'date2 = Format(DateSerial(Year(Now), 12, 31), "dd-mmm-yy")
         populate
         
     Case 2

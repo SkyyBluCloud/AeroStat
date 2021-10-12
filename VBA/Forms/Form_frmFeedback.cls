@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Option Compare Database
 
 Private Sub cancel_Click()
-    DoCmd.Close acForm, "frmFeedback", acSaveYes
+    DoCmd.Close acForm, "frmFeedback"
 End Sub
 
 Private Sub okay_Click()
@@ -18,7 +18,7 @@ Private Sub okay_Click()
         MsgBox "No blank feedback please...", vbCritical, "Write Something"
     Else
         DoCmd.RunCommand acCmdSaveRecord
-        DoCmd.Close acForm, "frmFeedback", acSaveYes
+        DoCmd.Close acForm, "frmFeedback"
         MsgBox "Thanks for the feedback! :D", vbInformation, "Thank You"
     End If
 End Sub

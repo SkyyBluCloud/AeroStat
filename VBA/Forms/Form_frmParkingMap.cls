@@ -21,20 +21,20 @@ Do While Not .EOF
         
         If InStr(1, !Spot, ",") > 0 Then
             Dim r As String 'ramp
-            Dim N As New Collection 'number
+            Dim n As New Collection 'number
             Dim sspot As String
             sspot = Replace(!Spot, ",", "")
             
             For i = 1 To Len(sspot)
                 char = Mid(sspot, i, 1)
                 If IsNumeric(char) Then
-                    N.add i
+                    n.add i
                 Else
                     r = r & char
                 End If
             Next
             
-            For Each i In N
+            For Each i In n
                 Me.Controls(r & i) = !Stationed
             Next
             
@@ -49,7 +49,7 @@ Do While Not .EOF
 Loop
 End With
 
-sExit:
+sexit:
     Exit Sub
 errtrap:
     ErrHandler err, Error$, Me.Name & ".onLoad"
