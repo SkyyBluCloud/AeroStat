@@ -247,7 +247,7 @@ SELECT tblTraffic.*, DateValue([DOF]+Nz([ATA],Nz([ETA],Nz([ATD],[ETD])+[ETE]))) 
 FROM tblTraffic, tblSettings
 WHERE (((DateValue([DOF]+Nz([ATA],Nz([ETA],Nz([ATD],[ETD])+[ETE]))))=[reportDate]) AND ((tblTraffic.Destination)=[station])) OR (((DateValue([DOF]+Nz([ETD],[ATD])))=[reportDate]) AND ((tblTraffic.depPoint)=[station]));
 "
-"qRWY","SELECT tblSurfaces.sfcName
+"qRWY","SELECT tblSurfaces.sfcName, 'CLSD' AS Expr1
 FROM tblSurfaces
 WHERE (((tblSurfaces.sfcType)='RWY'));
 "
