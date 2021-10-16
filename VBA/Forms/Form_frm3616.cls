@@ -298,11 +298,6 @@ End If
 Dim RS As DAO.Recordset
 logView.RowSource = "SELECT ID, entryTime, entry, initials, shiftID FROM tbl3616 WHERE shiftID = " & shiftID & " AND Not archive ORDER BY entryTime;"
 
-al = DLookup("authlevel", "tblUserAuth", "username = '" & Environ$("username") & "'")
-Dim ctl: For Each ctl In Me.Controls
-    If ctl.Tag Like "*admin*" Then ctl.Visible = (al < 5)
-Next
-
 edate = Format(DLookup("shiftStart", "tblShiftManager", "shiftID = " & shiftID), "dd-mmm-yy")
 
 syncForm Me.Name, True

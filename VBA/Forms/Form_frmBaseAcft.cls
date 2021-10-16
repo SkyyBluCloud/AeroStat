@@ -114,7 +114,7 @@ End Select
 End Sub
 
 Private Sub lstBaseAcft_AfterUpdate()
-    Me.Filter = "ID = " & lstBaseAcft
+    Me.filter = "ID = " & lstBaseAcft
     Me.FilterOn = True
     'replaceGhost
 End Sub
@@ -151,7 +151,7 @@ End Function
 
 Private Sub lstBaseAcft_Click()
 On Error Resume Next
-    Me.Filter = "ID = " & lstBaseAcft
+    Me.filter = "ID = " & lstBaseAcft
     Me.FilterOn = True
 End Sub
 
@@ -174,5 +174,5 @@ replaceGhost
 End Sub
 
 Private Sub Unit_Enter()
-If Nz(unit.Value) = Replace(unit.DefaultValue, """", "") Then unit = ""
+If Nz(Unit.Value) = Replace(Unit.DefaultValue, """", "") Then Unit = ""
 End Sub

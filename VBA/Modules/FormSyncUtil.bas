@@ -59,13 +59,7 @@ sexit:
 errtrap:
     ErrHandler err, Error$, "FormSyncUtil.syncForm"
     Resume sexit
-    Resume Next
 End Sub
-
-Public Function timestamp(ByVal frm As String) As Variant
-timestamp = DLookup("syncTime", "tblFormSyncGlobal", "formName = '" & frm & "'")
-
-End Function
 
 Public Function isFormSynced(ByVal frm As String) As Boolean
 'Checks if a form is in sync.

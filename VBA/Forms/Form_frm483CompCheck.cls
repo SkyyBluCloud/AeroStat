@@ -60,7 +60,7 @@ Dim rsLog As DAO.Recordset
     If IsNull(DLookup("af483", "tbl483", "af483 = '" & AF483 & "'")) Then
         If MsgBox("Confirm information:" & vbCrLf & vbCrLf & _
             AF483 & vbCrLf & _
-            rank & " " & lastName & ", " & firstName & " " & unit, vbInformation + vbYesNo, "AF483") = vbYes Then
+            rank & " " & lastName & ", " & firstName & " " & Unit, vbInformation + vbYesNo, "AF483") = vbYes Then
             
             Dim appendData() As String
             Dim idx As Integer

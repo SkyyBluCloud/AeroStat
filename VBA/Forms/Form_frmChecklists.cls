@@ -189,7 +189,7 @@ End Sub
 
 Private Sub lstDetails_AfterUpdate()
 'DoCmd.SearchForRecord , "", acFirst, "ID = " & lstDetails.Column(0)
-Me.Filter = "ID = " & Nz(lstDetails.Column(0), lstDetails.Column(0, 1))
+Me.filter = "ID = " & Nz(lstDetails.Column(0), lstDetails.Column(0, 1))
 Me.FilterOn = True
 'Me.Remarks = Me.lstDetails.Column(8)
 End Sub

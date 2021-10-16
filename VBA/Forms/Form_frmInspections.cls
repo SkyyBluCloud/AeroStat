@@ -55,6 +55,8 @@ On Error GoTo errtrap
     End If
     
     Call lstInspUpdate
+    
+    
 
 sexit:
     Exit Sub
@@ -67,28 +69,26 @@ Private Sub lstInspUpdate()
     Me.lstInsp.RowSource = newSQL
 End Sub
 
-Private Sub ctlInTime_BeforeUpdate(cancel As Integer): With ctlInTime
+Private Sub ctlInTime_AfterUpdate(): With ctlInTime
     
-    Dim ct As Variant: ct = getTime4Char(ctlInTime.Text)
+    Dim ct As Variant: ct = getTime4Char(ctlInTime)
     If Not IsDate(ct) Then
         .BorderColor = vbRed
     Else
         .BorderColor = RGB(166, 166, 166)
         .Value = ct
-        inTime = ct
     End If
 End With
 End Sub
 
-Private Sub ctlOutTime_BeforeUpdate(cancel As Integer): With ctlOutTime
+Private Sub ctlOutTime_AfterUpdate(): With ctlOutTime
 
-    Dim ct As Variant: ct = getTime4Char(.Text)
+    Dim ct As Variant: ct = getTime4Char(ctlOutTime)
     If Not IsDate(ct) Then
         .BorderColor = vbRed
     Else
         .BorderColor = RGB(166, 166, 166)
         .Value = ct
-        outTime = ct
     End If
 End With
 End Sub
@@ -117,7 +117,7 @@ Private Sub lstInsp_DblClick(cancel As Integer)
 If IsNull(lstInsp) Then Exit Sub
 On Error GoTo errtrap
     
-    Me.Filter = "tblInspections.ID = " & lstInsp
+    Me.filter = "tblInspections.ID = " & lstInsp
     Me.FilterOn = True
     tabCtl.Pages(1).SetFocus
     btnBack.Tag = 0

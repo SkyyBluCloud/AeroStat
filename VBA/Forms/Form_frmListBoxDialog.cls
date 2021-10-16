@@ -11,11 +11,14 @@ Option Compare Database
 Option Explicit
 
 Private Sub ctlListBox_DblClick(cancel As Integer)
-Me.Visible = False
+
+Application.FollowHyperlink ctlListBox.Column(2)
+
 End Sub
 
 Private Sub Form_Load()
 ctlListBox.RowSource = OpenArgs
+ctlListBox.ColumnCount = CurrentDb.OpenRecordset(OpenArgs).Fields.Count
 End Sub
 
 Private Sub Form_Open(cancel As Integer)

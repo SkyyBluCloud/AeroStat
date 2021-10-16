@@ -12,6 +12,16 @@ Public FPLType As Integer
 Dim bClose As Boolean
 Dim pprSelect As Boolean
 
+Private Sub ATActime_Click()
+    DoCmd.OpenForm "check_in_out", , , "ID = " & ID, acFormEdit, acDialog
+    Form_Current
+End Sub
+
+Private Sub ATDctime_Click()
+    DoCmd.OpenForm "check_in_out", , , "ID = " & ID, acFormEdit, acDialog
+    Form_Current
+End Sub
+
 Private Sub btnReg_Click()
     DoCmd.OpenForm "frmListBoxDialog", , , , , acDialog, "qBaseAcft"
     
@@ -57,62 +67,6 @@ Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblPPR WHERE ((nz(tblPPR.PPR)<>'
     End If
 End Sub
 
-Private Sub ctlATA_Click()
-    If Not shiftKeyPressed Then
-        movetime = getTime4Char(InputBox("Enter the ARR (Z) time for:" & vbCrLf & _
-            subject, _
-            "ARR", Format(LToZ(Now), "hhnn")))
-    Else
-        movetime = TimeValue(LToZ(Now))
-    End If
-    
-    If IsNull(movetime) Then
-        log "Invalid value for moveTime. (" & CStr(Nz(movetime, "<NULL>")) & ")", Me.Name & ".handleMovement", "WARN"
-        Beep
-        Exit Sub
-    End If
-    
-    ATA = movetime
-    Status = "Closed"
-    Stationed = True
-    arrDate = ZToL(cETA(DOF, ETD, ETE, Null, Null, TimeValue(movetime)))
-    
-'    db.Execute "UPDATE tblTraffic " & _
-        "SET ATA = #" & movetime & "#, " & _
-        "Status = 'Closed', " & _
-        "Stationed = True, " & _
-        "arrDate = ztol(cETA(DOF,ETD,ETE,Null,Null,TimeValue(#" & movetime & "#))) WHERE ID = " & selectedFlight, dbFailOnError
-End Sub
-
-Private Sub ctlATD_Click()
-
-    If Not shiftKeyPressed Then
-        movetime = getTime4Char(InputBox("Enter the DEP (Z) time for:" & vbCrLf & _
-            subject, _
-            "DEP", Format(LToZ(Now), "hhnn")))
-    Else
-        movetime = TimeValue(LToZ(Now))
-    End If
-    
-    If Not IsDate(movetime) Then
-        log "Invalid value for moveTime. (" & CStr(Nz(movetime, "<NULL>")) & ")", Me.Name & ".handleMovement", "WARN"
-        Beep
-        Exit Sub
-    End If
-    
-    ATD = movetime
-    Status = "Enroute"
-    Stationed = False
-    depDate = ZToL(cETA(DOF, ETD, ETE, Null, TimeValue(movetime)))
-    
-'    db.Execute "UPDATE tblTraffic " & _
-        "SET ATD = #" & movetime & "#, " & _
-        "Status = 'Enroute', " & _
-        "Stationed = False, " & _
-        "depDate = ztol(cETA(DOF,ETD,ETE,Null,TimeValue(#" & movetime & "#))) WHERE ID = " & ID, dbFailOnError
-        
-End Sub
-
 Private Sub ctlETD_Exit(cancel As Integer)
     If Nz(ctlETD) = "" Then Exit Sub
     If IsDate(ctlETD) Then ctlETD = Format(ctlETD, "hhnn")
@@ -122,7 +76,7 @@ Private Sub ctlETD_Exit(cancel As Integer)
     ctlETD = Left(Format(ctlETD, "0000"), 2) & ":" & Right(Format(ctlETD, "0000"), 2)
     
     If Not IsDate(ctlETD) Then
-        'cancel = True
+        cancel = True
         ctlETD = ""
         ctlETD.BorderColor = RGB(255, 0, 0)
         ctlETD.SetFocus
@@ -134,11 +88,11 @@ Private Sub ctlETE_Exit(cancel As Integer)
     If IsDate(ctlETE) Then ctlETE = Format(ctlETD, "hhnn")
     If IsNumeric(ctlETE) And Len(ctlETE) = 3 Then ctlETE = 0 & ctlETE
     ctlETE.BorderColor = RGB(166, 166, 166)
-    ETE = getTime4Char(IIf(Nz(ctlETE) = "", "0000", Nz(ctlETE)))
+    ETE = getTime4Char(Nz(ctlETE))
     ctlETE = Left(Format(ctlETE, "0000"), 2) & ":" & Right(Format(ctlETE, "0000"), 2)
     
     If Not IsDate(ctlETE) Then
-        'cancel = True
+        cancel = True
         ctlETE = ""
         ctlETE.BorderColor = RGB(255, 0, 0)
         ctlETE.SetFocus
@@ -767,7 +721,7 @@ save_Click_Err:
     If err = 3201 Then
      
     End If
-    ErrHandler err, Error$, "quick_input.done_Click"
+    ErrHandler err, Error$, Me.Name & ".done_Click"
     sperr = IIf(err = 3011, True, False)
     Resume Next
     GoTo done_fb
@@ -816,8 +770,6 @@ Private Sub Form_Close()
 End Sub
 
 Private Sub Form_Current()
-    'If NewRecord Then rwy = DLast("rwy", "tblshiftmanager")
-    
     bClose = False
     sp = NewRecord Or Not IsNull(spID)
     If Status = "Cancelled" Then
@@ -964,7 +916,7 @@ On Error GoTo errtrap
 Dim res() As String
 
 If Number > 1 And NewRecord Then
-    res = Split(InputBox("Please enter the tail numbers, separated by spaces:" & vbCrLf & "(Ex: 1234 5678 101...)", "Enter Tails"), " ")
+    res = Split(InputBox("Please enter the tail numbers, separated by spaces:" & vbCrLf & "(Ex: 1234 5678 1212...)", "Enter Tails"), " ")
     For Each t In res: Tail.AddItem t: Next
     Tail = Nz(res(0))
     longTail = Tail.RowSource

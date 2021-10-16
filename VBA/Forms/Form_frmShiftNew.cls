@@ -213,7 +213,7 @@ Private Sub Form_Load()
 nshiftID = Parent.Parent.getShiftID
     If nshiftID <> 0 Then
         Undo
-        Filter = "shiftID = " & nshiftID
+        filter = "shiftID = " & nshiftID
         FilterOn = True
     End If
     'If NewRecord Then log "New Record."

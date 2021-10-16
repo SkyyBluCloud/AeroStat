@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 '   AeroStat: Airfield Management
 '
 '
-'    Copyright 2017-2022 Shane J. DeSouza
+'    Copyright 2017-2021 Shane J. DeSouza
 '       https://github.com/SkyyBluCloud/AeroStat
 '       sdesouza187@gmail.com
 '
@@ -58,7 +58,7 @@ Private Sub btnReports_Click()
 End Sub
 
 Private Sub btnSettings_Click()
-    switchWindow "frmSettings", Me!view
+    switchWindow "frmSettingsMain", Me!view
 End Sub
 
 Private Sub feedback_Click()
@@ -103,9 +103,9 @@ End Sub
 Private Sub shiftBrief_Click()
 'On Error Resume Next
 'Dim isClosed As String
-Dim shiftID As Integer: shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Environ$("username") & "'")
+Dim shiftID As Integer: shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & getUSN() & "'")
 Dim isClosed As Boolean: isClosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
-Dim onShift As Boolean: onShift = DLookup("onShift", "tbluserauth", "username = '" & Environ$("username") & "'")
+Dim onShift As Boolean: onShift = DMax("onShift", "tbluserauth", "username = '" & getUSN() & "'")
 
     If Not onShift Or isClosed Then
         DoCmd.OpenForm "frmShiftBoard", , , , acFormAdd
@@ -362,7 +362,8 @@ qusn = "SELECT * FROM tblUserAuth WHERE username = '" & usn & "'"
         Application.Quit
         Exit Sub
     ElseIf DLookup("RS", "tbluserauth", "username='" & Environ$("username") & "'") Then
-        MsgBox "The database has been updated and will now restart." & vbCrLf & "Applied changes were already saved.", vbOKOnly, "AeroStat"
+        'MsgBox "The database has been updated and will now restart." & vbCrLf & "Applied changes were already saved.", vbOKOnly, "AeroStat"
+        bClose = True
         Application.FollowHyperlink DLookup("data", "tblSettings", "key = ""dbroot""") & DLookup("data", "tblSettings", "key = ""frontendsource""")
         Application.Quit
         Exit Sub

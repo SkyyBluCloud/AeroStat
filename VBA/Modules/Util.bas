@@ -3,12 +3,15 @@ Option Compare Database
 
 Public Sub clearConnections()
 On Error GoTo errtrap
+    log "Clearing relationships...", "Util.clearConnections"
+    DoEvents
     For Each t In CurrentDb.TableDefs
         t.Connect = ";"
     Next t
-    log "Done!", "Util.saveConnections"
+    log "Done!", "Util.clearConnections"
     
 fexit:
+    DoEvents
     Exit Sub
 errtrap:
     ErrHandler err, Error$, "Util.clearConnections"
@@ -35,6 +38,7 @@ On Error GoTo errtrap
     log "Done!", "Util.saveConnections"
     
 fexit:
+    DoEvents
     Exit Sub
 errtrap:
     ErrHandler err, Error$, "Util.saveConnections"
@@ -152,7 +156,6 @@ End Function
 
 'Don't do it.
 Public Sub truncAll(ByVal dbPath As Variant)
-On Error Resume Next
     If MsgBox("THIS IS DANGEROUS! TURN BACK NOW!", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then
     If MsgBox("THIS CANNOT BE UNDONE! CANCEL THIS IMMEDIATELY!", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then
     If MsgBox("SERIOUSLY? CANCEL THIS PROCESS? PLEASE?", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then
@@ -175,6 +178,7 @@ On Error Resume Next
     DoEvents
     Set app = Nothing
     DoEvents
+    log "Done. It's like it never happened...", "Util.truncAll", "WARN"
     MsgBox "Done. It's like it never happened...", vbInformation, "Trunc"
 End Sub
 
@@ -244,25 +248,16 @@ On Error Resume Next
 End Function
 
 Public Function cETA(ByVal DOF As Variant, ByVal ETD As Variant, ByVal ETE As Variant, _
-                    Optional ByVal ETA As Variant = Null, Optional ByVal ATD As Variant = Null, Optional ByVal ATA As Variant = Null) As Variant
+                    Optional ByVal ETA As Variant = Null, Optional ByVal ATD As Variant = Null, Optional ByVal ATA As Variant = Null) As Date
 On Error GoTo errtrap
 If IsNull(DOF) Then Exit Function
-'DOF = CDate(DOF): ETD = CDate(Nz(ETD, 0)): ETE = CDate(Nz(ETE, 0))
-'ETA = CDate(Nz(ETA, 0))
-'ATD = CDate(Nz(ATD, 0)): ATA = CDate(Nz(ATA, 0))
+DOF = CDate(DOF): ETD = CDate(Nz(ETD, 0)): ETE = CDate(Nz(ETE, 0))
 '[DOF]+IIf([ETA] Is Null,IIf([ATD] Is Null,[ETD],[ATD])+[ETE],[ETA])
-    Select Case False
-        Case IsDate(DOF), IsDate(ETD), IsDate(ETE)
-            Exit Function
-            
-    End Select
-    
-    If ATA = "" Then ATA = Null
     
 '    If Not IsNull(ETA) Then
 '        cETA = DOF + ETA
 '    End If
-  cETA = DateValue(DOF) + TimeValue(Nz(ATA, Nz(ETA, Nz(ATD, ETD) + CDate(ETE))))
+  cETA = DateValue(DOF) + Nz(ATA, Nz(ETA, Nz(ATD, ETD) + ETE))
 
 fexit:
     Exit Function
@@ -334,12 +329,15 @@ End Function
 'End Sub
 
 Public Sub exportAllCode()
+On Error GoTo errtrap
 Dim c As VBComponent
 Dim Sfx, exportLocation As String
 Dim num As Integer
 
 'If dir(exportLocation) = "" Then createPath exportLocation
-
+    
+    Util.exportSchema
+    
     For Each c In Application.VBE.VBProjects(1).VBComponents
         exportLocation = CurrentProject.Path & "\DB EXPORT\"
 
@@ -371,9 +369,20 @@ Dim num As Integer
             c.Export exportLocation & "\" & c.Name & Sfx
             num = num + 1
         End If
+        DoEvents
     Next c
-
+    
+sexit:
     log "Done! Successfully exported " & num & " objects.", "Util.exportAllCode"
+    Exit Sub
+errtrap:
+    ErrHandler err, Error$, "Util.exportAllCode"
+    Select Case err
+    Case 50034, 6
+        Resume Next
+    Case Else
+        Exit Sub
+    End Select
 End Sub
 
 

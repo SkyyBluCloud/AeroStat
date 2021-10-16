@@ -37,7 +37,7 @@ Dim rsSettings As DAO.Recordset: Set rsSettings = CurrentDb.OpenRecordset("tblSe
         
         'Load setting values to the temptbl fields
         Do While Not rsSettings.EOF
-            rsTT.Fields(!key).Value = !data
+            rsTT.Fields(!key).Value = !Data
             .MoveNext
           Loop
      End With

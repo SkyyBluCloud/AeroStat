@@ -24,6 +24,6 @@ Private Sub Form_Timer()
 End Sub
 
 Private Sub lstItems_AfterUpdate()
-    Me.Filter = "ID = " & lstItems
+    Me.filter = "ID = " & lstItems
     Me.FilterOn = True
 End Sub

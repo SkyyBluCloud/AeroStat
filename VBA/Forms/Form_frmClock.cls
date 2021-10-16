@@ -8,17 +8,16 @@ Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
+Option Explicit
 
 Private Sub Form_Timer()
-    For Each ctl In Me.Controls
+    Dim ctl: For Each ctl In Me.Controls
         If TypeOf ctl Is TextBox Then
             With ctl
                 '.enabled = True
                 .Requery
-                DoEvents
                 '.enabled = False
             End With
         End If
     Next ctl
-    DoEvents
 End Sub

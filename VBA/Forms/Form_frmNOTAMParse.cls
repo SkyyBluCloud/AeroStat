@@ -31,7 +31,7 @@ If Nz(parse) = "" Then Exit Sub
 n = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Environ$("username") & "'"), Date, DateAdd("d", 3, Date))
 
     If n <> 0 Then
-        Me.Filter = "ID = " & n
+        Me.filter = "ID = " & n
         Me.FilterOn = True
         
         Dim log As DAO.Recordset

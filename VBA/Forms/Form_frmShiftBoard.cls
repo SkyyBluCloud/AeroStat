@@ -42,6 +42,10 @@ errtrap:
     Beep
 End Sub
 
+Private Sub btnExtApps_Click()
+DoCmd.OpenForm "frmListBoxDialog", , , , , acDialog, "SELECT * FROM tblSettings WHERE Left([key],6) = 'extApp'"
+End Sub
+
 Private Sub btnNewShift_Click()
 'CurrentDb.Execute "UPDATE tblUserAuth SET onShift = False WHERE username = '" & Util.getUSN & "'"
 DoCmd.OpenForm "frmshiftselect", , , , , acDialog
@@ -112,12 +116,15 @@ Private Sub btnSave_Click()
             changes(idx) = s
             idx = idx + 1
         Next
-
-        If MsgBox("Add log entry?" & vbCrLf & vbCrLf & UCase(join(changes, ". ")), vbQuestion + vbYesNo, "Shift Board") = vbYes Then
-            UtilForm3616.newEntry shiftID, LToZ(Now), UCase(join(changes, ". "))
-        End If
+        
+        
+        
+'        If MsgBox("Add log entry?" & vbCrLf & vbCrLf & UCase(join(changes, ". ")), vbQuestion + vbYesNo, "Shift Board") = vbYes Then
+'            UtilForm3616.newEntry shiftID, LToZ(Now), UCase(join(changes, ". "))
+'        End If
     End If
-            
+        
+    
     'Update users on shift
     CurrentDb.Execute "UPDATE tblUserAuth SET lastShift = " & shiftID & ", onShift = True WHERE opInitials = '" & Right(superLead, 2) & "' OR opInitials = '" & _
         join(onShiftInitials, "' OR opInitials = '") & "'"
@@ -125,7 +132,9 @@ Private Sub btnSave_Click()
     'Update users who are no longer on the shift
     CurrentDb.Execute "UPDATE tblUserAuth SET onShift = False WHERE lastShift = " & shiftID & " AND (opInitials <> '" & Right(superLead, 2) & "' AND opInitials <> '" & _
         join(onShiftInitials, "' AND opInitials <> '") & "')"
-                    
+        
+    
+            
     If Me.Dirty Then Me.Dirty = False
     btnSave = Me.Dirty
     
@@ -282,7 +291,7 @@ Dim inc As Boolean
                     For Each c In Split(lstOnShift.RowSource, ";")
                         authLevel = DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(c, 2) & "'")
                         'result = result & ", " & Right(c, 2) & "/" & IIf(authLevel = 8, "TRAINEE", "AMOC")
-                        result = result & ", " & c & " " & IIf(authLevel = 8, "(TRAINEE)", "(AMOC)")
+                        result = result & ", " & c & " " & IIf(authLevel = 8, "(TRAINEE)", "")
                     Next
                     
                     result = result & " ON DUTY"
@@ -319,7 +328,7 @@ Dim inc As Boolean
                     
                 Case "[AFLDSTATUS]"
                     If rwy Like "*CLSD" Then
-                        result = ""
+                        result = "RWY CLSD"
                         'entry = Replace(entry, ";", "", InStr(1, entry, arg), 1)
                     Else
                         result = "RWY " & rwy & " IN USE; RSC " & rsc & "; BWC " & bwc
@@ -574,7 +583,7 @@ On Error Resume Next
             shiftID = Parent.OpenArgs
             'Undo
             bClose = True
-            Filter = "shiftID = " & shiftID
+            filter = "shiftID = " & shiftID
             FilterOn = True
             btnSave.Visible = True
         End If

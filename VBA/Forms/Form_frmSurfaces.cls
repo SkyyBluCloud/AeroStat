@@ -83,7 +83,7 @@ End Sub
 Private Sub lstSurfaces_DblClick(cancel As Integer)
 If IsNull(lstSurfaces) Then Exit Sub
 tabCtl = 1
-Me.Filter = "sfcID = " & lstSurfaces
+Me.filter = "sfcID = " & lstSurfaces
 Me.FilterOn = True
 End Sub
 

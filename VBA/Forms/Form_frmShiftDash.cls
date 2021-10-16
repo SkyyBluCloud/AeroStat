@@ -15,7 +15,7 @@ If Not IsNull(Me.OpenArgs) Then
     Me.view.Form.bClose = True
     With Me.view.Form
         .Undo
-        .Filter = "shiftid = " & Me.OpenArgs
+        .filter = "shiftid = " & Me.OpenArgs
         .FilterOn = True
     End With
 End If

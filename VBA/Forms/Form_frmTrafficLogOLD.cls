@@ -32,7 +32,7 @@ On Error GoTo errtrap
 If selectedFlight = 0 Then Exit Function
 
 Dim db As DAO.Database: Set db = CurrentDb
-Dim movetime As Variant
+Dim moveTime As Variant
 'Dim subject As String: subject = DLookup("Callsign & ""/"" & actype & "" | "" & deppoint & "" -> "" & destination", "tblTraffic", "ID = " & selectedFlight)
 Dim subject As String: subject = DLookup("Callsign & ""/"" & actype", "tblTraffic", "ID = " & selectedFlight)
 
@@ -44,24 +44,24 @@ Dim subject As String: subject = DLookup("Callsign & ""/"" & actype", "tblTraffi
         Or DLookup("status", "tbltraffic", "ID = " & selectedFlight) Like "*Closed*" Then
             
             If Not shiftKeyPressed Then
-                movetime = getTime4Char(InputBox("Enter the ARR (Z) time for:" & vbCrLf & _
+                moveTime = getTime4Char(InputBox("Enter the ARR (Z) time for:" & vbCrLf & _
                     subject, _
                     "ARR", Format(LToZ(Now), "hhnn")))
             Else
-                movetime = TimeValue(LToZ(Now))
+                moveTime = TimeValue(LToZ(Now))
             End If
             
-            If IsNull(movetime) Then
-                log "Invalid value for moveTime. (" & CStr(Nz(movetime, "<NULL>")) & ")", Me.Name & ".handleMovement", "WARN"
+            If IsNull(moveTime) Then
+                log "Invalid value for moveTime. (" & CStr(Nz(moveTime, "<NULL>")) & ")", Me.Name & ".handleMovement", "WARN"
                 'Beep
                 GoTo fexit
             End If
             
             db.Execute "UPDATE tblTraffic " & _
-                "SET ATA = #" & movetime & "#, " & _
+                "SET ATA = #" & moveTime & "#, " & _
                 "Status = 'Closed', " & _
                 "Stationed = True, " & _
-                "arrDate = ztol(cETA(DOF,ETD,ETE,Null,Null,TimeValue(#" & movetime & "#))) WHERE ID = " & selectedFlight, dbFailOnError
+                "arrDate = ztol(cETA(DOF,ETD,ETE,Null,Null,TimeValue(#" & moveTime & "#))) WHERE ID = " & selectedFlight, dbFailOnError
                 
         Else
             MsgBox "Cannot ARR without DEP or ETA.", vbInformation, "ARR"
@@ -72,26 +72,26 @@ Dim subject As String: subject = DLookup("Callsign & ""/"" & actype", "tblTraffi
         And Not DLookup("status", "tbltraffic", "ID = " & selectedFlight) Like "*Cancelled*" Then
             
             If Not shiftKeyPressed Then
-                movetime = getTime4Char(InputBox("Enter the DEP (Z) time for:" & vbCrLf & _
+                moveTime = getTime4Char(InputBox("Enter the DEP (Z) time for:" & vbCrLf & _
                     subject, _
                     "DEP", Format(LToZ(Now), "hhnn")))
             Else
-                movetime = TimeValue(LToZ(Now))
+                moveTime = TimeValue(LToZ(Now))
             End If
             
-            If IsNull(movetime) Then
+            If IsNull(moveTime) Then
                 log "Invalid value for moveTime.", Me.Name & ".handleMovement", "WARN"
                 'Beep
                 GoTo fexit
             End If
             
             db.Execute "UPDATE tblTraffic " & _
-                "SET ATD = #" & movetime & "#, " & _
+                "SET ATD = #" & moveTime & "#, " & _
                 "ETA = Null, " & _
                 "Stationed = False, " & _
                 "Status = 'Enroute', " & _
-                "depDate = ztol(DOF + TimeValue(#" & movetime & "#)), " & _
-                "arrDate = ztol(cETA(DOF,ETD,ETE,Null,TimeValue(#" & movetime & "#))) WHERE ID = " & selectedFlight, dbFailOnError
+                "depDate = ztol(DOF + TimeValue(#" & moveTime & "#)), " & _
+                "arrDate = ztol(cETA(DOF,ETD,ETE,Null,TimeValue(#" & moveTime & "#))) WHERE ID = " & selectedFlight, dbFailOnError
 
         Else
             MsgBox "Cannot DEP closed/cancelled flights.", vbInformation, "DEP"
@@ -102,24 +102,24 @@ Dim subject As String: subject = DLookup("Callsign & ""/"" & actype", "tblTraffi
         And Not DLookup("status", "tbltraffic", "ID = " & selectedFlight) Like "*Cancelled*" Then
             
             If Not shiftKeyPressed Then
-                movetime = getTime4Char(InputBox("Enter the ETA (Z) time for:" & vbCrLf & _
+                moveTime = getTime4Char(InputBox("Enter the ETA (Z) time for:" & vbCrLf & _
                     DLookup("Callsign & ""/"" & actype & "" | "" & deppoint & "" -> "" & destination", "tblTraffic", "ID = " & selectedFlight), _
                     "ETA", Format(LToZ(Now), "hhnn")))
             Else
-                movetime = TimeValue(LToZ(Now))
+                moveTime = TimeValue(LToZ(Now))
             End If
             
-            If IsNull(movetime) Then
+            If IsNull(moveTime) Then
                 log "Invalid value for moveTime.", Me.Name & ".handleMovement", "WARN"
                 'Beep
                 GoTo fexit
             End If
             
             db.Execute "UPDATE tblTraffic " & _
-                "SET ETA = TimeValue(#" & movetime & "#), " & _
+                "SET ETA = TimeValue(#" & moveTime & "#), " & _
                 "Status = 'Enroute', " & _
                 "Stationed = True, " & _
-                "arrDate = ztol(cETA(DOF,ETD,ETE,TimeValue(#" & movetime & "#))) WHERE ID = " & selectedFlight, dbFailOnError
+                "arrDate = ztol(cETA(DOF,ETD,ETE,TimeValue(#" & moveTime & "#))) WHERE ID = " & selectedFlight, dbFailOnError
 
         Else
             MsgBox "Cannot ETA closed/cancelled flights.", vbInformation, "ETA"
@@ -184,7 +184,7 @@ Dim subject As String: subject = DLookup("Callsign & ""/"" & actype", "tblTraffi
     
 fexit:
     If db.RecordsAffected <> 0 Then
-        log subject & ": (" & movement & "-" & Mid(subject, 1, InStr(1, subject, "/") - 1) & "-" & depPoint & IIf(movement = "DEP", Format(Nz(movetime, Now), "hhnn"), "") & "-" & Destination & IIf(movement = "ARR", Format(Nz(movetime, Now), "hhnn"), "") & ")", Me.Name & ".handleMovement"
+        log subject & ": (" & movement & "-" & Mid(subject, 1, InStr(1, subject, "/") - 1) & "-" & depPoint & IIf(movement = "DEP", Format(Nz(moveTime, Now), "hhnn"), "") & "-" & Destination & IIf(movement = "ARR", Format(Nz(moveTime, Now), "hhnn"), "") & ")", Me.Name & ".handleMovement"
         FormSyncUtil.syncForm Me.Name
         fpReload
     End If

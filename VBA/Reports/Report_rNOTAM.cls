@@ -11,10 +11,6 @@ Option Compare Database
 Option Explicit
 Private reportDate As Variant
 
-Private Sub btnPrint_Click()
-DoCmd.RunCommand acCmdPrint
-End Sub
-
 Private Sub Report_Open(cancel As Integer)
 On Error GoTo errtrap
 reportDate = Parent.Parent.reportDate

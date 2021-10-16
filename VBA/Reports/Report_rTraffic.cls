@@ -12,15 +12,6 @@ Option Explicit
 
 Private reportDate As Variant
 
-Private Sub btnPrint_Click()
-On Error GoTo errtrap
-DoCmd.RunCommand acCmdPrint
-sexit:
-Exit Sub
-errtrap:
-If err <> 2501 Then ErrHandler err, Error$, Me.Name & ".btnPrint_Click"
-End Sub
-
 Private Sub Report_Current()
 ctlReportDate = Format(Nz(reportDate, Date), "dd-mmm-yy")
 End Sub

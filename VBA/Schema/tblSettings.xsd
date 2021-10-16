@@ -10,10 +10,7 @@
 </xsd:element>
 <xsd:element name="tblSettings">
 <xsd:annotation>
-<xsd:appinfo>
-<od:index index-name="key" index-key="key " primary="no" unique="no" clustered="no" order="asc"/>
-<od:index index-name="PrimaryKey" index-key="ID " primary="yes" unique="yes" clustered="no" order="asc"/>
-</xsd:appinfo>
+<xsd:appinfo/>
 </xsd:annotation>
 <xsd:complexType>
 <xsd:sequence>

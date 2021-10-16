@@ -26,6 +26,6 @@ Private Sub btnSave_Click()
 End Sub
 
 Private Sub lstShifts_Click()
-    Me.Filter = "ID = " & lstShifts
+    Me.filter = "ID = " & lstShifts
     Me.FilterOn = True
 End Sub

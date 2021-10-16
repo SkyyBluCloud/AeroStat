@@ -24,7 +24,6 @@ Private Sub btnSave_Click()
 bClose = True
 If Dirty Then Dirty = False
 lstTemplates.Requery
-FormSyncUtil.syncForm "frm3616"
 End Sub
 
 Private Sub Form_BeforeUpdate(cancel As Integer)
@@ -43,6 +42,6 @@ Me.DataEntry = True
 End Sub
 
 Private Sub lstTemplates_Click()
-Me.Filter = "ID = " & lstTemplates
+Me.filter = "ID = " & lstTemplates
 Me.FilterOn = True
 End Sub

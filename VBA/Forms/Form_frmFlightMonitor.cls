@@ -23,7 +23,7 @@ Private Sub Form_Timer()
                 ctl.Requery
             End If
         Next ctl
-        DoEvents
+        
         FormSyncUtil.syncForm Me.Name, True
     End If
 End Sub

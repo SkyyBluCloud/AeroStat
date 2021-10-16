@@ -18,7 +18,7 @@ n = NOTAMUtil.parseNOTAM(parse)
     If n <> 0 Then
         Undo
         bClose = True
-        Me.Filter = "ID = " & n
+        Me.filter = "ID = " & n
         Me.FilterOn = True
         issuedBy.BorderColor = RGB(255, 0, 0)
     Else

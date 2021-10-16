@@ -88,9 +88,6 @@ Dim RS As DAO.Recordset: Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblSter
         Me.arrDate = ZToL(cETA(DOF, ETD, ETE))
         Me.depDate = ZToL(DOF + ETD)
         Me.stereoPlan = lstStereo.Column(1)
-        
-        Me.rwy = DLast("rwy", "tblshiftmanager")
-        
         'Me.Remarks = lstStereo.Column(1)
         
         'Me.altitude = !altitude
@@ -159,8 +156,6 @@ Private Sub Form_BeforeUpdate(cancel As Integer)
 End Sub
 
 Private Sub lstStereo_BeforeUpdate(cancel As Integer)
-    acType = lstStereo.Column(2)
-    
     If Not isValid Then
         'cancel = True
     Else
