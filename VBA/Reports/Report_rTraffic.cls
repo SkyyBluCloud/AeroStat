@@ -12,6 +12,20 @@ Option Explicit
 
 Private reportDate As Variant
 
+Private Sub btnPrint_Click()
+On Error GoTo errtrap
+If Not CurrentProject.AllReports("rTraffic").IsLoaded Then
+    DoCmd.OpenReport "rTraffic", acViewPreview, , , acHidden, reportDate
+End If
+    DoCmd.SelectObject acReport, "rTraffic"
+    DoCmd.RunCommand acCmdPrint
+    DoCmd.Close acReport, "rTraffic"
+sexit:
+Exit Sub
+errtrap:
+If err <> 2501 Then ErrHandler err, Error$, Me.Name & ".btnPrint_Click"
+End Sub
+
 Private Sub Report_Current()
 ctlReportDate = Format(Nz(reportDate, Date), "dd-mmm-yy")
 End Sub
@@ -20,10 +34,10 @@ Private Sub Report_Open(cancel As Integer)
 On Error GoTo errtrap
 
 CurrentDb.Execute "qTrafficFlightStatusUpdate"
-
-'reportDate = Null
 reportDate = Parent.Parent.reportDate
-reportDate = Nz(reportDate, Date)
+'reportDate = Null
+If IsEmpty(reportDate) Then reportDate = Nz(OpenArgs, Date)
+    
 
 Dim newSQL As String, db As DAO.Database: Set db = CurrentDb
 newSQL = Replace(db.QueryDefs("qTraffic").sql, "[varDate]", "#" & reportDate & "#")

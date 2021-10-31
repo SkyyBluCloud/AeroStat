@@ -12,16 +12,6 @@ Public FPLType As Integer
 Dim bClose As Boolean
 Dim pprSelect As Boolean
 
-Private Sub ATActime_Click()
-    DoCmd.OpenForm "check_in_out", , , "ID = " & ID, acFormEdit, acDialog
-    Form_Current
-End Sub
-
-Private Sub ATDctime_Click()
-    DoCmd.OpenForm "check_in_out", , , "ID = " & ID, acFormEdit, acDialog
-    Form_Current
-End Sub
-
 Private Sub btnReg_Click()
     DoCmd.OpenForm "frmListBoxDialog", , , , , acDialog, "qBaseAcft"
     
@@ -67,6 +57,62 @@ Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblPPR WHERE ((nz(tblPPR.PPR)<>'
     End If
 End Sub
 
+Private Sub ctlATA_Click()
+    If Not shiftKeyPressed Then
+        movetime = getTime4Char(InputBox("Enter the ARR (Z) time for:" & vbCrLf & _
+            subject, _
+            "ARR", Format(LToZ(Now), "hhnn")))
+    Else
+        movetime = TimeValue(LToZ(Now))
+    End If
+    
+    If IsNull(movetime) Then
+        log "Invalid value for moveTime. (" & CStr(Nz(movetime, "<NULL>")) & ")", Me.Name & ".handleMovement", "WARN"
+        Beep
+        Exit Sub
+    End If
+    
+    ATA = movetime
+    Status = "Closed"
+    Stationed = True
+    arrDate = ZToL(cETA(DOF, ETD, ETE, Null, Null, TimeValue(movetime)))
+    
+'    db.Execute "UPDATE tblTraffic " & _
+        "SET ATA = #" & movetime & "#, " & _
+        "Status = 'Closed', " & _
+        "Stationed = True, " & _
+        "arrDate = ztol(cETA(DOF,ETD,ETE,Null,Null,TimeValue(#" & movetime & "#))) WHERE ID = " & selectedFlight, dbFailOnError
+End Sub
+
+Private Sub ctlATD_Click()
+
+    If Not shiftKeyPressed Then
+        movetime = getTime4Char(InputBox("Enter the DEP (Z) time for:" & vbCrLf & _
+            subject, _
+            "DEP", Format(LToZ(Now), "hhnn")))
+    Else
+        movetime = TimeValue(LToZ(Now))
+    End If
+    
+    If Not IsDate(movetime) Then
+        log "Invalid value for moveTime. (" & CStr(Nz(movetime, "<NULL>")) & ")", Me.Name & ".handleMovement", "WARN"
+        Beep
+        Exit Sub
+    End If
+    
+    ATD = movetime
+    Status = "Enroute"
+    Stationed = False
+    depDate = ZToL(cETA(DOF, ETD, ETE, Null, TimeValue(movetime)))
+    
+'    db.Execute "UPDATE tblTraffic " & _
+        "SET ATD = #" & movetime & "#, " & _
+        "Status = 'Enroute', " & _
+        "Stationed = False, " & _
+        "depDate = ztol(cETA(DOF,ETD,ETE,Null,TimeValue(#" & movetime & "#))) WHERE ID = " & ID, dbFailOnError
+        
+End Sub
+
 Private Sub ctlETD_Exit(cancel As Integer)
     If Nz(ctlETD) = "" Then Exit Sub
     If IsDate(ctlETD) Then ctlETD = Format(ctlETD, "hhnn")
@@ -76,7 +122,7 @@ Private Sub ctlETD_Exit(cancel As Integer)
     ctlETD = Left(Format(ctlETD, "0000"), 2) & ":" & Right(Format(ctlETD, "0000"), 2)
     
     If Not IsDate(ctlETD) Then
-        cancel = True
+        'cancel = True
         ctlETD = ""
         ctlETD.BorderColor = RGB(255, 0, 0)
         ctlETD.SetFocus
@@ -88,11 +134,11 @@ Private Sub ctlETE_Exit(cancel As Integer)
     If IsDate(ctlETE) Then ctlETE = Format(ctlETD, "hhnn")
     If IsNumeric(ctlETE) And Len(ctlETE) = 3 Then ctlETE = 0 & ctlETE
     ctlETE.BorderColor = RGB(166, 166, 166)
-    ETE = getTime4Char(Nz(ctlETE))
+    ETE = getTime4Char(IIf(Nz(ctlETE) = "", "0000", Nz(ctlETE)))
     ctlETE = Left(Format(ctlETE, "0000"), 2) & ":" & Right(Format(ctlETE, "0000"), 2)
     
     If Not IsDate(ctlETE) Then
-        cancel = True
+        'cancel = True
         ctlETE = ""
         ctlETE.BorderColor = RGB(255, 0, 0)
         ctlETE.SetFocus
@@ -137,7 +183,7 @@ Dim f As Boolean
 Dim sperr As Boolean
 Dim spAccess As Boolean
 
-spAccess = DLookup("spaccess", "tbluserauth", "username = '" & getUSN & "'")
+spAccess = DLookup("spaccess", "tbluserauth", "username = '" & Util.getUser & "'")
 If Not spAccess Then spAccess = getAccessSP
 If spAccess Then
     If Not sp Then sp = (MsgBox("Connect to SharePoint", vbQuestion + vbYesNo, "PPR") = vbYes)
@@ -151,20 +197,20 @@ On Error GoTo save_Click_Err
 bClose = True
 
 sending.Visible = True
-sp.enabled = False
-done.enabled = False
-cancel_flt.enabled = False
-cPPR.enabled = False
+sp.Enabled = False
+done.Enabled = False
+cancel_flt.Enabled = False
+cPPR.Enabled = False
 DoEvents
 
 10  ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     '''''Grammar check''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-    For Each ctl In Controls
-        If TypeOf ctl Is TextBox And ctl.Name <> "Remarks" Then
-            ctl.Value = UCase(ctl.Value)
-        End If
-    Next
+'    For Each ctl In Controls
+'        If TypeOf ctl Is TextBox And ctl.Name <> "Remarks" Then
+'            ctl.Value = UCase(ctl.Value)
+'        End If
+'    Next
         
     If Nz(Tail) < 4 And Me.acType = "C172" Then
         Tail = Callsign
@@ -189,8 +235,9 @@ DoEvents
     Tail = Right(Tail, 7)
     
     If Not depPoint = stn And Not Destination = stn Then
-        MsgBox "If this aircraft is not landing here (full stop), a flight tracker entry is not needed." & vbCrLf & "Otherwise, please enter as two seperate flight plans.", vbInformation, "AeroStat"
-        GoTo done_fb
+'        MsgBox "If this aircraft is not landing here (full stop), a flight tracker entry is not needed." & vbCrLf & "Otherwise, please enter as two seperate flight plans.", vbInformation, "AeroStat"
+'        GoTo done_fb
+        flightRule = "A"
     End If
     
     If IsNull(opFPType) Then
@@ -200,7 +247,7 @@ DoEvents
         opFPType.BorderColor = RGB(166, 166, 166)
     End If
     
-    If IsNumeric(altitude) Then altitude = IIf(altitude <= 140, "A", "F") & altitude
+    If IsNumeric(altitude) Then altitude = IIf(altitude < getSettings("transitionAlt"), "A", "F") & altitude
     
     Me.acType = Replace(Me.acType, "-", "")
     Me.acType = Replace(Me.acType, "/", "")
@@ -232,23 +279,24 @@ DoEvents
         'arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "dd-mmm-yy") & " " & Format(ZToL(Nz(ATA, IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE))), "hh:nn")
         arrDate = ZToL(Util.cETA(DOF, ETD, ETE, ETA, ATD))
         arrordep = arrDate
-'        If Not Status = "Closed" And Not DateDiff("d", arrDate, Now) = 0 Then
-'            If MsgBox("Calculated ETA as " & arrDate & " (L). Is this correct?" & vbCrLf & "(DOF: " & DOF & ")", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
-'                GoTo done_fb
-'                Exit Sub
-'            End If
-'        End If
+        If Not Status = "Closed" And Not DateDiff("d", arrDate, Now) = 0 Then
+            If MsgBox("Calculated ETA as " & arrDate & " (L). Is this correct?" & vbCrLf & "(DOF: " & DOF & ")", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
+                GoTo done_fb
+                Exit Sub
+            End If
+        End If
     End If
     
     If depPoint = stn Then
-        depDate = DOF + ZToL(TimeValue(Nz(ATD, ETD)))
+        depDate = ZToL(DOF + TimeValue(Nz(ATD, ETD)))
+        'depDate = ZToL(Util.cETA(DOF, ETD, ETE, ETA, ATD))
         If arrordep = "" Then arrordep = depDate
-'        If Not Status = "Closed" And Not DateDiff("d", depDate, Now) = 0 Then
-'            If MsgBox("Calculated ETD as " & depDate & " (L). Is this correct?" & vbCrLf & "(DOF: " & DOF & ")", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
-'                GoTo done_fb
-'                Exit Sub
-'            End If
-'        End If
+        If Not Status = "Closed" And Not DateDiff("d", depDate, Now) = 0 Then
+            If MsgBox("Calculated ETD as " & depDate & " (L). Is this correct?" & vbCrLf & "(DOF: " & DOF & ")", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
+                GoTo done_fb
+                Exit Sub
+            End If
+        End If
     End If
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -346,7 +394,9 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                             !arrID = ID
                             spID = !spID
                             PPR = !PPR
-                            '!Tail = Tail
+                            If Nz(!Tail) <> Nz(Tail) Then
+                                 Tail = !Tail
+                            End If
                             dvCode = !dvCode
                             If Nz(Spot) = "" Then
                                 Spot = !Spot
@@ -362,7 +412,9 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                         ElseIf depPoint = stn Or Nz(PPR) = "" Then
                             
                             PPR = !PPR
-                            '!Tail = Tail
+                            If Nz(!Tail) <> Tail Then
+                                 Tail = !Tail
+                            End If
                             spID = !spID
                             dvCode = !dvCode
                             If Nz(Spot) = "" Then
@@ -690,7 +742,7 @@ els:
     Set RS = Nothing
     
 done_exit:
-    If btnAtlas Then atlasID = linkAtlas(NewRecord, Nz(atlasID, 0))
+    If btnAtlas And Nz(getSettings("syncAtlas"), False) Then atlasID = linkAtlas(NewRecord, Nz(atlasID, 0))
     If Dirty Then Dirty = False
     sending.Visible = False
     'syncTrafficLog ID, "Traffic", NewRecord
@@ -710,10 +762,10 @@ done_exit:
 done_fb:
     bClose = False
     sending.Visible = False
-    sp.enabled = True
-    done.enabled = True
-    cancel_flt.enabled = True
-    cPPR.enabled = True
+    sp.Enabled = True
+    done.Enabled = True
+    cancel_flt.Enabled = True
+    cPPR.Enabled = True
     Exit Sub
 
 save_Click_Err:
@@ -721,10 +773,11 @@ save_Click_Err:
     If err = 3201 Then
      
     End If
-    ErrHandler err, Error$, Me.Name & ".done_Click"
+    ErrHandler err, Error$, "quick_input.done_Click"
     sperr = IIf(err = 3011, True, False)
+    sending.Caption = "An error has occured. (" & err & ")"
+    Resume done_fb
     Resume Next
-    GoTo done_fb
 End Sub
 
 Private Sub altitude_LostFocus()
@@ -770,6 +823,8 @@ Private Sub Form_Close()
 End Sub
 
 Private Sub Form_Current()
+    'If NewRecord Then rwy = DLast("rwy", "tblshiftmanager")
+    
     bClose = False
     sp = NewRecord Or Not IsNull(spID)
     If Status = "Cancelled" Then
@@ -916,7 +971,7 @@ On Error GoTo errtrap
 Dim res() As String
 
 If Number > 1 And NewRecord Then
-    res = Split(InputBox("Please enter the tail numbers, separated by spaces:" & vbCrLf & "(Ex: 1234 5678 1212...)", "Enter Tails"), " ")
+    res = Split(InputBox("Please enter the tail numbers, separated by spaces:" & vbCrLf & "(Ex: 1234 5678 101...)", "Enter Tails"), " ")
     For Each t In res: Tail.AddItem t: Next
     Tail = Nz(res(0))
     longTail = Tail.RowSource

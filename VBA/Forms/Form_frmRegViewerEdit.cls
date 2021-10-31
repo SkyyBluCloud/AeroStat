@@ -42,7 +42,7 @@ Private Sub Form_Timer()
 End Sub
 
 Private Sub lstRegs_AfterUpdate()
-    filter = "ID = " & lstRegs
+    Filter = "ID = " & lstRegs
     FilterOn = True
 End Sub
 

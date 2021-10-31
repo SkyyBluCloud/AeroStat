@@ -49,14 +49,15 @@ Private Sub arrDate_AfterUpdate()
         Set qdf = CurrentDb.QueryDefs("qAnnounce")
         cd1 = Format(arrDate, "mm/dd/yyyy")
         cd2 = Format(Nz(depDate, arrDate), "mm/dd/yyyy")
-        qdf.Parameters("checkDate") = cd1
+        qdf.Parameters("cd1") = cd1
+        qdf.Parameters("cd2") = cd2
         Set rsRes = qdf.OpenRecordset
         With rsRes
             If Not .EOF Then
     '            .MoveLast
     '            .MoveFirst
                 rcheck = True
-                DoCmd.OpenForm "frmRestrictions", , , , , acDialog, cd1
+                DoCmd.OpenForm "frmRestrictions", , , , , acDialog, cd1 & ";" & cd2
                 If frmRestrictionsResponse Then
                     arrDate.SetFocus
                 End If
@@ -152,7 +153,7 @@ With RS
     .edit
     !archive = True
     !archiveTime = Now
-    !archiveBy = Util.getOpInitials(getUSN)
+    !archiveBy = Util.getOpInitials(Util.getUser)
     .update
     .Close
 End With
@@ -172,7 +173,7 @@ If comment = "" Then Exit Sub
         !PPR = formPPR
         !inputTime = Now
         !comment = comment
-        !opInitials = Util.getOpInitials(getUSN)
+        !opInitials = Util.getOpInitials(Util.getUser)
         .update
         .Bookmark = .LastModified
         If NewRecord Then unsavedComment = !ID
@@ -198,35 +199,37 @@ Private Sub depDate_AfterUpdate()
             Set qdf = CurrentDb.QueryDefs("qAnnounce")
             cd1 = Format(arrDate, "mm/dd/yyyy")
             cd2 = Format(Nz(depDate, arrDate), "mm/dd/yyyy")
-            qdf.Parameters("checkDate") = cd1
-            Set rsRes = qdf.OpenRecordset
-        '    With rsRes
-        '        If Not .EOF Then
-        ''            .MoveLast
-        ''            .MoveFirst
-        '            rcheck = True
-        '            DoCmd.OpenForm "frmRestrictions", , , , , acDialog, cd1
-        '            If frmRestrictionsResponse Then
-        '                arrDate.SetFocus
-        '                arrDate = ""
-        '            End If
-        '        End If
-        '    End With
+            qdf.Parameters("cd1") = cd1
+            qdf.Parameters("cd2") = cd2
             
-            If cd1 <> cd2 Then
-                qdf.Parameters("checkDate") = cd2
-                Set rsRes = qdf.OpenRecordset
-                With rsRes
-                    If Not .EOF Then
-            '            .MoveLast
-            '            .MoveFirst
-                        DoCmd.OpenForm "frmRestrictions", , , , , acDialog, cd2
-                        If frmRestrictionsResponse Then
-                            depDate.SetFocus
-                        End If
+            Set rsRes = qdf.OpenRecordset
+            With rsRes
+                If Not .EOF Then
+        '            .MoveLast
+        '            .MoveFirst
+                    rcheck = True
+                    DoCmd.OpenForm "frmRestrictions", , , , , acDialog, cd1 & ";" & cd2
+                    If frmRestrictionsResponse Then
+                        arrDate.SetFocus
+                        arrDate = ""
                     End If
-                End With
-            End If
+                End If
+            End With
+            
+'            If cd1 <> cd2 Then
+'                qdf.Parameters("checkDate") = cd2
+'                Set rsRes = qdf.OpenRecordset
+'                With rsRes
+'                    If Not .EOF Then
+'            '            .MoveLast
+'            '            .MoveFirst
+'                        DoCmd.OpenForm "frmRestrictions", , , , , acDialog, cd2
+'                        If frmRestrictionsResponse Then
+'                            depDate.SetFocus
+'                        End If
+'                    End If
+'                End With
+'            End If
         End If
     End If
 
@@ -267,9 +270,17 @@ Private Sub Form_Load()
 '    End If
 '    '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     'NAMT and above can change the PPR number
-    If DLookup("authlevel", "tbluserauth", "username='" & Environ$("username") & "'") < 5 Or DLookup("opinitials", "tbluserauth", "username='" & Environ$("username") & "'") Like "XD" Then 'And me, LOL
-        formPPR.enabled = True
+    If DLookup("authlevel", "tbluserauth", "username='" & Util.getUser & "'") < 5 Or DLookup("opinitials", "tbluserauth", "username='" & Util.getUser & "'") Like "XD" Then 'And me, LOL
+        formPPR.Enabled = True
         formPPR.Locked = False
+    End If
+    
+    For Each ctl In Me.Controls
+        If ctl.Tag = "ro" Then ctl.Enabled = Me.AllowEdits
+    Next
+    If Not Me.AllowEdits Then
+        internalComments.Visible = False
+        Remarks.width = (internalComments.Left + internalComments.width) - Remarks.Left
     End If
     
     On Error Resume Next
@@ -544,14 +555,16 @@ If spEnabled Then spEnabled = btnSP
             RS.Close
             Set RS = Nothing
             Set db = Nothing
-        Exit Do
+            
+        
         End With
+        Exit Do
     Loop
     
     'End SharePoint
     
     bClose = True
-    If Dirty Then Dirty = False
+    
     
     If NewRecord Then MsgBox "Callsign: " & Callsign & vbCrLf & _
             "Type: " & Me.Type & vbCrLf & _
@@ -561,6 +574,8 @@ If spEnabled Then spEnabled = btnSP
             vbCrLf & _
             "The PPR number for this mission is: " & formPPR _
             , vbInformation, "New PPR"
+            
+    If Dirty Then Dirty = False
     savePPR = True
         
 fexit:
@@ -576,7 +591,7 @@ End Function
 'Dim spAccess As Boolean
 'Dim stn As String
 'stn = DLookup("data","tblSettings","key = 'station'")
-'spAccess = DLookup("spaccess", "tbluserauth", "username = '" & getUSN & "'")
+'spAccess = DLookup("spaccess", "tbluserauth", "username = '" & util.getuser & "'")
 'If Not spAccess Then spAccess = getAccessSP
 'If spAccess Then
 '    If Not sp Then sp = (MsgBox("Connect to SharePoint", vbQuestion + vbYesNo, "PPR") = vbYes)

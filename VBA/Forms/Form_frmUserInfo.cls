@@ -42,10 +42,14 @@ errText.Visible = False
             End If
         End If
     Next
-    If errors Then Exit Sub
+    If errors Then
+        Exit Sub
+    Else
+        errText.Visible = True
+    End If
     
     If Not IsNull(DLookup("ID", "tblUserAuth", "opinitials = '" & opInitials & "'")) Then
-        errText.Caption = "These initials have already been assigned. Please choose a different one."
+        errText.Caption = "These initials have already been assigned."
         errText.Visible = True
         opInitials.BorderColor = RGB(255, 0, 0)
         Exit Sub
@@ -54,13 +58,11 @@ errText.Visible = False
     opInitials = UCase(opInitials)
     firstName = UCase(Left(firstName, 1)) & LCase(Right(firstName, Len(firstName) - 1))
     lastName = UCase(Left(lastName, 1)) & LCase(Right(lastName, Len(lastName) - 1))
-    username = Environ$("username")
+    username = Util.getUser
     lastLogin = Now()
-    lastSystem = Environ$("computername")
+    lastSystem = Util.getWorkstation
     'DoCmd.RunCommand acCmdSaveRecord
     
-    ''''''exit access here and constantly check for verification before the main form loads...'''''''''''''''''
-    '''For now, we will just continue'''''''''''
     
     isLoggedIn = True
     DoCmd.Close acForm, "frmUserInfo"

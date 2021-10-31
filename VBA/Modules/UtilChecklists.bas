@@ -71,10 +71,10 @@ End Function
 Public Function closeChecklist(ByVal checklistID As Integer, ByVal instance As Integer, Optional ByVal opInitials As String) As Boolean
 On Error GoTo fErr
 If IsNull(instance) Then Exit Function
-If IsNull(opInitials) Then opInitials = Util.getOpInitials(getUSN)
+If IsNull(opInitials) Then opInitials = Util.getOpInitials(Util.getUser)
 Dim db As DAO.Database: Set db = CurrentDb
     
-    Dim cert As Variant: cert = UtilCertifier.newCert(getUSN)
+    Dim cert As Variant: cert = UtilCertifier.newCert(Util.getUser)
     db.Execute "UPDATE tblChecklistItemsData INNER JOIN tblChecklistItems ON tblChecklistItemsData.itemID = tblChecklistItems.itemID " & _
                 "SET certifierID = " & cert & " WHERE checklistID = " & checklistID & " AND instance = " & instance & ";", dbFailOnError
                 

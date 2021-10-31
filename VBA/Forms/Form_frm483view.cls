@@ -69,7 +69,7 @@ If list483.ItemsSelected.Count <> 1 Then Exit Sub
 End Sub
 
 Private Sub new_Click()
-    If DLookup("authlevel", "tbluserauth", "username = '" & Environ$("username") & "'") > 4 Then
+    If DLookup("authlevel", "tbluserauth", "username = '" & Util.getUser & "'") > 4 Then
         MsgBox "Access denied.", vbCritical, "ADPM"
         Exit Sub
     End If

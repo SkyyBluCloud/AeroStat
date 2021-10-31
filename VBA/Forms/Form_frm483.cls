@@ -42,7 +42,7 @@ End Sub
 
 Public Function changeView(ByVal frm As String, Optional ByVal args As String, Optional args2 As Variant = 0)
     view.SourceObject = frm
-    view.Form.filter = args
+    view.Form.Filter = args
     view.Form.FilterOn = Not IsNull(args)
     
     If frm = "frm483entry" Then

@@ -91,7 +91,7 @@ Dim f As Boolean
 Dim sperr As Boolean
 Dim spAccess As Boolean
 
-spAccess = DLookup("spaccess", "tbluserauth", "username = '" & getUSN & "'")
+spAccess = DLookup("spaccess", "tbluserauth", "username = '" & Util.getUser & "'")
 If Not spAccess Then spAccess = getAccessSP
 If spAccess Then
     If Not sp Then sp = (MsgBox("Connect to SharePoint", vbQuestion + vbYesNo, "PPR") = vbYes)
@@ -105,10 +105,10 @@ On Error GoTo save_Click_Err
 bClose = True
 
 sending.Visible = True
-sp.enabled = False
-done.enabled = False
-cancel_flt.enabled = False
-cPPR.enabled = False
+sp.Enabled = False
+done.Enabled = False
+cancel_flt.Enabled = False
+cPPR.Enabled = False
 DoEvents
 
 10  ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -646,10 +646,10 @@ done_exit:
 done_fb:
     bClose = False
     sending.Visible = False
-    sp.enabled = True
-    done.enabled = True
-    cancel_flt.enabled = True
-    cPPR.enabled = True
+    sp.Enabled = True
+    done.Enabled = True
+    cancel_flt.Enabled = True
+    cPPR.Enabled = True
     Exit Sub
 
 save_Click_Err:

@@ -75,7 +75,7 @@ Private Sub lstMain_DblClick(cancel As Integer)
     If Not IsNull(lstMain) Then
         With Me
             .DataEntry = False
-            .filter = "ID = " & lstMain
+            .Filter = "ID = " & lstMain
             .FilterOn = True
             .tabCtl = 1
         End With

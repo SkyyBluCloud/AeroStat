@@ -22,7 +22,7 @@ changeView "frmAFMDash"
 End Sub
 
 Private Sub Form_Load()
-shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Environ$("username") & "'")
+shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Util.getUser & "'")
 Dim isClosed As Boolean: isClosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
 dashShiftID = IIf(isClosed, 0, shiftID)
 If dashShiftID <> 0 Then
@@ -35,7 +35,7 @@ End Sub
 
 Private Sub newShift_Click()
 On Error Resume Next
-shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Environ$("username") & "'")
+shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Util.getUser & "'")
 Dim isClosed As Boolean: isClosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
 
     If Not isClosed Then
@@ -78,7 +78,7 @@ Dim isClosed As Boolean
         Exit Function
     End If
     
-    shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Environ$("username") & "'")
+    shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Util.getUser & "'")
     isClosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
     getShiftID = IIf(isClosed, 0, shiftID)
     'frm!filter = "shiftID = " & dashShiftID

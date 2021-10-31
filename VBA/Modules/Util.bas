@@ -1,17 +1,67 @@
 Attribute VB_Name = "Util"
+Public Declare Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" (ByVal lpBuffer As String, nSize As Long) As Long
+Public Declare Function GetComputerName Lib "Kernel32" Alias "GetComputerNameA" (ByVal lpBuffer As String, nSize As Long) As Long
+
 Option Compare Database
+
+Sub qDefs()
+On Error GoTo errtrap
+Dim key As String: key = "getUSN"
+Dim qdf: For Each qdf In CurrentDb.QueryDefs
+    If Left(qdf.Name, 1) = "q" And InStr(1, qdf.sql, key) <> 0 Then
+        log qdf.Name, "qDefs"
+    End If
+Next
+sexit:
+Exit Sub
+errtrap:
+ErrHandler err, Error$, "qDefs"
+End Sub
+
+Public Function getUser() As Variant
+' This procedure uses the Win32API function util.getuserName
+' to return the name of the user currently logged on to
+' this machine. The Declare statement for the API function
+' is located in the Declarations section of this module.
+   
+    Dim strBuffer As String
+    Dim lngSize As Long
+        
+    strBuffer = String(100, " ")
+    lngSize = Len(strBuffer)
+    
+    If GetUserName(strBuffer, lngSize) = 1 Then
+        getUser = Left(strBuffer, lngSize - 1)
+    End If
+    
+End Function
+
+Public Function getWorkstation() As Variant
+    Dim strBuffer As String
+    Dim lngSize As Long
+        
+    strBuffer = String(100, " ")
+    lngSize = Len(strBuffer)
+
+    If GetComputerName(strBuffer, lngSize) = 1 Then
+        getWorkstation = Left(strBuffer, lngSize)
+    End If
+
+End Function
+
+
+Public Function getSettings(key As String) As Variant
+getSettings = DLookup("data", "tblSettings", "key = '" & key & "'")
+End Function
 
 Public Sub clearConnections()
 On Error GoTo errtrap
-    log "Clearing relationships...", "Util.clearConnections"
-    DoEvents
     For Each t In CurrentDb.TableDefs
         t.Connect = ";"
     Next t
-    log "Done!", "Util.clearConnections"
+    log "Done!", "Util.saveConnections"
     
 fexit:
-    DoEvents
     Exit Sub
 errtrap:
     ErrHandler err, Error$, "Util.clearConnections"
@@ -38,7 +88,6 @@ On Error GoTo errtrap
     log "Done!", "Util.saveConnections"
     
 fexit:
-    DoEvents
     Exit Sub
 errtrap:
     ErrHandler err, Error$, "Util.saveConnections"
@@ -156,6 +205,7 @@ End Function
 
 'Don't do it.
 Public Sub truncAll(ByVal dbPath As Variant)
+On Error Resume Next
     If MsgBox("THIS IS DANGEROUS! TURN BACK NOW!", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then
     If MsgBox("THIS CANNOT BE UNDONE! CANCEL THIS IMMEDIATELY!", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then
     If MsgBox("SERIOUSLY? CANCEL THIS PROCESS? PLEASE?", vbCritical + vbYesNo, "Truncate (Thats fancy for DELETE EVERYTHING)") = vbNo Then
@@ -178,7 +228,6 @@ Public Sub truncAll(ByVal dbPath As Variant)
     DoEvents
     Set app = Nothing
     DoEvents
-    log "Done. It's like it never happened...", "Util.truncAll", "WARN"
     MsgBox "Done. It's like it never happened...", vbInformation, "Trunc"
 End Sub
 
@@ -190,8 +239,12 @@ Dim db As DAO.Database: Set db = CurrentDb
             Exit Sub
         End If
     End If
+    Dim timeStart As Date: timeStart = Now
+    
     db.Execute "DELETE * FROM " & tbl, dbFailOnError
-    log "Truncated " & tbl & " (" & db.RecordsAffected & " record(s) )", "Util.trunc"
+    DoEvents
+    
+    log "Truncated " & tbl & " in " & DateDiff("s", timeStart, Now) & " seconds. (" & db.RecordsAffected & " record(s) )", "Util.trunc"
     Set db = Nothing
 End Sub
 
@@ -248,17 +301,27 @@ On Error Resume Next
 End Function
 
 Public Function cETA(ByVal DOF As Variant, ByVal ETD As Variant, ByVal ETE As Variant, _
-                    Optional ByVal ETA As Variant = Null, Optional ByVal ATD As Variant = Null, Optional ByVal ATA As Variant = Null) As Date
+                    Optional ByVal ETA As Variant = Null, Optional ByVal ATD As Variant = Null, Optional ByVal ATA As Variant = Null) As Variant
 On Error GoTo errtrap
 If IsNull(DOF) Then Exit Function
-DOF = CDate(DOF): ETD = CDate(Nz(ETD, 0)): ETE = CDate(Nz(ETE, 0))
+'DOF = CDate(DOF): ETD = CDate(Nz(ETD, 0)): ETE = CDate(Nz(ETE, 0))
+'ETA = CDate(Nz(ETA, 0))
+'ATD = CDate(Nz(ATD, 0)): ATA = CDate(Nz(ATA, 0))
 '[DOF]+IIf([ETA] Is Null,IIf([ATD] Is Null,[ETD],[ATD])+[ETE],[ETA])
+    Select Case False
+        Case IsDate(DOF), IsDate(ETD), IsDate(ETE)
+            Exit Function
+            
+    End Select
+    
+    If ATA = "" Then ATA = Null
     
 '    If Not IsNull(ETA) Then
 '        cETA = DOF + ETA
 '    End If
-  cETA = DateValue(DOF) + Nz(ATA, Nz(ETA, Nz(ATD, ETD) + ETE))
-
+  cETA = DateValue(DateValue(DOF) + TimeValue(Nz(ATD, ETD)) + Nz(ETE, 0)) + _
+            CDate(Nz(ATA, Nz(ETA, Nz(ATD, ETD) + ETE)))
+') + TimeValue(Nz(ATA, Nz(ETA)))
 fexit:
     Exit Function
 errtrap:
@@ -329,15 +392,12 @@ End Function
 'End Sub
 
 Public Sub exportAllCode()
-On Error GoTo errtrap
 Dim c As VBComponent
 Dim Sfx, exportLocation As String
 Dim num As Integer
 
 'If dir(exportLocation) = "" Then createPath exportLocation
-    
-    Util.exportSchema
-    
+
     For Each c In Application.VBE.VBProjects(1).VBComponents
         exportLocation = CurrentProject.Path & "\DB EXPORT\"
 
@@ -369,20 +429,9 @@ Dim num As Integer
             c.Export exportLocation & "\" & c.Name & Sfx
             num = num + 1
         End If
-        DoEvents
     Next c
-    
-sexit:
+
     log "Done! Successfully exported " & num & " objects.", "Util.exportAllCode"
-    Exit Sub
-errtrap:
-    ErrHandler err, Error$, "Util.exportAllCode"
-    Select Case err
-    Case 50034, 6
-        Resume Next
-    Case Else
-        Exit Sub
-    End Select
 End Sub
 
 
@@ -499,17 +548,8 @@ End Select
 End Function
 
 Public Function getOpInitials(ByVal username As String) As Variant
-    'getOpInitials = DLookup("opInitials", "tbluserauth", "username = '" & IIf(username <> "", username, Environ$("username")) & "'")
+    'getOpInitials = DLookup("opInitials", "tbluserauth", "username = '" & IIf(username <> "", username, Util.getUser) & "'")
     getOpInitials = DLookup("opInitials", "tbluserauth", "username = '" & username & "'")
-End Function
-
-Public Function getUSN(Optional ByVal opInitials As String) As String
-    If opInitials <> "" Then
-        getUSN = DLookup("username", "tblUserAuth", "opInitials ='" & opInitials & "'")
-    Else
-        'getUSN = Environ$("username") 'This doesn't work anymore for some reason
-        getUSN = Mid(Environ$("userprofile"), InStr(InStr(1, Environ$("userprofile"), "Users\"), Environ$("userprofile"), "\") + 1)
-    End If
 End Function
 
 Public Function createPath(ByVal Path As String) As Boolean
@@ -743,7 +783,7 @@ Public Sub log(msg As String, module As String, Optional priority As String = "I
 Dim db As DAO.Database: Set db = CurrentDb
 Dim sql As String:  sql = "INSERT INTO [@DEBUG] (username,initials,computername,priority,module,details) " & _
                             "SELECT tblUserAuth.username, tblUserAuth.opInitials, tblUserAuth.lastsystem, '" & priority & "', '" & module & "', " & """" & msg & """" & _
-                            " FROM tblUserAuth WHERE tblUserAuth.username = '" & getUSN & "';"
+                            " FROM tblUserAuth WHERE tblUserAuth.username = '" & Util.getUser & "';"
 
     db.Execute sql, dbFailOnError
     Debug.Print Format(Now, "dd-mmm-yy hh:nn:ssL") & "[" & priority & "] " & module & ": " & msg
@@ -805,7 +845,7 @@ Set rstbl = CurrentDb.OpenRecordset("SELECT * FROM " & tbl & " WHERE ID = " & re
         .AddNew
         !timestamp = t
         !PID = recID
-        !opInitials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
+        !opInitials = DLookup("opinitials", "tbluserauth", "username = '" & Util.getUser & "'")
         With rstbl: Select Case tbl
             Case "Traffic"
                 rsAlert!alerttype = 1
@@ -824,7 +864,7 @@ Set rstbl = CurrentDb.OpenRecordset("SELECT * FROM " & tbl & " WHERE ID = " & re
         .Bookmark = .LastModified
     End With
     
-'    Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & Environ$("username") & "'")
+'    Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & Util.getUser & "'")
 '    With rs
 '        .edit
 '        !frmtrafficlogalert = rsAlert!ID

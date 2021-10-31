@@ -114,7 +114,7 @@ End Select
 End Sub
 
 Private Sub lstBaseAcft_AfterUpdate()
-    Me.filter = "ID = " & lstBaseAcft
+    Me.Filter = "ID = " & lstBaseAcft
     Me.FilterOn = True
     'replaceGhost
 End Sub
@@ -151,7 +151,7 @@ End Function
 
 Private Sub lstBaseAcft_Click()
 On Error Resume Next
-    Me.filter = "ID = " & lstBaseAcft
+    Me.Filter = "ID = " & lstBaseAcft
     Me.FilterOn = True
 End Sub
 

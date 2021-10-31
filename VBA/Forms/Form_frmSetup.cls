@@ -20,7 +20,7 @@ Private Sub btnBack_Click()
         Exit Sub
         
     Case 2
-        btnNext.enabled = True
+        btnNext.Enabled = True
     
     End Select
     tabCtl = tabCtl - 1
@@ -45,7 +45,7 @@ Dim fd As Office.FileDialog: Set fd = Application.FileDialog(msoFileDialogFilePi
         End If
     End With
     
-    btnNext.enabled = Util.relinkTables(txtBackend)
+    btnNext.Enabled = Util.relinkTables(txtBackend)
     
 End Sub
 
@@ -165,7 +165,7 @@ Private Sub TabCtl_Change()
         btnNext.Caption = "Accept"
         
     Case 2 'Backend
-        btnNext.enabled = Nz(txtBackend) <> ""
+        btnNext.Enabled = Nz(txtBackend) <> ""
     
     Case 3 'Global Settings
         frmSetupGlobalSettings.SourceObject = "frmSetupGlobalSettings"

@@ -38,12 +38,12 @@ Dim db As DAO.Database: Set db = CurrentDb
     With sfEditChecklist.Form
         .Recordset.AddNew
         !checklistID = lstChecklists
-        !order = 1
+        '!order = 1
         !item = "New Item"
         .Recordset.update
         
         .bClose = True
-        .filter = "checklistID = " & Me.lstChecklists
+        .Filter = "checklistID = " & Me.lstChecklists
         .FilterOn = True
     End With
     
@@ -64,7 +64,7 @@ On Error GoTo errtrap
         
         Me.sfEditChecklist.SourceObject = "frmChecklistEdit"
         With Me.sfEditChecklist.Form
-            .filter = "tblChecklistIndex.checklistID = " & lstChecklists
+            .Filter = "tblChecklistIndex.checklistID = " & lstChecklists
             .FilterOn = True
             Set !lstItems.Recordset = qdf.OpenRecordset
         End With

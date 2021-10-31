@@ -95,7 +95,7 @@ End Sub
 
 Private Sub lstItems_AfterUpdate()
     
-    Me.filter = "ID = " & lstItems.Column(0)
+    Me.Filter = "ID = " & lstItems.Column(0)
     Me.FilterOn = True
     
     

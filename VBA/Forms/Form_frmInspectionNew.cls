@@ -66,7 +66,7 @@ Dim t As Date
 '    End If
 
     For Each ctl In Controls
-        If TypeOf ctl Is CommandButton Or CheckBox Then ctl.enabled = False
+        If TypeOf ctl Is CommandButton Or CheckBox Then ctl.Enabled = False
     Next
     
     Dim fail As Boolean
@@ -164,7 +164,7 @@ log:
             !shiftID = shiftID
             !entryTime = LToZ(t)
             !entry = entry
-            !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
+            !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Util.getUser & "'")
             .update
             .Bookmark = .LastModified
             IIf(Not firstEntryComplete, logOn, logOff) = !ID
@@ -193,7 +193,7 @@ sexit:
     Exit Sub
 fb:
     For Each ctl In Controls
-        If TypeOf ctl Is CommandButton Or CheckBox Then ctl.enabled = True
+        If TypeOf ctl Is CommandButton Or CheckBox Then ctl.Enabled = True
     Next
     Exit Sub
     Resume Next

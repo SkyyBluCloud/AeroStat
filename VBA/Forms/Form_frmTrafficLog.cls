@@ -18,10 +18,14 @@ Private shiftKeyPressed As Boolean
 
 Public Property Let selectedFlight(f As Integer)
 flightID = f
+'Me.Filter = "ID = " & flightID
+'Me.FilterOn = True
 End Property
 
 Public Property Get selectedFlight() As Integer
 selectedFlight = flightID
+'Me.Filter = "ID = " & flightID
+'Me.FilterOn = True
 End Property
 
 Private Function handleMovement(ByVal movement As String)
@@ -32,105 +36,128 @@ On Error GoTo errtrap
 If selectedFlight = 0 Then Exit Function
 
 Dim db As DAO.Database: Set db = CurrentDb
-Dim moveTime As Variant
+Dim movetime As Variant
+Dim dataObj As New MSForms.DataObject
 'Dim subject As String: subject = DLookup("Callsign & ""/"" & actype & "" | "" & deppoint & "" -> "" & destination", "tblTraffic", "ID = " & selectedFlight)
 Dim subject As String: subject = DLookup("Callsign & ""/"" & actype", "tblTraffic", "ID = " & selectedFlight)
 Dim atlasID As Double: atlasID = Nz(DLookup("atlasID", "tblTraffic", "ID = " & selectedFlight), 0)
 
+    Me.Filter = "ID = " & selectedFlight
+    Me.FilterOn = True
+    
+    If Not shiftKeyPressed And (movement = "ARR" Or movement = "DEP" Or movement = "ETA") Then
+        movetime = getTime4Char(InputBox("Enter the " & movement & " (Z) time for:" & vbCrLf & _
+            subject, _
+            "Movement", Format(LToZ(Now), "hhnn")))
+    Else
+        movetime = TimeValue(LToZ(Now))
+    End If
+            
     Select Case movement
     
     Case "ARR"
         If DLookup("status", "tbltraffic", "ID = " & selectedFlight) Like "*Enroute*" _
         Or DLookup("status", "tbltraffic", "ID = " & selectedFlight) Like "*Closed*" Then
             
-            If Not shiftKeyPressed Then
-                moveTime = getTime4Char(InputBox("Enter the ARR (Z) time for:" & vbCrLf & _
-                    subject, _
-                    "ARR", Format(LToZ(Now), "hhnn")))
-            Else
-                moveTime = TimeValue(LToZ(Now))
-            End If
-            
-            If IsNull(moveTime) Then
-                log "Invalid value for moveTime. (" & CStr(Nz(moveTime, "<NULL>")) & ")", Me.Name & ".handleMovement", "WARN"
+            If IsNull(movetime) Then
+                log "Invalid value for moveTime. (" & CStr(Nz(movetime, "<NULL>")) & ")", Me.Name & ".handleMovement", "WARN"
                 'Beep
                 GoTo fexit
             End If
             
             db.Execute "UPDATE tblTraffic " & _
-                "SET ATA = #" & moveTime & "#, " & _
+                "SET ATA = #" & movetime & "#, " & _
                 "Status = 'Closed', " & _
                 "Stationed = True, " & _
-                "arrDate = ztol(cETA(DOF,ETD,ETE,Null,Null,TimeValue(#" & moveTime & "#))) WHERE ID = " & selectedFlight, dbFailOnError
+                "arrDate = ztol(cETA(DOF,ETD,ETE,Null,Null,TimeValue(#" & movetime & "#))) WHERE ID = " & selectedFlight, dbFailOnError
                 
+        ElseIf DLookup("flightRule", "tbltraffic", "ID = " & selectedFlight) = "A" And DLookup("status", "tbltraffic", "ID = " & selectedFlight) Like "*Pending*" Then
+        
+            db.Execute "UPDATE tblTraffic " & _
+                "SET ATA = #" & movetime & "#, " & _
+                "Status = 'Enroute', " & _
+                "arrDate = ztol(cETA(DOF,ETD,ETE,Null,Null,TimeValue(#" & movetime & "#))) WHERE ID = " & selectedFlight, dbFailOnError
+            
         Else
             MsgBox "Cannot ARR without DEP or ETA.", vbInformation, "ARR"
         End If
             
     Case "DEP"
-        If Not DLookup("status", "tbltraffic", "ID = " & selectedFlight) Like "*Closed*" _
-        And Not DLookup("status", "tbltraffic", "ID = " & selectedFlight) Like "*Cancelled*" Then
+        If DLookup("status", "tbltraffic", "ID = " & selectedFlight) Like "*Pending*" Then
             
-            If Not shiftKeyPressed Then
-                moveTime = getTime4Char(InputBox("Enter the DEP (Z) time for:" & vbCrLf & _
-                    subject, _
-                    "DEP", Format(LToZ(Now), "hhnn")))
-            Else
-                moveTime = TimeValue(LToZ(Now))
-            End If
+'            If Not shiftKeyPressed Then
+'                movetime = getTime4Char(InputBox("Enter the DEP (Z) time for:" & vbCrLf & _
+'                    subject, _
+'                    "DEP", Format(LToZ(Now), "hhnn")))
+'            Else
+'                movetime = TimeValue(LToZ(Now))
+'            End If
             
-            If IsNull(moveTime) Then
+            If IsNull(movetime) Then
                 log "Invalid value for moveTime.", Me.Name & ".handleMovement", "WARN"
                 'Beep
                 GoTo fexit
             End If
             
             db.Execute "UPDATE tblTraffic " & _
-                "SET ATD = #" & moveTime & "#, " & _
+                "SET ATD = #" & movetime & "#, " & _
                 "ETA = Null, " & _
                 "Stationed = False, " & _
                 "Status = 'Enroute', " & _
-                "depDate = ztol(DOF + TimeValue(#" & moveTime & "#)), " & _
-                "arrDate = ztol(cETA(DOF,ETD,ETE,Null,TimeValue(#" & moveTime & "#))) WHERE ID = " & selectedFlight, dbFailOnError
+                "depDate = ztol(DOF + TimeValue(#" & movetime & "#)), " & _
+                "arrDate = ztol(cETA(DOF,ETD,ETE,Null,TimeValue(#" & movetime & "#))) WHERE ID = " & selectedFlight, dbFailOnError
 
+        ElseIf DLookup("flightRule", "tbltraffic", "ID = " & selectedFlight) = "A" And DLookup("status", "tbltraffic", "ID = " & selectedFlight) Like "*Enroute*" Then
+        
+            db.Execute "UPDATE tblTraffic " & _
+                "SET ATD = #" & movetime & "#, " & _
+                "Status = 'Closed', " & _
+                "depDate = ztol(DOF + TimeValue(#" & movetime & "#)) " & _
+                "WHERE ID = " & selectedFlight, dbFailOnError
+        
         Else
             MsgBox "Cannot DEP closed/cancelled flights.", vbInformation, "DEP"
         End If
             
     Case "ETA"
+    '''ID  atlasField  atlasSolution
+    '14  InETA "Iif(Forms!quick_input!Destination = Dlookup(""data"",""tblsettings"",""key = 'station'""), iif(Forms!quick_input!depPoint = Dlookup(""data"",""tblsettings"",""key = 'station'""),Forms!quick_input!ETA,cETA(Forms!quick_input!DOF,Forms!quick_input!ETD,Forms!quick_input!ETE)),Null)"
         If Not DLookup("status", "tbltraffic", "ID = " & selectedFlight) Like "*Closed*" _
         And Not DLookup("status", "tbltraffic", "ID = " & selectedFlight) Like "*Cancelled*" Then
-            
-            
+        
                     
-                    
-                    
-            If Not shiftKeyPressed Then
-                Dim gt4c As String: gt4c = InputBox("Enter the ETA (Z) time for:" & vbCrLf & _
-                    DLookup("Callsign & ""/"" & actype & "" | "" & deppoint & "" -> "" & destination", "tblTraffic", "ID = " & selectedFlight), _
-                    "ETA", Format(LToZ(Now), "hhnn"))
-                
-                If Left(gt4c, 1) = "+" Then
-                    moveTime = DateAdd("n", Mid(gt4c, 2), LToZ(Now))
-                Else
-                    moveTime = getTime4Char(gt4c)
-                End If
-            Else
-                moveTime = TimeValue(LToZ(Now))
-            End If
+'            If Not shiftKeyPressed Then
+'                Dim gt4c As String: gt4c = InputBox("Enter the ETA (Z) time for:" & vbCrLf & _
+'                    DLookup("Callsign & ""/"" & actype & "" | "" & deppoint & "" -> "" & destination", "tblTraffic", "ID = " & selectedFlight), _
+'                    "ETA", Format(LToZ(Now), "hhnn"))
+'
+'                If Left(gt4c, 1) = "+" Then
+'                    movetime = TimeValue(DateAdd("n", Mid(gt4c, InStr(1, gt4c, "+") + 1), LToZ(Now)))
+'                Else
+'                    movetime = getTime4Char(gt4c)
+'                End If
+'            Else
+'                movetime = TimeValue(LToZ(Now))
+'            End If
             
-            If IsNull(moveTime) Then
+            If IsNull(movetime) Then
                 log "Invalid value for moveTime.", Me.Name & ".handleMovement", "WARN"
                 'Beep
                 GoTo fexit
             End If
             
-            db.Execute "UPDATE tblTraffic " & _
-                "SET ETA = TimeValue(#" & moveTime & "#), " & _
-                "Status = 'Enroute', " & _
-                "Stationed = True, " & _
-                "arrDate = ztol(cETA(DOF,ETD,ETE,TimeValue(#" & moveTime & "#))) WHERE ID = " & selectedFlight, dbFailOnError
-
+            If Not DLookup("flightRule", "tblTraffic", "ID = " & selectedFlight) = "A" Then
+                db.Execute "UPDATE tblTraffic " & _
+                    "SET ETA = TimeValue(#" & movetime & "#), " & _
+                    "Status = 'Enroute', " & _
+                    "Stationed = False, " & _
+                    "arrDate = ztol(cETA(DOF,ETD,ETE,TimeValue(#" & movetime & "#))) WHERE ID = " & selectedFlight, dbFailOnError
+            Else
+                db.Execute "UPDATE tblTraffic " & _
+                "SET ETA = TimeValue(#" & movetime & "#) " & _
+                "WHERE ID = " & selectedFlight, dbFailOnError
+            End If
+            
         Else
             MsgBox "Cannot ETA closed/cancelled flights.", vbInformation, "ETA"
         End If
@@ -145,7 +172,7 @@ Dim atlasID As Double: atlasID = Nz(DLookup("atlasID", "tblTraffic", "ID = " & s
             
             db.Execute "UPDATE tblTraffic " & _
                 "SET Status = 'Pending', " & _
-                "ATA = Null, ATD = Null, " & _
+                "ATA = Null, ATD = Null, ETA = Null, " & _
                 "Stationed = (depPoint = DLookup('data','tblSettings','key = ""station""')) " & _
                 "WHERE ID = " & selectedFlight, dbFailOnError
                 
@@ -182,15 +209,13 @@ Dim atlasID As Double: atlasID = Nz(DLookup("atlasID", "tblTraffic", "ID = " & s
         Or DLookup("status", "tbltraffic", "ID = " & selectedFlight) Like "*Cancelled*" Then
             
             If MsgBox(subject & vbCrLf & "Remove Strip (Delete)?", vbQuestion + vbYesNo, "RS") = vbNo Then GoTo fexit
+                
+            If Nz(getSettings("syncAtlas"), False) And Nz(atlasID, 0) <> 0 Then
+                CurrentDb.Execute "DELETE FROM atlAtlas WHERE recID = " & atlasID
+            End If
             
             db.Execute "DELETE FROM tblTraffic " & _
                 "WHERE ID = " & selectedFlight, dbFailOnError
-                
-            If atlasID <> 0 Then
-                CurrentDb.Execute "DELETE FROM atlAtlas WHERE recID = " & atlasID
-                atlasID = 0
-            End If
-            
         Else
             MsgBox "Cannot Remove Strip without CLR.", vbInformation, "CNL"
         End If
@@ -199,14 +224,24 @@ Dim atlasID As Double: atlasID = Nz(DLookup("atlasID", "tblTraffic", "ID = " & s
     
 fexit:
     If db.RecordsAffected <> 0 Then
-        log subject & ": (" & movement & "-" & Mid(subject, 1, InStr(1, subject, "/") - 1) & "-" & depPoint & IIf(movement = "DEP", Format(Nz(moveTime, Now), "hhnn"), "") & "-" & Destination & IIf(movement = "ARR", Format(Nz(moveTime, Now), "hhnn"), "") & ")", Me.Name & ".handleMovement"
+        Dim movementMsg As String
+        If movement <> "RS" Then
+            movementMsg = subject & ": (" & movement & "-" & Mid(subject, 1, InStr(1, subject, "/") - 1) & "-" & depPoint & IIf(movement = "DEP", Format(Nz(movetime, Now), "hhnn"), "") & "-" & Destination & IIf(movement = "ARR", Format(Nz(movetime, Now), "hhnn"), "") & "-0)"
+        Else
+            movementMsg = subject & ": (RS)"
+        End If
+        
+        log movementMsg, Me.Name & ".handleMovement"
+        dataObj.SetText Mid(movementMsg, InStr(1, movementMsg, ":") + 2)
+        dataObj.putInClipboard
+        
         FormSyncUtil.syncForm Me.Name
         FormSyncUtil.syncForm "frmFlightMonitor"
-        If atlasID <> 0 And movement <> "CNL" Then
-            DoCmd.OpenForm "quick_input", , , "ID = " & selectedFlight, acFormEdit, acHidden
-            linkAtlas False, atlasID
-            DoCmd.Close acForm, "quick_input"
-        End If
+'        If Nz(getSettings("syncAtlas"), False) And atlasID <> 0 And movement <> "CNL" Then
+'            DoCmd.OpenForm "quick_input", , , "ID = " & selectedFlight, acFormEdit, acHidden
+'            linkAtlas False, atlasID
+'            DoCmd.Close acForm, "quick_input"
+'        End If
         fpReload
     End If
     Set db = Nothing
@@ -219,7 +254,12 @@ errtrap:
 End Function
 
 Private Sub all_pprs_Click()
-    DoCmd.OpenForm "frmAllPPRs"
+Dim ti As Integer: ti = Me.TimerInterval
+    Me.TimerInterval = 0
+    
+    DoCmd.OpenForm "frmAllPPRs", , , , , acDialog
+    
+    Me.TimerInterval = ti
 End Sub
 
 Private Sub btnAnnounce_Click()
@@ -236,13 +276,32 @@ Private Sub btnAllFlights_Click()
 DoCmd.OpenForm "checked_flts"
 End Sub
 
+Private Sub btnAtlasSync_Click()
+If Not Nz(getSettings("syncAtlas"), False) Then Exit Sub
+DoCmd.Hourglass True
+ If atlasPull(Date) Then
+    fpReload
+    FormSyncUtil.syncForm "frmTrafficLog"
+    FormSyncUtil.syncForm "frmFlightMonitor"
+Else
+    Beep
+    log "atlasPull failed for some reason", Me.Name & ".btnAtlasSync_Click", "WARN"
+End If
+DoCmd.Hourglass False
+End Sub
+
 Private Sub btnNewFlight_Click()
     openFlight
 End Sub
 
 Private Sub btnNewStereo_Click()
+    Dim ti As Integer: ti = Me.TimerInterval
+    Me.TimerInterval = 0
+    
     DoCmd.OpenForm "frmStereoFlightPlanSelect", , , , , acDialog
     fpReload 3
+    
+    Me.TimerInterval = ti
 End Sub
 
 Private Sub btnOnStation_Click()
@@ -313,9 +372,9 @@ Dim initialized As Boolean
             Next
             !flightRule = "I"
             !DOF = DateSerial(Year(rs2.Fields("arrDate")), Month(rs2.Fields("arrDate")), Day(rs2.Fields("arrDate")))
-            !ETA = Format(LToZ(TimeSerial(Hour(rs2.Fields("arrDate")), Minute(rs2.Fields("arrDate")), 0)), "hh:nn")
+            !ETA = Format(LToZ(TimeValue(rs2.Fields("arrDate"))), "hh:nn")
             !entryDate = Now
-            !AMOPS = Util.getOpInitials(getUSN)
+            !AMOPS = Util.getOpInitials(Util.getUser)
             !Status = "Pending"
             !Destination = DLookup("data", "tblSettings", "key = 'station'")
             .update
@@ -382,7 +441,7 @@ Set db = CurrentDb
             RS!Status = "Cancelled"
             RS!approval = 0
             RS.update
-            If DLookup("spAccess", "tblUserAuth", "username = '" & Environ$("username") & "'") And Not IsNull(RS!spID) Then
+            If DLookup("spAccess", "tblUserAuth", "username = '" & Util.getUser & "'") And Not IsNull(RS!spID) Then
                 Set qdf = db.QueryDefs("qMissionTrackerByID")
                 qdf.Parameters("mtbid") = RS!spID
                 Set rstSP = qdf.OpenRecordset()
@@ -402,7 +461,7 @@ Set db = CurrentDb
                 RS!Status = IIf(RS!approach, "Approach", "Approved")
                 RS!approval = 1
                 RS.update
-                If DLookup("spAccess", "tblUserAuth", "username='" & Environ$("username") & "'") And Not IsNull(RS!spID) Then
+                If DLookup("spAccess", "tblUserAuth", "username='" & Util.getUser & "'") And Not IsNull(RS!spID) Then
                     Set qdf = db.QueryDefs("qMissionTrackerByID")
                     qdf.Parameters("mtbid") = RS!spID
                     Set rstSP = qdf.OpenRecordset()
@@ -436,11 +495,19 @@ End Sub
 
 Private Sub bNewPPR_Click()
 On Error GoTo errtrap
+    Dim ti As Integer: ti = Me.TimerInterval
+    Me.TimerInterval = 0
+    
     isSubFormOpen = True
     DoCmd.OpenForm "new_ppr", , , , acFormAdd, acDialog
     onPPRFormClose
+    
+sexit:
+    Me.TimerInterval = ti
+    Exit Sub
 errtrap:
     isSubFormOpen = False
+    GoTo sexit
 End Sub
 
 Private Sub checked_Click()
@@ -488,27 +555,75 @@ Private Sub Form_KeyUp(KeyCode As Integer, Shift As Integer)
 End Sub
 
 Private Sub Form_Load()
+    
+    Dim ctl: For Each ctl In Controls
+        If ctl.Tag Like "*kiosk*" Then
+        End If
+    Next
+    
+    If DLookup("data", "tblsettings", "key = 'syncAtlasOnStart'") Then TrafficUtil.atlasPull Date
+    FormSyncUtil.syncForm Me.Name, True
+    
+    Dim qdfAnnounce As DAO.QueryDef: Set qdfAnnounce = CurrentDb.QueryDefs("qAnnounce")
+    qdfAnnounce.Parameters("cd1") = Date
+    qdfAnnounce.Parameters("cd2") = Date
+    Set lstAnnounce.Recordset = qdfAnnounce.OpenRecordset
+    
+    Me.TimerInterval = DLookup("data", "tblsettings", "key = 'globalSyncLength'")
+    
     osReload
     pprlogReload
-    FormSyncUtil.syncForm Me.Name, True
+    fpReload
 End Sub
 
 Private Sub Form_Timer()
 On Error Resume Next
 If isSubFormOpen Then Exit Sub
 
-    
-    
-    If Not FormSyncUtil.isFormSynced(Me.Name) Or fpReloadTime >= 12 Then
+    If Not FormSyncUtil.isFormSynced(Me.Name) Or fpReloadTime >= DLookup("data", "tblsettings", "key = 'globalSyncInterval'") Then
+        If Nz(getSettings("syncAtlas"), False) Then TrafficUtil.atlasPull Date
+        
         osReload
         pprlogReload
         fpReload
+        
+        lstAnnounce.Requery
         
         CurrentDb.Execute "qTrafficFlightStatusUpdate"
         
         FormSyncUtil.syncForm Me.Name, True
         fpReloadTime = 0
     End If
+    
+'    Dim qdf As DAO.QueryDef: Set qdf = CurrentDb.QueryDefs("qLocal")
+'    Dim rs As DAO.Recordset
+'    With qdf
+'        .Parameters("cd1") = Date
+'        .Parameters("cd2") = Date
+'        Set rs = .OpenRecordset
+'    End With
+'
+'    With rs: Do While Not .EOF
+'        Select Case !Status
+'        Case "Pending"
+'            If !ETD < DateAdd("h", -1, Now) Then
+'                Me.SetFocus
+'                local_aircraft.BackColor = vbYellow
+'                local_aircraft.ForeColor = vbRed
+'                lblLateLcl.Visible = True
+'            End If
+'
+'        Case "*Enroute*"
+'            If !ETA < DateAdd("n", -30, Now) Then
+'                Me.SetFocus
+'                local_aircraft.BackColor = vbYellow
+'                local_aircraft.ForeColor = vbRed
+'                lblLateLcl.Visible = True
+'            End If
+'
+'    End Select: Loop: End With
+        
+            
 
 fpReloadTime = fpReloadTime + 1
 End Sub
@@ -571,11 +686,16 @@ Private Sub new_flt_Click()
 End Sub
 
 Private Sub openFlight(Optional ID As Integer, Optional onStation As Boolean)
+    Dim ti As Integer: ti = Me.TimerInterval
+    Me.TimerInterval = 0
+    
     DoCmd.OpenForm "quick_input", , , IIf(ID <> 0, "ID = " & ID, ""), IIf(ID <> 0, acFormEdit, acFormAdd), acDialog, IIf(onStation, 4, Null)
     If CurrentProject.AllForms("quick_input").IsLoaded Then
-        fpReload Forms!quick_input.FPType
+        fpReload
         DoCmd.Close acForm, "quick_input"
     End If
+    
+    Me.TimerInterval = ti
 End Sub
 
 Private Sub fpReload(Optional FPType As Integer)
@@ -714,11 +834,10 @@ tCount = 0
         End If
     Next
     
-    lblWait.Caption = "Getting parking assignment from SP..."
-    lblWait.Visible = True
+   
     DoEvents
     
-    Set rsSP = CurrentDb.OpenRecordset("SELECT * FROM [Mission Tracker] WHERE ID = " & join(s, " OR ID = ") & " ORDER BY ID")
+    Set rsSP = CurrentDb.OpenRecordset("SELECT * FROM spPPRLog WHERE ID = " & join(s, " OR ID = ") & " ORDER BY ID")
     With rsSP: Do While Not .EOF
         With rsPPR: Do While Not .EOF
             If !spID = rsSP!ID Then
@@ -732,7 +851,6 @@ tCount = 0
     Loop: End With
     ppr_list.Requery
     
-    lblWait.Visible = False
     DoEvents
     syncTrafficLog
     

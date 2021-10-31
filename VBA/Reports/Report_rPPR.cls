@@ -10,6 +10,7 @@ Attribute VB_Exposed = False
 Option Compare Database
 Dim doOrderArrDate, doOrderDepDate, doOrderPPR, obArrDate, obDepDate, obPPR As Boolean
 Public hLight As String 'CSV
+Private reportDate As Variant
 
 Private Sub arrdate_Label_Click()
 doOrderArrDate = True
@@ -104,8 +105,17 @@ errtrap:
 End Sub
 
 Private Sub btnPrint_Click()
-On Error Resume Next
+On Error GoTo errtrap
+If Not CurrentProject.AllReports("rPPR").IsLoaded Then
+    DoCmd.OpenReport "rPPR", acViewReport, , , acHidden, reportDate
+End If
+    DoCmd.SelectObject acReport, "rPPR"
     DoCmd.RunCommand acCmdPrint
+    DoCmd.Close acReport, "rPPR"
+sexit:
+Exit Sub
+errtrap:
+If err <> 2501 Then ErrHandler err, Error$, Me.Name & ".btnPrint_Click"
 End Sub
 
 Private Sub depdate_Label_Click()
@@ -115,7 +125,7 @@ refreshOrder 2
 End Sub
 
 Public Function doHighlight(ByVal xID As Integer) As Boolean
-'This function is called from the 'Conditional Formatting' module(?) of the report
+'This function is called from the 'Conditional Formatting' section of the report
     For Each h In Split(hLight, ",")
         
         doHighlight = (xID = h)
@@ -179,16 +189,14 @@ End Sub
 
 Private Sub Report_Load()
     Caption = "PPR Report " & Format(Now, "dd-mmm-yy hhnn(L)")
-    If Nz(OpenArgs) <> "" Then
-        Me.RecordSource = OpenArgs
-    Else
+
         Dim newSQL As String
         Dim db As DAO.Database: Set db = CurrentDb
         
-        newSQL = Replace(db.QueryDefs("qPPRReport").sql, "[varDate]", "#" & Parent.Parent.reportDate & "#")
+        newSQL = Replace(db.QueryDefs("qPPRReport").sql, "[varDate]", "#" & reportDate & "#")
         Me.RecordSource = newSQL
         
-    End If
+
 End Sub
 
 Private Sub btnOverlay_Click()
@@ -213,4 +221,12 @@ Dim found As Boolean
     hLight = join(s, ",")
     Report.Requery
     Me.btnEmail.SetFocus
+End Sub
+
+Private Sub Report_Open(cancel As Integer)
+If IsDate(OpenArgs) Then
+    reportDate = OpenArgs
+Else
+    reportDate = Parent.Parent.reportDate
+End If
 End Sub

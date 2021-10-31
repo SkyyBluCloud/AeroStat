@@ -38,7 +38,7 @@ End Sub
 Private Sub btnLog_Click()
     If Not NewRecord Then
         If DLookup("closed", "tblShiftManager", "shiftID = " & shiftID) Then
-            If Not DLookup("opInitials", "tblUserAuth", "username = '" & Environ$("username") & "'") = Right(DLookup("superLead", "tblShiftManager", "shiftID = " & shiftID), 2) Then
+            If Not DLookup("opInitials", "tblUserAuth", "username = '" & Util.getUser & "'") = Right(DLookup("superLead", "tblShiftManager", "shiftID = " & shiftID), 2) Then
                 MsgBox "This shift was closed. Only the AMOS/AMSL can edit the log.", vbInformation, "AeroStat"
                 'Exit Sub
             End If
@@ -51,7 +51,7 @@ Private Sub closeShift_Click()
 If NewRecord Then Exit Sub
 Dim authLevel As Integer
 Dim usn As String
-usn = Environ$("username")
+usn = Util.getUser
 authLevel = DLookup("authlevel", "tbluserauth", "username = '" & usn & "'")
 
     If authLevel > 6 Then
@@ -178,7 +178,7 @@ bClose = True
             .AddNew
             !shiftID = Me.shiftID
             !entryTime = LToZ(Me.shiftStart)
-            !Initials = DLookup("opInitials", "tblUserAuth", "username = '" & Environ$("username") & "'")
+            !Initials = DLookup("opInitials", "tblUserAuth", "username = '" & Util.getUser & "'")
             'amoc field should store full name instead of initials
             '!entry = IIf(shiftTitle = "DAYSHIFT", "LOG OPEN. ", "") ...
             !entry = "LOG OPEN. " & UCase(superLead) & " " & getPos(DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(superLead, 2) & "'")) & _
@@ -213,7 +213,7 @@ Private Sub Form_Load()
 nshiftID = Parent.Parent.getShiftID
     If nshiftID <> 0 Then
         Undo
-        filter = "shiftID = " & nshiftID
+        Filter = "shiftID = " & nshiftID
         FilterOn = True
     End If
     'If NewRecord Then log "New Record."

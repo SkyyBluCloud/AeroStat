@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 '   AeroStat: Airfield Management
 '
 '
-'    Copyright 2017-2021 Shane J. DeSouza
+'    Copyright 2017-2022 Shane J. DeSouza
 '       https://github.com/SkyyBluCloud/AeroStat
 '       sdesouza187@gmail.com
 '
@@ -58,7 +58,7 @@ Private Sub btnReports_Click()
 End Sub
 
 Private Sub btnSettings_Click()
-    switchWindow "frmSettingsMain", Me!view
+    switchWindow "frmSettings", Me!view
 End Sub
 
 Private Sub feedback_Click()
@@ -68,7 +68,7 @@ End Sub
 Private Sub log_Click()
 On Error Resume Next
 Dim isClosed As String
-shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Environ$("username") & "'")
+shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Util.getUser & "'")
 isClosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
     
     If isClosed Then
@@ -103,11 +103,11 @@ End Sub
 Private Sub shiftBrief_Click()
 'On Error Resume Next
 'Dim isClosed As String
-Dim shiftID As Integer: shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & getUSN() & "'")
+Dim shiftID As Integer: shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Util.getUser & "'")
 Dim isClosed As Boolean: isClosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
-Dim onShift As Boolean: onShift = DMax("onShift", "tbluserauth", "username = '" & getUSN() & "'")
+Dim onShift As Boolean: onShift = DLookup("onShift", "tbluserauth", "username = '" & Util.getUser & "'")
 
-    If Not onShift Or isClosed Then
+    If Not onShift Or isClosed Or shiftID = 0 Then
         DoCmd.OpenForm "frmShiftBoard", , , , acFormAdd
         
     ElseIf Not isClosed Then
@@ -173,7 +173,39 @@ On Error GoTo sperr
         Forms!frmloading!loadingText.Caption = "Starting AeroStat..."
         DoEvents
         
-        view.SourceObject = "frmTrafficLog"
+        view.SourceObject = "loading"
+        
+        Select Case !authLevel
+
+        Case 20 'TA
+            view.SourceObject = "frmFlightMonitor"
+            With view.Form
+                !tabCtl.Style = 0 'Can see tabs and switch freely
+                !tabCtl = 0 'Start on TA tab
+            End With
+        
+        Case 30 'SQ OPS
+            If !approved Then view.SourceObject = "frmFlightMonitor"
+            With view.Form
+                !tabCtl.Style = 2 'No tabs
+                !tabCtl = 1 'Stereo Log
+            End With
+            
+        Case Is < 10
+            If !approved Then
+                view.SourceObject = "frmTrafficLog"
+            Else
+                view.SourceObject = "frmFlightMonitor"
+            End If
+        
+        End Select
+        
+        Dim ctl: For Each ctl In Me.Controls
+            If ctl.Tag Like "*permAmops*" Then
+                ctl.Visible = (!authLevel < 10 And !approved)
+            End If
+        Next
+            
         DoCmd.Close acForm, "frmLoading"
         
 '        If Not !lastVersion = lv Then
@@ -202,7 +234,7 @@ Load_Exit:
     Exit Sub
     
 sperr:
-    MsgBox Error$
+    ErrHandler err, Error$, Me.Name & ".Form_Load"
     Resume Next
 End Sub
 
@@ -229,14 +261,16 @@ Dim salute As String, lv As Double
     
     DoCmd.OpenForm "frmLoading"
     Forms!frmloading!loadingText.Caption = "Checking environment..."
-    DoEvents
-    log "Database launched from " & CurrentProject.Path, "frmMain.Form_Open", "WARN"
     
-    If InStr(1, CurrentProject.Path, Environ$("username")) = 0 And Not CurrentProject.Name Like "*DEV*" Then
+    log "Database launched from " & CurrentProject.Path, "frmMain.Form_Open", "WARN"
+    DoEvents
+    
+    'If InStr(1, CurrentProject.Path, Util.getUser) = 0 And Not CurrentProject.Name Like "*DEV*" Then
+    If InStr(1, CurrentProject.Path, Util.getUser) = 0 Then
         log "Expected " & Environ$("userprofile"), "frmMain.Form_Open", "WARN"
         Dim dbFrom As String, dbTo As String, fso As New FileSystemObject
         
-        'If Left(CurrentProject.Path, "2") = "\\" Then CurrentDb.Execute "UPDATE lclver SET frontEndLocation = " & CurrentProject.fullName
+        If Right(CurrentProject.Name, 5) = "accde" Then CurrentDb.Execute "UPDATE tblSettings SET data = '" & CurrentProject.Name & "' WHERE key = 'frontEndSource'"
         
         'dbFrom = DLookup("frontEndSource", "tblSettings")
         dbTo = Environ$("userprofile") & "\Documents\AeroStat\"
@@ -244,10 +278,12 @@ Dim salute As String, lv As Double
         Forms!frmloading!loadingText.Caption = "Creating local files..."
         log CurrentProject.fullName, "frmMain.Form_Open"
         DoEvents
+        
         If dir(dbTo, vbNormal) = "" Then fso.CreateFolder dbTo
         fso.CopyFile CurrentProject.fullName, dbTo & CurrentProject.Name
         Forms!frmloading!loadingText.Caption = "Activating..."
         DoEvents
+        
         Application.FollowHyperlink dbTo & CurrentProject.Name
         cancel = True
         Application.Quit
@@ -256,13 +292,13 @@ Dim salute As String, lv As Double
     
     Forms!frmloading!loadingText.Caption = "Loading global settings..."
     DoEvents
-    'If Right(CurrentProject.Name, 5) = "accde" Then CurrentDb.Execute "UPDATE tblSettings SET frontEndSource = '" & CurrentProject.Name & "'"
+    
     
     
     If Util.relinkTables(DLookup("backend", "lclver"), Forms!frmloading) Then
-        usn = Nz(DLookup("username", "tblUserAuth", "username = '" & getUSN & "'"))
+        usn = Util.getUser
         qusn = "SELECT * FROM tblUserAuth WHERE username = '" & usn & "'"
-        If usn = "" Then
+        If CurrentDb.OpenRecordset(qusn).EOF Then
             DoCmd.OpenForm "frmUserInfo", , , , acFormAdd
             cancel = True
             Exit Sub
@@ -335,7 +371,7 @@ Select Case err
         End If
 End Select
 ErrHandler err, Error$, Me.Name
-Resume Next
+'Resume Next
 End Sub
 
 Private Sub Form_Timer()
@@ -343,7 +379,7 @@ On Error GoTo errtrap
 Dim usn As String
 Dim qusn As String
 Dim RS As DAO.Recordset
-usn = Nz(DLookup("username", "tblUserAuth", "username = '" & Environ$("username") & "'"))
+usn = Nz(DLookup("username", "tblUserAuth", "username = '" & Util.getUser & "'"))
 qusn = "SELECT * FROM tblUserAuth WHERE username = '" & usn & "'"
 
 '    Set rs = CurrentDb.OpenRecordset(qusn)
@@ -357,13 +393,12 @@ qusn = "SELECT * FROM tblUserAuth WHERE username = '" & usn & "'"
     
     CurrentDb.Execute "UPDATE tblUserAuth SET lastLogin = Now() WHERE username = '" & usn & "'"
         
-    If DLookup("BOOT", "tblUserAuth", "username='" & Environ$("username") & "'") Then
+    If DLookup("BOOT", "tblUserAuth", "username='" & Util.getUser & "'") Then
         bClose = True
         Application.Quit
         Exit Sub
-    ElseIf DLookup("RS", "tbluserauth", "username='" & Environ$("username") & "'") Then
-        'MsgBox "The database has been updated and will now restart." & vbCrLf & "Applied changes were already saved.", vbOKOnly, "AeroStat"
-        bClose = True
+    ElseIf DLookup("RS", "tbluserauth", "username='" & Util.getUser & "'") Then
+        MsgBox "The database has been updated and will now restart." & vbCrLf & "Applied changes were already saved.", vbOKOnly, "AeroStat"
         Application.FollowHyperlink DLookup("data", "tblSettings", "key = ""dbroot""") & DLookup("data", "tblSettings", "key = ""frontendsource""")
         Application.Quit
         Exit Sub
@@ -383,7 +418,7 @@ Dim usn As String
 Dim qusn As String
 Dim RS As DAO.Recordset
 Dim rsShift As DAO.Recordset
-usn = Nz(DLookup("username", "tblUserAuth", "username = '" & Environ$("username") & "'"))
+usn = Nz(DLookup("username", "tblUserAuth", "username = '" & Util.getUser & "'"))
 qusn = "SELECT * FROM tblUserAuth WHERE username = '" & usn & "'"
 Set RS = CurrentDb.OpenRecordset(qusn)
 Set rsShift = CurrentDb.OpenRecordset("SELECT * FROM tblShiftManager WHERE shiftID = " & RS!lastShift)

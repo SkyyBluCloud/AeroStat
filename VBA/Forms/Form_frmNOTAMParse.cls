@@ -28,15 +28,15 @@ If Nz(parse) = "" Then
 End If
 If Nz(parse) = "" Then Exit Sub
 
-n = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Environ$("username") & "'"), Date, DateAdd("d", 3, Date))
+n = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Util.getUser & "'"), Date, DateAdd("d", 3, Date))
 
     If n <> 0 Then
-        Me.filter = "ID = " & n
+        Me.Filter = "ID = " & n
         Me.FilterOn = True
         
         Dim log As DAO.Recordset
 '        Dim shiftID As Integer
-'        shiftID = DLookup("lastshift", "tbluserauth", "username='" & Environ$("username") & "'")
+'        shiftID = DLookup("lastshift", "tbluserauth", "username='" & Util.getUser & "'")
         'shiftID = IIf(     Nz(    DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0))    , True), 0, shiftID)
         
         If logentry And shiftID <> 0 Then
@@ -62,7 +62,7 @@ n = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Enviro
                         !entry = "NOTAM " & NOTAM & " CANCELS " & Right(verbiage, 8) & ": " & DLookup("verbiage", "tblnotam", "notam = '" & Right(verbiage, 8) & "'") & ". " & _
                             "NEW NOTAM COUNT: " & DCount("notam", "qNOTAMM") & "M, " & DCount("notam", "qNOTAML") & "L"
                 End Select
-                !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
+                !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Util.getUser & "'")
                 !entry = UCase(!entry)
                 .update
                 .Close

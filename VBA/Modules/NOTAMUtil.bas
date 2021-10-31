@@ -107,7 +107,7 @@ With rNOTAM
     e = InStr(1, s, "E)") + spaces
     
     If (Not Mid(s, 15, 1) = "C" And (q > a Or a > b Or b > c Or (d <> spaces And c > d))) Then
-        parseNOTAM = 0
+        parseNOTAM = -1 'Invalid Format
         MsgBox "Could not parse NOTAM: Invalid format.", vbInformation, "NOTAM Control"
         Exit Function
     ElseIf d > e Then
@@ -117,6 +117,7 @@ With rNOTAM
     .AddNew
     !NOTAM = Left(s, 8)
     If Not IsNull(DLookup("notam", "tblnotam", "notam = '" & !NOTAM & "'")) And Not proc Then
+        parseNOTAM = 0
         MsgBox "This NOTAM already exists.", vbInformation, "NOTAM Control"
         Exit Function
     End If
@@ -138,7 +139,7 @@ With rNOTAM
             If !nType = "R" Then
                 cNOTAM = Mid(s, InStr(1, s, "NOTAMR") + 7, 8)
                 If IsNumeric(Left(cNOTAM, 1)) Or Not IsNumeric(Mid(cNOTAM, 2, 3)) Then
-                    parseNOTAM = 0
+                    parseNOTAM = -1 'Invalid Format
                     MsgBox "Could not parse NOTAM. NOTAM number required after 'NOTAMR'", vbInformation, "NOTAM Control"
                     Exit Function
                 End If
@@ -157,7 +158,7 @@ With rNOTAM
             NOTAMUtil.cancelNOTAM cNOTAM, cNOTAMEnd
             
         Case Else
-            parseNOTAM = 0
+            parseNOTAM = -1 'Invalid Format
             MsgBox "Could not parse NOTAM: Invalid format.", vbInformation, "NOTAM Control"
             Exit Function
     End Select

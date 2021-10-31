@@ -12,13 +12,13 @@ Option Compare Database
 Private Sub join_Click()
 On Error GoTo errtrap
 Dim ls As Integer
-ls = DLookup("lastShift", "tblUserAuth", "username = '" & Environ$("username") & "'")
+ls = DLookup("lastShift", "tblUserAuth", "username = '" & Util.getUser & "'")
 If IsNull(listShift.Column(0)) Then Exit Sub
 If ls = listShift.Column(0) Or Not DLookup("closed", "tblShiftManager", "shiftID = " & ls) Then
     If MsgBox("You have already joined a shift that was not closed. Continue?", vbQuestion + vbYesNo, "AeroStat") = vbNo Then Exit Sub
 End If
         
-    'appendUser Environ$("username"), "lastShift", listShift.Column(0)
+    'appendUser Util.getUser, "lastShift", listShift.Column(0)
     CurrentDb.Execute "UPDATE tblUserAuth, tblShiftManager " & _
                         "SET tblUserAuth.lastShift = " & listShift.Column(0) & ", " & _
                             "tblUserAuth.onshift = True, " & _

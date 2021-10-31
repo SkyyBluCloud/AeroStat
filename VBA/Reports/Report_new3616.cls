@@ -14,12 +14,13 @@ Dim pageCount() As Integer
 
 Private Sub printClick(ByVal d As Variant)
 If IsNull(d) Or Not IsDate(d) Then Exit Sub
-DoCmd.OpenReport "new3616", acViewReport, , , acHidden, d
-DoCmd.SelectObject acReport, "new3616"
-Reports!new3616.Visible = False
-DoCmd.RunCommand acCmdPrint
-DoEvents
-DoCmd.Close acReport, "new3616"
+DoCmd.OpenReport "new3616", acViewReport, , , , d
+'DoEvents
+'DoCmd.SelectObject acReport, "new3616"
+'
+'DoCmd.RunCommand acCmdPrint
+'DoEvents
+'DoCmd.Close acReport, "new3616"
 End Sub
 
 
@@ -27,7 +28,7 @@ End Sub
 Private Sub btnPrint_Click()
 On Error GoTo errtrap
     If Not CurrentProject.AllReports("new3616").IsLoaded Then
-        DoCmd.OpenReport "new3616", acViewPreview, , , acHidden, rDate
+        DoCmd.OpenReport "new3616", acViewReport, , , acHidden, rDate
         DoEvents
     End If
     DoCmd.SelectObject acReport, "new3616"
@@ -59,7 +60,7 @@ End Sub
 Private Sub namoBox_Click()
 Dim authLevel As Integer
 
-authLevel = DLookup("authLevel", "tbluserauth", "username = '" & Environ$("username") & "'")
+authLevel = DLookup("authLevel", "tbluserauth", "username = '" & Util.getUser & "'")
 If authLevel > 4 Then Exit Sub
 
     'if msgbox("By signing this document, you certify that all entries are correct and the form contains all required entries as

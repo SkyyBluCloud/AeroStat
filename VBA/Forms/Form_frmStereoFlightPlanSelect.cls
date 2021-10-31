@@ -61,6 +61,7 @@ Dim dataObj As New MSForms.DataObject
         log "Copied AISR string: " & AISR, Me.Name & ".AISR_Click"
         Beep
     End With
+    Set qdf = Nothing
     Set dataObj = Nothing
     RS.Close
     Set RS = Nothing
@@ -70,8 +71,8 @@ Private Sub btnSave_Click()
 On Error GoTo errtrap
 If Not isValid Then Exit Sub
 DoEvents
-Dim stereo As Integer: stereo = Nz(lstStereo.Column(0), 0): If stereo = 0 Then Exit Sub
-Dim RS As DAO.Recordset: Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblStereoFlightPlan WHERE ID = " & stereo)
+Dim Stereo As Integer: Stereo = Nz(lstStereo.Column(0), 0): If Stereo = 0 Then Exit Sub
+Dim RS As DAO.Recordset: Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblStereoFlightPlan WHERE ID = " & Stereo)
 
     With RS
         If .EOF Then Exit Sub
@@ -88,13 +89,16 @@ Dim RS As DAO.Recordset: Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblSter
         Me.arrDate = ZToL(cETA(DOF, ETD, ETE))
         Me.depDate = ZToL(DOF + ETD)
         Me.stereoPlan = lstStereo.Column(1)
+        
+        Me.rwy = DLast("rwy", "tblshiftmanager")
+        
         'Me.Remarks = lstStereo.Column(1)
         
         'Me.altitude = !altitude
         Call AISR_Click
         
         
-        Me.AMOPS = getOpInitials(getUSN)
+        Me.AMOPS = getOpInitials(Util.getUser)
     End With
     
     bClose = True
@@ -156,6 +160,8 @@ Private Sub Form_BeforeUpdate(cancel As Integer)
 End Sub
 
 Private Sub lstStereo_BeforeUpdate(cancel As Integer)
+    acType = lstStereo.Column(2)
+    
     If Not isValid Then
         'cancel = True
     Else
