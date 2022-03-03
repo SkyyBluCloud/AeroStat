@@ -10,12 +10,12 @@ Attribute VB_Exposed = False
 Option Compare Database
 
 Private Sub Form_Load()
-If Not IsNull(Me.OpenArgs) Then
-    Me.view.Form!shiftID = OpenArgs
+If Not IsNull(Me.openargs) Then
+    Me.view.Form!shiftID = openargs
     Me.view.Form.bClose = True
     With Me.view.Form
         .Undo
-        .Filter = "shiftid = " & Me.OpenArgs
+        .Filter = "shiftid = " & Me.openargs
         .FilterOn = True
     End With
 End If

@@ -38,43 +38,34 @@ Private Sub AISR_Click()
 If Not isValid Then Exit Sub
 Dim dataObj As New MSForms.DataObject
     With dataObj
-        Dim qdf As DAO.QueryDef: Set qdf = CurrentDb.QueryDefs("qTrafficStereo")
-        Dim RS As DAO.Recordset
-        With qdf
-            .Parameters("varDate") = Date
-            Set RS = .OpenRecordset
-            With RS
-                If Not .EOF Then
-                    .MoveLast
-                    .MoveFirst
-                End If
-                seq = .RecordCount + 1
-                Me.Tail = 100 + seq
-            End With
-        End With
-        
-        Dim timestamp As String: timestamp = Right(DLookup("data", "tblSettings", "key = 'station'"), 3) & _
-                                            Format(LToZ(Now), "hhnn") & _
-                                            Format(seq, "000")
-        .SetText timestamp & " " & AISR
+
+        .SetText AISR
         .putInClipboard
         log "Copied AISR string: " & AISR, Me.Name & ".AISR_Click"
         Beep
     End With
     Set dataObj = Nothing
-    RS.Close
-    Set RS = Nothing
 End Sub
 
 Private Sub btnSave_Click()
 On Error GoTo errtrap
 If Not isValid Then Exit Sub
 DoEvents
-Dim stereo As Integer: stereo = Nz(lstStereo.Column(0), 0): If stereo = 0 Then Exit Sub
-Dim RS As DAO.Recordset: Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblStereoFlightPlan WHERE ID = " & stereo)
+Dim Stereo As Integer: Stereo = Nz(lstStereo.Column(0), 0): If Stereo = 0 Then Exit Sub
+Dim RS As DAO.Recordset: Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblStereoFlightPlan WHERE ID = " & Stereo)
 
+    lblLoading.Visible = True
+    Dim ctl: For Each ctl In Me.Controls
+        If Not TypeOf ctl Is Label Then
+            ctl.Enabled = False
+        End If
+    Next ctl
+            
+    
     With RS
         If .EOF Then Exit Sub
+        
+        If DCount("ID", "tblTraffic", "ID = " & Me.ID) > 1 Then Me.ID = DMax("ID", "tblTraffic") + 1
         
         Me.flightRule = "S"
         Me.Status = "Pending"
@@ -82,44 +73,56 @@ Dim RS As DAO.Recordset: Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblSter
         Me.Destination = DLookup("data", "tblSettings", "key = 'station'")
         
         Me.Callsign = UCase(Me.Callsign)
-        Me.acType = !acType
+        If IsNull(Me.acType) Then Me.acType = !acType
         Me.ETE = !ETE
         
         Me.arrDate = ZToL(cETA(DOF, ETD, ETE))
         Me.depDate = ZToL(DOF + ETD)
+        
+        'if datediff("d",now,ZToL(cETA(DOF, ETD, ETE))) <> 0
+        
         Me.stereoPlan = lstStereo.Column(1)
         
         Me.rwy = DLast("rwy", "tblshiftmanager")
         
-        'Me.Remarks = lstStereo.Column(1)
-        
+        Me.Remarks = Nz(openargs) & getOpInitials(getUser) & vbCrLf & Nz(Me.Remarks)
+        DoEvents
         'Me.altitude = !altitude
         Call AISR_Click
         
         
-        Me.AMOPS = getOpInitials(getUSN)
+        Me.AMOPS = getOpInitials(Util.getUser)
     End With
     
     bClose = True
     If Dirty Then Dirty = False
     
-    If btnAtlas Then
-        DoCmd.OpenForm "quick_input", , , "ID = " & ID, acFormEdit, acHidden
-        Me.atlasID = linkAtlas(NewRecord, Nz(atlasID, 0))
-        DoCmd.Close acForm, "quick_input"
-    End If
+'    If btnAtlas Then
+'        DoCmd.OpenForm "quick_input", , , "ID = " & ID, acFormEdit, acHidden
+'        Me.atlasID = linkAtlas(NewRecord, Nz(atlasID, 0))
+'        DoCmd.Close acForm, "quick_input"
+'    End If
     
-    
+cleanup:
+    lblLoading.Visible = False
+    For Each ctl In Me.Controls
+        If Not TypeOf ctl Is Label Then
+            ctl.Enabled = True
+        End If
+    Next ctl
     
 sexit:
     RS.Close
     Set RS = Nothing
     FormSyncUtil.syncForm "frmTrafficLog"
     FormSyncUtil.syncForm "frmFlightMonitor"
-    DoCmd.Close acForm, Me.Name
+    Me.Visible = False
     Exit Sub
 errtrap:
+    If err = 3022 Then Resume Next
     ErrHandler err, Error$, Me.Name & ".btnSave_Click"
+    Resume sexit
+    Resume Next
 End Sub
 
 Private Sub btnSettings_Click()
@@ -159,7 +162,7 @@ Private Sub Form_BeforeUpdate(cancel As Integer)
 End Sub
 
 Private Sub lstStereo_BeforeUpdate(cancel As Integer)
-    acType = lstStereo.Column(2)
+    If IsNull(acType) Then acType = lstStereo.Column(2)
     
     If Not isValid Then
         'cancel = True

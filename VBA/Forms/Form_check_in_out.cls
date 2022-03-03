@@ -251,7 +251,7 @@ End Sub
 Private Sub submit_Click()
 On Error GoTo save_Click_Err
 For Each ctl In Controls
-    If ctl.Tag = "btn" Then ctl.enabled = False
+    If ctl.Tag = "btn" Then ctl.Enabled = False
 Next
 Dim RS As DAO.Recordset
 Dim qdf As DAO.QueryDef
@@ -262,7 +262,7 @@ Dim spfound As Boolean
 Dim spAccess As Boolean
 Dim tz As Double
 bClose = True
-spAccess = DLookup("spAccess", "tblUserAuth", "username = '" & Environ$("username") & "'")
+spAccess = DLookup("spAccess", "tblUserAuth", "username = '" & Util.getUser & "'")
 If spAccess Then spAccess = sp
 tz = DLookup("data", "tblSettings", "key = ""timezone""")
 stn = DLookup("data", "tblSettings", "key = 'station'")
@@ -567,7 +567,7 @@ fb:
     sp.Visible = True
     bClose = False
     For Each ctl In Controls
-        If ctl.Tag = "btn" Then ctl.enabled = True
+        If ctl.Tag = "btn" Then ctl.Enabled = True
     Next
     Exit Sub
 

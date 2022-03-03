@@ -30,8 +30,8 @@ If IsNull(shiftList.Column(0)) Then Exit Sub
         If MsgBox("This will also remove the NAMO/AMOM signature. Continue?", vbQuestion + vbYesNo, "Unsign") = vbNo Then Exit Sub
     End If
         
-    If Not UtilCertifier.deCertifyDay(role, getUSN, shiftList.Column(0)) Then
-        MsgBox "Could not remove signatures.", vbInformation, "Reports"
+    If Not UtilCertifier.deCertifyDay(role, Util.getUser, shiftList.Column(0)) Then
+        MsgBox "Could not remove signatures.", vbCritical, "Reports"
     Else
         frmReportsView.Form.initializeSubForms
         shiftList.Requery
@@ -91,20 +91,34 @@ If IsNull(shiftList.Column(0)) Then Exit Sub
     
     Select Case role
     Case 1
-        certifier = UtilCertifier.newCert(getUSN)
+        If getOpInitials(getUser) = Right(shiftList.Column(3), 2) Then
         
-        If certifier <> 0 Then
-            CurrentDb.Execute "UPDATE tblShiftManager SET certifierID = " & certifier & " WHERE shiftID = " & shiftList.Column(1)
+            certifier = UtilCertifier.newCert(Util.getUser)
             
-            log "Success!", Me.Name & ".btnSign_Click"
-            Call role_AfterUpdate
+            If certifier <> 0 Then
+                CurrentDb.Execute "UPDATE tblShiftManager SET certifierID = " & certifier & ", closed = True WHERE shiftID = " & shiftList.Column(1)
+                Dim sql As String, crit As String
+                sql = "UPDATE tbl3616 SET opInitials = Left(opInitials,2) "
+                crit = "shiftID = " & shiftList.Column(1) & " AND Right(originalOpInitials,1) = '*'"
+                If DCount("originalOpInitials", "tbl3616", crit) <> 0 Then
+                    If MsgBox("Remove asterisks (*)?", vbQuestion + vbYesNo, "Events Log") = vbYes Then
+                        CurrentDb.Execute sql & "WHERE " & crit
+                    End If
+                End If
+                log "Success!", Me.Name & ".btnSign_Click"
+                Call role_AfterUpdate
+            
+            Else
+                log "Could not sign report. Cert " & certifier, Me.Name & ".btnSign_Click", "WARN"
+                GoTo sexit
+            End If
         Else
-            log "Could not sign report. Cert " & certifier, Me.Name & ".btnSign_Click", "WARN"
+            log "Could not sign report. (shiftLead) ", Me.Name & ".btnSign_Click", "WARN"
             GoTo sexit
         End If
         
     Case 2, 3 'NAMO or AFM
-        If Not UtilCertifier.certifyShiftDay(role, getUSN, shiftList.Column(0)) Then
+        If Not UtilCertifier.certifyShiftDay(role, Util.getUser, shiftList.Column(0)) Then
             log "Could not sign report. Cert = " & certifier, Me.Name & "btnSign_Click", "WARN"
             GoTo sexit
         End If
@@ -126,7 +140,7 @@ Private Sub role_AfterUpdate()
 Dim qdf As DAO.QueryDef
 Dim reviewStatus As String
 Dim authLevel As Integer
-authLevel = DLookup("authlevel", "tbluserauth", "username = '" & Util.getUSN & "'")
+authLevel = DLookup("authlevel", "tbluserauth", "username = '" & Util.getUser & "'")
 If CurrentProject.Name Like "*DEV*" Then authLevel = 0
 
 Set qdf = CurrentDb.QueryDefs("qDailyReportIndex")
@@ -173,7 +187,7 @@ Set qdf = CurrentDb.QueryDefs("qDailyReportIndex")
 '        Set shiftList.Recordset = CurrentDb.OpenRecordset("SELECT tblShiftManager.shiftID, tblShiftManager.shiftStart AS [Start Time (L)], tblShiftManager.shiftEnd AS [End Time (L)], tblShiftManager.superlead AS AMOS, IIf([amosSig] Is Not Null,'YES','NO') AS [AMOS Signed], IIf([namoSig] Is Not Null,'YES','NO') AS [NAMO Signed], IIf([afmSig] Is Not Null,'YES','NO') AS [AFM Signed], [amosSig] Is Not Null AS Expr1, [namoSig] Is Not Null AS Expr2, [afmSig] Is Not Null AS Expr3 FROM tblShiftManager ORDER BY tblShiftManager.shiftStart DESC;")
     End Select
     
-    btnSign.enabled = reviewStatus <> ""
+    btnSign.Enabled = reviewStatus <> ""
     'btnComment.enabled = reviewStatus <> ""
     Dim ctl: For Each ctl In Me.Controls
         If ctl.Tag = "review" Then

@@ -23,7 +23,7 @@ Set db = CurrentDb
 sending.Caption = "Sending to SharePoint..."
 sending.Visible = True
 DoEvents
-sid = DLookup("ID", "ADPMUsers", "[User name] = '" & Environ$("username") & "'")
+sid = DLookup("ID", "ADPMUsers", "[User name] = '" & Util.getUser & "'")
     
     Select Case MsgBox("Are these MILITARY Requests?", vbQuestion + vbYesNo, "POV Pass")
     Case vbYes

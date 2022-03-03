@@ -28,7 +28,7 @@ If Nz(parse) = "" Then
 End If
 If Nz(parse) = "" Then Exit Sub
 
-n = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Environ$("username") & "'"), Date, DateAdd("d", 3, Date))
+n = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Util.getUser & "'"), Date, DateAdd("d", 3, Date))
 
     If n <> 0 Then
         Me.Filter = "ID = " & n
@@ -36,7 +36,7 @@ n = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Enviro
         
         Dim log As DAO.Recordset
 '        Dim shiftID As Integer
-'        shiftID = DLookup("lastshift", "tbluserauth", "username='" & Environ$("username") & "'")
+'        shiftID = DLookup("lastshift", "tbluserauth", "username='" & Util.getUser & "'")
         'shiftID = IIf(     Nz(    DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0))    , True), 0, shiftID)
         
         If logentry And shiftID <> 0 Then
@@ -62,7 +62,7 @@ n = parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username='" & Enviro
                         !entry = "NOTAM " & NOTAM & " CANCELS " & Right(verbiage, 8) & ": " & DLookup("verbiage", "tblnotam", "notam = '" & Right(verbiage, 8) & "'") & ". " & _
                             "NEW NOTAM COUNT: " & DCount("notam", "qNOTAMM") & "M, " & DCount("notam", "qNOTAML") & "L"
                 End Select
-                !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
+                !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Util.getUser & "'")
                 !entry = UCase(!entry)
                 .update
                 .Close
@@ -87,12 +87,12 @@ MsgBox "Example of an ICAO Format:" & vbCrLf & "M0380/20 NOTAMN Q) ZMA/QFAGD/IV/
 End Sub
 
 Private Sub Form_Load()
-    logentry.Visible = (Nz(Me.OpenArgs) <> "")
+    logentry.Visible = (Nz(Me.openargs) <> "")
     
-    Select Case Nz(OpenArgs)
+    Select Case Nz(openargs)
         Case Is <> 0
             logentry.Visible = True
-            shiftID = Me.OpenArgs
+            shiftID = Me.openargs
             If Not Nz(DLookup("closed", "tblshiftmanager", "shiftid = " & shiftID), True) Then
                 bParse_Click
             End If

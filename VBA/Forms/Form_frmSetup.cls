@@ -10,6 +10,11 @@ Attribute VB_Exposed = False
 Option Compare Database
 Option Explicit
 
+Private Type qd
+    qName As String
+    sql As String
+End Type
+
 Private Sub btnAirfield_Click()
 DoCmd.OpenForm "frmAirfieldEquipmentSurfaces"
 End Sub
@@ -20,7 +25,7 @@ Private Sub btnBack_Click()
         Exit Sub
         
     Case 2
-        btnNext.enabled = True
+        btnNext.Enabled = True
     
     End Select
     tabCtl = tabCtl - 1
@@ -45,81 +50,107 @@ Dim fd As Office.FileDialog: Set fd = Application.FileDialog(msoFileDialogFilePi
         End If
     End With
     
-    btnNext.enabled = Util.relinkTables(txtBackend)
+    btnNext.Enabled = Util.relinkTables(txtBackend)
     
 End Sub
 
 Private Sub btnCreateBackend_Click()
-On err GoTo errtrap
-Dim fd As Office.FileDialog: Set fd = Access.FileDialog(msoFileDialogSaveAs)
-Dim fso As New FileSystemObject
-Dim f, fr, fc
-Dim acc As New Access.Application
-Dim saveLocation As String
-
-    With fd 'File dialog for save location
-        .title = "Save New Backend"
-        
-        If .show Then
-            Dim s: For Each s In .SelectedItems
-                saveLocation = s
-            Next
-            fso.DeleteFile saveLocation
-        'Else
-            'Cancelled by user
-        End If
-    End With
+'On err GoTo errtrap
+'Dim fd As Office.FileDialog: Set fd = Access.FileDialog(msoFileDialogSaveAs)
+'Dim fso As New FileSystemObject
+'Dim f, fr, fc
+'Dim acc As New Access.Application
+'Dim saveLocation As String
+'
+'    With fd 'File dialog for save location
+'        .title = "Save New Backend"
+'        .InitialFileName = "ICAO DATA.accdb"
+'        '.Filters.add "Access Database", "*.accdb"
+'        If .show Then
+'            Dim s: For Each s In .SelectedItems
+'                saveLocation = s
+'            Next
+'            'fso.DeleteFile saveLocation
+'        'Else
+'            'Cancelled by user
+'        End If
+'    End With
+'
+'    With acc 'Create the new database file
+'        Dim schema As String
+'
+'        If fso.FileExists(saveLocation) Then fso.DeleteFile (saveLocation)
+'        .DBEngine.CreateDatabase saveLocation, dbLangGeneral
+'
+'        Dim subDB As DAO.Database
+'        .OpenCurrentDatabase (saveLocation)
+'        Set subDB = .CurrentDb
+'
+'        schema = .CurrentProject.Path & "\Schema\"
+'        If Not fso.FolderExists(schema) Then
+'            Set fd = Access.FileDialog(msoFileDialogFolderPicker)
+'            With fd
+'                .title = "Select schema folder"
+'                If .show Then
+'                    Dim S1: For Each S1 In .SelectedItems
+'                        schema = S1
+'                    Next
+'                Else
+'                    'Cancelled by user
+'                End If
+'            End With
+'
+'        Else
+'
+'        End If
+'
+'        Set fr = fso.GetFolder(schema)
+'        Set fc = fr.Files
+'        For Each f In fc 'Lookup each file in schema folder, then import
+'            Select Case Right(f.Name, 4)
+'            Case ".xsd"
+'                log "Creating schema from XML: " & f.Name, "frmSetup.btnCreateBackend"
+'                .ImportXML f, acStructureOnly
+'            Case ".xml"
+'                If Not f.Name = "@DEBUG.xml" Then
+'                    log "Importing table from XML: " & f.Name, "frmSetup.btnCreateBackend"
+'                    .ImportXML f, acStructureAndData
+'                End If
+'            Case ".csv"
+'                log "Importing CSV.........", Me.Name & ".createBackend"
+'                Dim importTable: Set importTable = subDB.CreateTableDef("qryImport")
+'                With importTable
+'                    .Fields.Append "name"
+'                    .Fields.Append "sql"
+'                End With
+'                subDB.TableDefs.refresh
+'
+'                .DoCmd.TransferText , , "qryImport", f, True
+'
+'                Dim RS As DAO.Recordset: Set RS = subDB.OpenRecordset("qryImport")
+'                With RS: Do While Not .EOF
+'                    subDB.CreateQueryDef !Name, !sql
+'                    log !Name, Me.Name & ".createBackend"
+'                    .MoveNext
+'                Loop: End With
+'                subDB.QueryDefs.refresh
+'
+'                subDB.TableDefs.delete ("qryImport")
+'            End Select
+'        Next
+'
+'        .CloseCurrentDatabase
+'        .Quit acQuitSaveAll
+'    End With
     
-    With acc 'Create the new database file
-        Dim schema As String
-        
-        .DBEngine.CreateDatabase saveLocation, dbLangGeneral
-        .OpenCurrentDatabase saveLocation
-        schema = .CurrentProject.Path & "\Schema\"
-        
-        If Not fso.FolderExists(schema) Then
-            Set fd = Access.FileDialog(msoFileDialogFolderPicker)
-            With fd
-                .title = "Select schema folder"
-                If .show Then
-                    Dim S1: For Each S1 In .SelectedItems
-                        schema = S1
-                    Next
-                Else
-                    'Cancelled by user
-                End If
-            End With
-                
-        Else
-            
-        End If
-        
-        Set fr = fso.GetFolder(schema)
-        Set fc = fr.Files
-        For Each f In fc 'Lookup each file in schema folder, then import
-            log "Creating table from XML: " & f.Name, "frmSetup.btnCreateBackend"
-            .ImportXML f, acStructureOnly
-        Next
-        
-        .CloseCurrentDatabase
-    End With
-    log "Done!", "frmSetup.btnCreateBackend"
-    tabCtl = tabCtl + 1
+    If Util.relinkTables(Util.createBackend) Then
+        log "Done!", "frmSetup.btnCreateBackend"
+        tabCtl = tabCtl + 1
+    Else
+        log "Something went wrong.", "frmSetup.btnCreateBackend_Click", "ERR"
+        Exit Sub
+    End If
     
-sexit:
-    'Cleanup
-    Set acc = Nothing
-    Set fd = Nothing
-    Set fso = Nothing
-    Set fr = Nothing
-    Set fc = Nothing
-    Exit Sub
-errtrap:
-    Select Case err
-    Case 76
-        MsgBox Error$ & " (" & err & ")", vbCritical, "Error"
-    End Select
-    Resume sexit
 End Sub
 
 Private Sub btnNext_Click()
@@ -165,7 +196,7 @@ Private Sub TabCtl_Change()
         btnNext.Caption = "Accept"
         
     Case 2 'Backend
-        btnNext.enabled = Nz(txtBackend) <> ""
+        btnNext.Enabled = Nz(txtBackend) <> ""
     
     Case 3 'Global Settings
         frmSetupGlobalSettings.SourceObject = "frmSetupGlobalSettings"

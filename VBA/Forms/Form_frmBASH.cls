@@ -24,7 +24,7 @@ End Sub
 
 Private Sub Form_Load()
     If NewRecord Then
-        shiftID = OpenArgs
+        shiftID = openargs
         obTime = Now
     End If
 End Sub
@@ -107,7 +107,7 @@ Dim msg As String
     End If
     msg = UCase(Trim(msg))
     
-    If OpenArgs = "frmInspectionNew" Then
+    If openargs = "frmInspectionNew" Then
         With Forms!frmInspectionNew
             !Remarks = !Remarks & " " & msg
         End With

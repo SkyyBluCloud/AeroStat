@@ -28,7 +28,7 @@ End Sub
 Private Sub btnCommentNew_Click()
 On Error GoTo errtrap
 Dim comment As String: comment = InputBox("Enter a comment:", "Shift Comment")
-Dim sel As String: sel = shiftID & ", """ & comment & """, """ & getOpInitials(getUSN) & """"
+Dim sel As String: sel = shiftID & ", """ & comment & """, """ & getOpInitials(Util.getUser) & """"
 
     CurrentDb.Execute "INSERT INTO tblShiftPassDown (shiftID, comment, opInitials) SELECT " & sel & ";", dbFailOnError
     lstComments.Requery
@@ -42,8 +42,12 @@ errtrap:
     Beep
 End Sub
 
+Private Sub btnExtApps_Click()
+DoCmd.OpenForm "frmListBoxDialog", , , , , acDialog, "SELECT * FROM tblSettings WHERE Left([key],6) = 'extApp'"
+End Sub
+
 Private Sub btnNewShift_Click()
-'CurrentDb.Execute "UPDATE tblUserAuth SET onShift = False WHERE username = '" & Util.getUSN & "'"
+'CurrentDb.Execute "UPDATE tblUserAuth SET onShift = False WHERE username = '" & util.getuser & "'"
 DoCmd.OpenForm "frmshiftselect", , , , , acDialog
 'DoCmd.Close acForm, "frmShiftBOARD"
 'DoCmd.OpenForm "frmShiftBoard", , , "shiftid = " & sid, acFormEdit, , sid
@@ -70,9 +74,7 @@ lstOsSel = getSelection(lstOnShift)
     
     Dim authLevel As Integer
     For Each a In lstOsSel
-        
-        authLevel = DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(a, 2) & "'")
-        'collOnShiftChanges.add (a & " " & IIf(authLevel = 8, "(TRAINEE)", "(AMOC)") & " OFF SHIFT")
+
         collOnShiftChanges.add (a & " OFF DUTY")
         lstOnShift.RemoveItem (a)
     Next
@@ -141,7 +143,7 @@ Select Case btnStartStop
 Case True
     btnStartStop.Caption = "Close and Sign"
 Case False
-    btnStartStop.enabled = Not Me.closed
+    btnStartStop.Enabled = Not Me.closed
     btnStartStop.Caption = "Start Shift"
 End Select
 End Sub
@@ -171,6 +173,7 @@ Dim inc As Boolean
     Select Case btnStartStop
     
     Case True 'Shift start
+    
         If Nz(superLead) = "" Then
             btnStartStop = False
             btnStartStop_AfterUpdate
@@ -277,12 +280,12 @@ Dim inc As Boolean
                     Dim authLevel As Integer: authLevel = DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(superLead, 2) & "'")
                     
                     'result = superLead & " " & getPos(DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(superLead, 2) & "'"))
-                    result = superLead & " " & IIf(authLevel < 6, "(AMOS)", "(AMSL)")
+                    result = superLead & " " & IIf(authLevel < 6, "(AMSL)", "(AMSL)")
                     
                     For Each c In Split(lstOnShift.RowSource, ";")
                         authLevel = DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(c, 2) & "'")
                         'result = result & ", " & Right(c, 2) & "/" & IIf(authLevel = 8, "TRAINEE", "AMOC")
-                        result = result & ", " & c & " " & IIf(authLevel = 8, "(TRAINEE)", "(AMOC)")
+                        result = result & ", " & c & " " & IIf(authLevel = 8, "(TRAINEE)", "")
                     Next
                     
                     result = result & " ON DUTY"
@@ -310,7 +313,7 @@ Dim inc As Boolean
                         If Not .EOF Then
                             result = UCase(oldSuperLead) & IIf(Nz(oldAmoc) = "", "", ", " & oldAmoc) & " OFF DUTY"
                         Else
-                            result = "__/__ OFF DUTY"
+                            result = ""
                         End If
                     End With
                     
@@ -382,7 +385,7 @@ Dim inc As Boolean
 '                .AddNew
 '                !shiftID = Me.shiftID
 '                !entryTime = LToZ(Me.shiftStart)
-'                !Initials = DLookup("opInitials", "tblUserAuth", "username = '" & Environ$("username") & "'")
+'                !Initials = DLookup("opInitials", "tblUserAuth", "username = '" & Util.getUser & "'")
 '                'amoc field should store full name instead of initials
 '                '!entry = IIf(shiftTitle = "DAYSHIFT", "LOG OPEN. ", "") ...
 '                !entry = "LOG OPEN. " & UCase(superLead) & " " & getPos(DLookup("authlevel", "tbluserauth", "opInitials = '" & Right(superLead, 2) & "'")) & _
@@ -404,7 +407,7 @@ Dim inc As Boolean
             sid = shiftID
             DoCmd.Close acForm, "frmShiftBOARD"
             DoCmd.OpenForm "frmShiftBoard", , , "shiftid = " & sid, acFormEdit, , sid
-            Exit Sub
+            GoTo sexit
         End If
         
         
@@ -412,7 +415,7 @@ Dim inc As Boolean
 
     Case False 'Shift end
 '        If shiftTitle Like "*swingshift*" Then
-'            If MsgBox("Close the aerodrome?", vbQuestion + vbYesNo, "Shift Board") = vbYes Then rwy = "AD CLSD"
+'            If MsgBox("Close the aerodrome?", vbQuestion + vbYesNo, "Shift Board") = vbYes Then rwy = "CLSD"
 '        End If
         If MsgBox("Close and sign for shift?", vbInformation + vbYesNo, "Shift Board") = vbNo Then
             btnStartStop = True
@@ -431,11 +434,12 @@ Dim inc As Boolean
             Exit Sub
         End If
 
-        DoCmd.Close acForm, "frmShiftBoard"
+        
     End Select
     
 sexit:
-    FormSyncUtil.syncForm Me.Name
+    FormSyncUtil.syncForm "frmShiftBoard"
+    DoCmd.Close acForm, "frmShiftBoard"
     Exit Sub
 fallback:
     btnStartStop = Not btnStartStop
@@ -479,6 +483,7 @@ Dim offshift() As String
     
     If NewRecord And IsNull(Me.shiftID) Then
         'Get data from previous shift.
+        shiftID = DMax("shiftID", "tblShiftManager") + 1
         Me.TimerInterval = 0
         
         lstOnShift.RowSource = ""
@@ -506,7 +511,7 @@ Dim offshift() As String
         AF3616.SourceObject = "frm3616"
     End If
     
-    shiftTitle.enabled = NewRecord
+    shiftTitle.Enabled = NewRecord
     tcMain.Visible = Not NewRecord
     btnSave.Visible = Not NewRecord
     
@@ -568,10 +573,10 @@ Private Sub Form_Load()
 On Error Resume Next
     
     If Nz(shiftID, 0) = 0 Then
-        If Nz(Parent.Name) <> "frmShiftDash" And IsNull(Parent.OpenArgs) Then
+        If Nz(Parent.Name) <> "frmShiftDash" And IsNull(Parent.openargs) Then
             'Silent fail
-        ElseIf Parent.Name = "frmShiftDash" And Not IsNull(Parent.OpenArgs) Then
-            shiftID = Parent.OpenArgs
+        ElseIf Parent.Name = "frmShiftDash" And Not IsNull(Parent.openargs) Then
+            shiftID = Parent.openargs
             'Undo
             bClose = True
             Filter = "shiftID = " & shiftID
@@ -629,7 +634,7 @@ Next
 End Sub
 
 Private Sub Form_Timer()
-If Not FormSyncUtil.isFormSynced(Me.Name) Then
+If Not FormSyncUtil.isFormSynced(Me.Name) And tcMain = 0 Then
     Form.Requery
     AF3616.Form.Requery
     'frmInspections.Form.Requery

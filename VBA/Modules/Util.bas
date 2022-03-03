@@ -1,5 +1,212 @@
 Attribute VB_Name = "Util"
+Public Declare Function GetUserName Lib "advapi32.dll" Alias "GetUserNameA" (ByVal lpBuffer As String, nSize As Long) As Long
+Public Declare Function GetComputerName Lib "Kernel32" Alias "GetComputerNameA" (ByVal lpBuffer As String, nSize As Long) As Long
+
+Public Declare Function sndPlaySound Lib "winmm.dll" Alias "sndPlaySoundA" (ByVal lpszSoundName As String, ByVal uFlags As Long) As Long
+Public Const SND_ASYNC = &H1
+Public Const SND_SYNC = &H0
+Public Const SND_LOOP = &H8
+
 Option Compare Database
+
+Public Function createBackend() As Variant
+On err GoTo errtrap
+Dim fd As Office.FileDialog: Set fd = Access.FileDialog(msoFileDialogSaveAs)
+Dim fso As New FileSystemObject
+Dim f, fr, fc
+Dim acc As New Access.Application
+Dim saveLocation As String
+
+    With fd 'File dialog for save location
+        .title = "Save New Backend"
+        .InitialFileName = "ICAO DATA.accdb"
+        '.Filters.add "Access Database", "*.accdb"
+        If .show Then
+            Dim s: For Each s In .SelectedItems
+                saveLocation = s
+            Next
+            'fso.DeleteFile saveLocation
+        Else
+            'Cancelled by user
+            GoTo sexit
+        End If
+    End With
+    
+    With acc 'Create the new database file
+        Dim schema As String
+        
+        If fso.FileExists(saveLocation) Then fso.DeleteFile (saveLocation)
+        .DBEngine.CreateDatabase saveLocation, dbLangGeneral
+        
+        Dim subDB As DAO.Database
+        .OpenCurrentDatabase (saveLocation)
+        Set subDB = .CurrentDb
+        
+        schema = .CurrentProject.Path & "\Schema\"
+        If Not fso.FolderExists(schema) Then
+            Set fd = Access.FileDialog(msoFileDialogFolderPicker)
+            With fd
+                .title = "Select schema folder"
+                If .show Then
+                    Dim S1: For Each S1 In .SelectedItems
+                        schema = S1
+                    Next
+                Else
+                    'Cancelled by user
+                    GoTo sexit
+                End If
+            End With
+                
+        Else
+            
+        End If
+        
+        Set fr = fso.GetFolder(schema)
+        Set fc = fr.Files
+        
+        On Error GoTo runtimeErr
+        For Each f In fc 'Lookup each file in schema folder, then import
+            Select Case Right(f.Name, 4)
+            Case ".xsd"
+                log "Creating schema from XML: " & f.Name, "frmSetup.btnCreateBackend"
+                .ImportXML f, acStructureOnly
+            Case ".xml"
+                If Not f.Name = "@DEBUG.xml" Then
+                    log "Importing table from XML: " & f.Name, "frmSetup.btnCreateBackend"
+                    .ImportXML f, acStructureAndData
+                End If
+            Case ".csv"
+                log "Importing CSV.........", f.Name & ".createBackend"
+                Dim importTable As TableDef: Set importTable = subDB.CreateTableDef("qryImport")
+                With importTable
+                    .Fields.Append .CreateField("name", dbText, 255)
+                    .Fields.Append .CreateField("sql", dbMemo, 65535)
+                    
+                End With
+                subDB.TableDefs.refresh
+                
+                .DoCmd.TransferText , , "qryImport", f, True
+                
+                Dim RS As DAO.Recordset: Set RS = subDB.OpenRecordset("qryImport")
+                With RS: Do While Not .EOF
+                    subDB.CreateQueryDef !Name, !sql
+                    log !Name, f.Name & ".createBackend"
+                    .MoveNext
+                Loop: End With
+                subDB.QueryDefs.refresh
+                
+                subDB.TableDefs.delete ("qryImport")
+            End Select
+        Next
+        On Error GoTo errtrap
+        
+        .CloseCurrentDatabase
+        .Quit acQuitSaveAll
+    End With
+    
+    createBackend = saveLocation
+    
+'    If Util.relinkTables(saveLocation) Then
+'        log "Done!", "frmSetup.btnCreateBackend"
+'        tabCtl = tabCtl + 1
+'    Else
+'        log "Something went wrong.", "frmSetup.btnCreateBackend_Click", "ERR"
+'        GoTo sexit
+'    End If
+
+sexit:
+    'Cleanup
+    Set acc = Nothing
+    Set fd = Nothing
+    Set fso = Nothing
+    Set fr = Nothing
+    Set fc = Nothing
+    Exit Function
+errtrap:
+    Select Case err
+    Case 31550
+        MsgBox Error$ & " (" & err & ")", vbCritical, "Error"
+        Resume Next
+    Case 76
+        MsgBox Error$ & " (" & err & ")", vbCritical, "Error"
+    End Select
+    Resume sexit
+runtimeErr:
+    ErrHandler err, Error$, "Util.createBackend"
+    Resume Next
+End Function
+
+Public Sub printReport(ByVal rName As String, Optional ByVal openargs As Variant)
+On Error GoTo errtrap
+If Not CurrentProject.AllReports(rName).IsLoaded Then
+    DoCmd.OpenReport rName, acViewPreview, , , acHidden, openargs
+End If
+    DoCmd.SelectObject acReport, rName
+    DoEvents
+    
+    DoCmd.RunCommand acCmdPrint
+    
+sexit:
+DoCmd.Close acReport, rName
+Exit Sub
+errtrap:
+Select Case err
+    Case Is <> 2501
+        ErrHandler err, Error$, "Util" & ".printReport"
+End Select
+Resume sexit
+End Sub
+
+Sub qDefs()
+On Error GoTo errtrap
+Dim key As String: key = "getUSN"
+Dim qdf: For Each qdf In CurrentDb.QueryDefs
+    If Left(qdf.Name, 1) = "q" And InStr(1, qdf.sql, key) <> 0 Then
+        log qdf.Name, "qDefs"
+    End If
+Next
+sexit:
+Exit Sub
+errtrap:
+ErrHandler err, Error$, "qDefs"
+End Sub
+
+Public Function getUser() As Variant
+' This procedure uses the Win32API function util.getuserName
+' to return the name of the user currently logged on to
+' this machine. The Declare statement for the API function
+' is located in the Declarations section of this module.
+   
+    Dim strBuffer As String
+    Dim lngSize As Long
+        
+    strBuffer = String(100, " ")
+    lngSize = Len(strBuffer)
+    
+    If GetUserName(strBuffer, lngSize) = 1 Then
+        getUser = Left(strBuffer, lngSize - 1)
+    End If
+    
+End Function
+
+Public Function getWorkstation() As Variant
+    Dim strBuffer As String
+    Dim lngSize As Long
+        
+    strBuffer = String(100, " ")
+    lngSize = Len(strBuffer)
+
+    If GetComputerName(strBuffer, lngSize) = 1 Then
+        getWorkstation = Left(strBuffer, lngSize)
+    End If
+
+End Function
+
+
+Public Function getSettings(key As String) As Variant
+
+getSettings = DLookup("data", "tblSettings", "key = '" & key & "'")
+End Function
 
 Public Sub clearConnections()
 On Error GoTo errtrap
@@ -23,12 +230,14 @@ On Error GoTo errtrap
             If Left(t.Connect, 4) <> "ODBC" And Left(t.Connect, 3) <> "WSS" Then
 '                CurrentDb.Execute "INSERT INTO tblConnectionStrings (table, connect) VALUES (""" & t.Name & """, """ & t.Connect & """)"
                 Dim RS As DAO.Recordset: Set RS = CurrentDb.OpenRecordset("tblConnectionStrings")
-                With RS
-                    .AddNew
-                    !Table = t.Name
-                    !Connect = t.Connect
-                    .update
-                End With
+                If t.Name Like "tbl*" Then
+                    With RS
+                        .AddNew
+                        !Table = t.Name
+                        !Connect = t.Connect
+                        .update
+                    End With
+                End If
             End If
         End If
     Next t
@@ -39,10 +248,6 @@ fexit:
 errtrap:
     ErrHandler err, Error$, "Util.saveConnections"
 End Sub
-
-Public Function createBackend() As Boolean
-
-End Function
 
 Public Sub closeAllForms()
 On Error Resume Next
@@ -71,7 +276,7 @@ On Error Resume Next
 For Each ctl In frm.Controls
     If TypeOf ctl Is TextBox Then
         'If ctl.Value <> Replace(Nz(ctl.DefaultValue), """", "") Then ctl.Value = UCase(ctl.Value)
-        If ctl.Value <> Replace(Nz(ctl.DefaultValue), """", "") Then ctl.Text = UCase(ctl.Text)
+        If ctl.Value <> Replace(Nz(ctl.DefaultValue), """", "") Then ctl.Value = UCase(ctl.Value)
     End If
 Next
 
@@ -186,8 +391,12 @@ Dim db As DAO.Database: Set db = CurrentDb
             Exit Sub
         End If
     End If
+    Dim timeStart As Date: timeStart = Now
+    
     db.Execute "DELETE * FROM " & tbl, dbFailOnError
-    log "Truncated " & tbl & " (" & db.RecordsAffected & " record(s) )", "Util.trunc"
+    DoEvents
+    
+    log "Truncated " & tbl & " in " & DateDiff("s", timeStart, Now) & " seconds. (" & db.RecordsAffected & " record(s) )", "Util.trunc"
     Set db = Nothing
 End Sub
 
@@ -232,7 +441,7 @@ If IsNull(Path) Then Path = CurrentProject.Path & "\DB EXPORT\Schema\"
     Next
     
 sexit:
-    log "Done!", "Util.exportSchema"
+    log "Done! Schema located at " & Path, "Util.exportSchema"
     Exit Sub
 errtrap:
     ErrHandler err, Error$, "Util.exportSchema"
@@ -259,11 +468,22 @@ If IsNull(DOF) Then Exit Function
     
     If ATA = "" Then ATA = Null
     
+    Dim CTD: CTD = DateValue(DOF) + Nz(ATD, ETD)
+    Dim CTA: CTA = DateValue(DOF) + Nz(ATA, Nz(ETA, Nz(ATD, ETD) + ETE))
+    
+    If CTA < CTD Then CTA = DateAdd("d", 1, CTA)
+    
+    cETA = CTA
+    
 '    If Not IsNull(ETA) Then
-'        cETA = DOF + ETA
+'        If DateValue(DOF + ETA) <> DateValue(DOF + Nz(ATD, ETD) + ETE) Then
+'            cETA = DateValue(DOF + Nz(ATD, ETD) + ETE) + ETA
+'        End If
+'
+'    Else
+'        cETA = DateValue(DateValue(DOF) + Nz(ATD, ETD) + ETE) + TimeValue(Nz(ATA, Nz(ETA, Nz(ATD, ETD) + ETE)))
 '    End If
-  cETA = DateValue(DOF) + TimeValue(Nz(ATA, Nz(ETA, Nz(ATD, ETD) + CDate(ETE))))
-
+') + TimeValue(Nz(ATA, Nz(ETA)))
 fexit:
     Exit Function
 errtrap:
@@ -273,7 +493,7 @@ End Function
 
 Function LToZ(ByVal lcl As Date) As Date
     Dim Timezone As Integer: Timezone = DLookup("data", "tblSettings", "key = ""timezone""")
-    If DLookup("data", "tblSettings", "key = ""dst""") And isDST Then Timezone = Timezone + 1
+    If DLookup("data", "tblSettings", "key = ""dst""") And isDST(DateValue(lcl)) Then Timezone = Timezone + 1
     'If lcl = "" Then Exit Function
     
     LToZ = DateAdd("h", -Timezone, lcl)
@@ -283,7 +503,8 @@ End Function
 
 Function ZToL(ByVal zulu As Date) As Date
     Dim Timezone As Integer: Timezone = DLookup("data", "tblSettings", "key = ""timezone""")
-    If DLookup("data", "tblSettings", "key = ""dst""") And isDST Then Timezone = Timezone + 1
+    If DLookup("data", "tblSettings", "key = ""dst""") And isDST(DateValue(zulu)) Then Timezone = Timezone + 1
+    
     'If zulu = "" Then Exit Function
     
     ZToL = DateAdd("h", Timezone, zulu)
@@ -490,17 +711,8 @@ End Select
 End Function
 
 Public Function getOpInitials(ByVal username As String) As Variant
-    'getOpInitials = DLookup("opInitials", "tbluserauth", "username = '" & IIf(username <> "", username, Environ$("username")) & "'")
+    'getOpInitials = DLookup("opInitials", "tbluserauth", "username = '" & IIf(username <> "", username, Util.getUser) & "'")
     getOpInitials = DLookup("opInitials", "tbluserauth", "username = '" & username & "'")
-End Function
-
-Public Function getUSN(Optional ByVal opInitials As String) As String
-    If opInitials <> "" Then
-        getUSN = DLookup("username", "tblUserAuth", "opInitials ='" & opInitials & "'")
-    Else
-        'getUSN = Environ$("username") 'This doesn't work anymore for some reason
-        getUSN = Mid(Environ$("userprofile"), InStr(InStr(1, Environ$("userprofile"), "Users\"), Environ$("userprofile"), "\") + 1)
-    End If
 End Function
 
 Public Function createPath(ByVal Path As String) As Boolean
@@ -572,6 +784,7 @@ End Function
 
 Public Function relinkTables(Optional ByVal backend As Variant = Null, Optional ByRef loading As Variant = Null) As Boolean
 On Error GoTo errtrap
+Const DO_LOG As Boolean = False
 Dim db As DAO.Database
 Dim RS As DAO.Recordset
 Dim tdf As DAO.TableDef
@@ -632,7 +845,7 @@ show:
 '                    GoTo show
 '                End If
             Else
-                log "Cancelled by user.", "Util.relinkTables"
+                If DO_LOG Then log "Cancelled by user.", "Util.relinkTables"
                 GoTo fexit
             End If
         End With
@@ -654,16 +867,15 @@ On Error GoTo errtrap
         For Each tdf In db.TableDefs
             If Len(tdf.Connect) > 1 Then 'Only relink linked tables
                 If tdf.Connect <> ";DATABASE=" & lnkDatabase Then 'only relink tables if they are not linked correctly
-                    If Left(tdf.Connect, 4) <> "ODBC" And Left(tdf.Connect, 3) <> "WSS" Then 'Don't want to relink any ODBC tables
+                    If Left(tdf.Connect, 4) <> "ODBC" And Left(tdf.Connect, 3) <> "WSS" Then 'Don't want to relink any ODBC or SP tables
                         strTable = tdf.Name
                         'db.TableDefs(strTable).Connect = "MS Access;PWD=" & DBPassword & ";DATABASE=" & LnkDataBase
-                        If strTable Like "atl*" Then
-                            db.TableDefs(strTable).Connect = ";DATABASE=" & lnkAtlas
-                        Else
+                        If strTable Like "tbl*" Then
                             db.TableDefs(strTable).Connect = ";DATABASE=" & lnkDatabase
+                            db.TableDefs(strTable).RefreshLink
                         End If
-                        db.TableDefs(strTable).RefreshLink
-                        'log tdf.Name & " refreshed.", "Util.relinkTables"
+                        
+                        If DO_LOG Then log tdf.Name & " refreshed.", "Util.relinkTables"
                     End If
                 End If
 '                If Nz(DLookup("sharepoint", "tblSettings"), False) And Left(tdf.Connect, 3) = "WSS" Then
@@ -689,7 +901,7 @@ On Error GoTo errtrap
     '    End With
     
     DoEvents
-    log "Table links re-synced.", "Util.relinkTables"
+    If DO_LOG Then log "Table links re-synced.", "Util.relinkTables"
     loading!loadingText.Caption = "Tables Updated."
     DoEvents
     db.Execute "UPDATE tblSettings SET data = '" & lnkDatabase & "' WHERE key = 'backend'"
@@ -702,10 +914,10 @@ fexit:
     Exit Function
 errtrap:
     If err = 52 Then Resume Next
-    ErrHandler err, Error$, "Util.relinkTables"
+    If DO_LOG Then ErrHandler err, Error$, "Util.relinkTables"
     Resume Next
 showErr:
-    ErrHandler err, Error$, "Util.relinkTables"
+    If DO_LOG Then ErrHandler err, Error$, "Util.relinkTables"
     MsgBox "Invalid AeroStat Backend format.", vbCritical, "AeroStat"
     GoTo show
 End Function
@@ -730,17 +942,21 @@ Public Sub ErrHandler(err As Integer, msg As String, Optional frm As String)
 End Sub
 
 Public Sub log(msg As String, module As String, Optional priority As String = "INFO")
-
+On Error GoTo errtrap
 Dim db As DAO.Database: Set db = CurrentDb
 Dim sql As String:  sql = "INSERT INTO [@DEBUG] (username,initials,computername,priority,module,details) " & _
                             "SELECT tblUserAuth.username, tblUserAuth.opInitials, tblUserAuth.lastsystem, '" & priority & "', '" & module & "', " & """" & msg & """" & _
-                            " FROM tblUserAuth WHERE tblUserAuth.username = '" & getUSN & "';"
+                            " FROM tblUserAuth WHERE tblUserAuth.username = '" & Util.getUser & "';"
 
     db.Execute sql, dbFailOnError
     Debug.Print Format(Now, "dd-mmm-yy hh:nn:ssL") & "[" & priority & "] " & module & ": " & msg
     
     If CurrentProject.AllForms("CONSOLE").IsLoaded Then Forms!CONSOLE.update
+sexit:
+Exit Sub
+errtrap:
 
+Resume Next
 End Sub
 
 Public Function base7(ByVal num As Integer) As Integer
@@ -796,7 +1012,7 @@ Set rstbl = CurrentDb.OpenRecordset("SELECT * FROM " & tbl & " WHERE ID = " & re
         .AddNew
         !timestamp = t
         !PID = recID
-        !opInitials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
+        !opInitials = DLookup("opinitials", "tbluserauth", "username = '" & Util.getUser & "'")
         With rstbl: Select Case tbl
             Case "Traffic"
                 rsAlert!alerttype = 1
@@ -815,7 +1031,7 @@ Set rstbl = CurrentDb.OpenRecordset("SELECT * FROM " & tbl & " WHERE ID = " & re
         .Bookmark = .LastModified
     End With
     
-'    Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & Environ$("username") & "'")
+'    Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & Util.getUser & "'")
 '    With rs
 '        .edit
 '        !frmtrafficlogalert = rsAlert!ID

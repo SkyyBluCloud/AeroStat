@@ -97,7 +97,7 @@ Private Sub Form_Load()
 '
 'End With
 
-Set rsDUPE = CurrentDb.OpenRecordset(OpenArgs)
+Set rsDUPE = CurrentDb.OpenRecordset(openargs)
 If Not rsDUPE.EOF Then
     With rsDUPE
         .MoveLast
@@ -113,7 +113,7 @@ If Not rsDUPE.EOF Then
         Case Else
             
         End Select
-        listDupe.RowSource = OpenArgs
+        listDupe.RowSource = openargs
         Set qdf = CurrentDb.QueryDefs("qMissionTrackerByID")
     End With
 Else

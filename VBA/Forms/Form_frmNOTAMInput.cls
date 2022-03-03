@@ -13,7 +13,7 @@ Dim shiftID As Integer
 
 Private Sub bParse_Click()
 If Nz(parse) = "" Then Exit Sub
-'n = NOTAMUtil.parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'"))
+'n = NOTAMUtil.parseNOTAM(parse, DLookup("opinitials", "tbluserauth", "username = '" & Util.getUser & "'"))
 n = NOTAMUtil.parseNOTAM(parse)
     If n <> 0 Then
         Undo
@@ -44,14 +44,14 @@ Private Sub Form_BeforeUpdate(cancel As Integer)
 End Sub
 
 Private Sub Form_Load()
-If IsNull(OpenArgs) Then
+If IsNull(openargs) Then
     If shiftID = 0 Then
-        If Not DLookup("closed", "tblshiftmanager", "shiftid = " & DLookup("lastshift", "tbluserauth", "username = '" & Environ$("username") & "'")) Then
-            shiftID = DLookup("lastshift", "tbluserauth", "username = '" & Environ$("username") & "'")
+        If Not DLookup("closed", "tblshiftmanager", "shiftid = " & DLookup("lastshift", "tbluserauth", "username = '" & Util.getUser & "'")) Then
+            shiftID = DLookup("lastshift", "tbluserauth", "username = '" & Util.getUser & "'")
         End If
     End If
 Else
-    shiftID = OpenArgs
+    shiftID = openargs
 End If
 End Sub
 
@@ -88,7 +88,7 @@ If Dirty Then Dirty = False
                 Case "C"
                     !entry = "NOTAM " & Right(verbiage, 8) & " CANCELLED"
             End Select
-            !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
+            !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Util.getUser & "'")
             .update
             .Close
         End With

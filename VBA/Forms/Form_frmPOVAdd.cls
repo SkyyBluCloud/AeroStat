@@ -90,7 +90,7 @@ Dim lName As String
 sending.Caption = "Loading..."
 sending.Visible = True
 DoEvents
-sid = DLookup("ID", "ADPMUsers", "[User name] = '" & Environ$("username") & "'")
+sid = DLookup("ID", "ADPMUsers", "[User name] = '" & Util.getUser & "'")
 lName = Nz(DLookup("[tbluserauth].[rankID] & ' ' & Left([tbluserauth].[firstname],1) & '. ' & [tbluserauth].[lastname] & '/' & [tbluserauth].[opinitials]", "tblUserAuth", "[spID] = " & _
    sid))
     Select Case rStatus

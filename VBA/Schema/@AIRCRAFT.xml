@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<dataroot xmlns:od="urn:schemas-microsoft-com:officedata" generated="2021-10-12T15:08:44">
+<dataroot xmlns:od="urn:schemas-microsoft-com:officedata" generated="2022-03-03T07:30:00">
 <_x0040_AIRCRAFT>
 <ID>1</ID>
 <acTypeID>A10</acTypeID>
@@ -272,7 +272,7 @@
 </_x0040_AIRCRAFT>
 <_x0040_AIRCRAFT>
 <ID>50</ID>
-<acTypeID>F22A</acTypeID>
+<acTypeID>F22</acTypeID>
 <synonym>F22</synonym>
 <gearType>2</gearType>
 </_x0040_AIRCRAFT>

@@ -40,7 +40,7 @@ Private Sub btnSign_Click()
 '
 '    With rs: Do While Not .EOF
 '        .edit
-'        .Fields(LCase(roleStr) & "Sig") = getUSN
+'        .Fields(LCase(roleStr) & "Sig") = util.getuser
 '        .Fields(LCase(roleStr) & "SigTime") = Now
 '        .update
 '        .MoveNext
@@ -60,8 +60,8 @@ Dim qdf As DAO.QueryDef
 Dim qry As String
 Dim reviewStatus As String
 Dim authLevel As Integer
-authLevel = DLookup("authlevel", "tbluserauth", "username = '" & Util.getUSN & "'")
-If Util.getUSN Like "1516576541*" Then authLevel = 0
+authLevel = DLookup("authlevel", "tbluserauth", "username = '" & Util.getUser & "'")
+If Util.getUser Like "1516576541*" Then authLevel = 0
 qry = "SELECT tblShiftManager.shiftID, tblShiftManager.shiftStart AS [Start Time (L)], tblShiftManager.shiftEnd AS [End Time (L)], tblShiftManager.superlead AS AMOS, IIf([amosSig] Is Not Null,'YES','NO') AS [AMOS Signed], IIf([namoSig] Is Not Null,'YES','NO') AS [NAMO Signed], IIf([afmSig] Is Not Null,'YES','NO') AS [AFM Signed], [amosSig] Is Not Null AS Expr1, [namoSig] Is Not Null AS Expr2, [afmSig] Is Not Null AS Expr3 FROM tblShiftManager WHERE ((([amosSig] Is Not Null)=[showForNAMO]) AND (([namoSig] Is Not Null)<>[showForNAMO]) AND (([afmSig] Is Not Null)<>[showForNAMO])) OR ((([namoSig] Is Not Null)=[showForAFM]) AND (([afmSig] Is Not Null)<>[showForAFM])) ORDER BY tblShiftManager.shiftStart DESC;"
 Set qdf = CurrentDb.QueryDefs("qAFMDash")
 
@@ -101,8 +101,8 @@ Set qdf = CurrentDb.QueryDefs("qAFMDash")
 '        Set shiftList.Recordset = CurrentDb.OpenRecordset("SELECT tblShiftManager.shiftID, tblShiftManager.shiftStart AS [Start Time (L)], tblShiftManager.shiftEnd AS [End Time (L)], tblShiftManager.superlead AS AMOS, IIf([amosSig] Is Not Null,'YES','NO') AS [AMOS Signed], IIf([namoSig] Is Not Null,'YES','NO') AS [NAMO Signed], IIf([afmSig] Is Not Null,'YES','NO') AS [AFM Signed], [amosSig] Is Not Null AS Expr1, [namoSig] Is Not Null AS Expr2, [afmSig] Is Not Null AS Expr3 FROM tblShiftManager ORDER BY tblShiftManager.shiftStart DESC;")
     End Select
     
-    btnSign.enabled = reviewStatus <> ""
-    btnComment.enabled = reviewStatus <> ""
+    btnSign.Enabled = reviewStatus <> ""
+    btnComment.Enabled = reviewStatus <> ""
     For Each ctl In Me.Controls
         If ctl.Tag = "review" Then
             ctl.Caption = reviewStatus
@@ -147,6 +147,6 @@ DoCmd.OpenForm "frm3616", , , , , , shiftList.Column(0)
 End Sub
 
 Private Sub togDate_Click()
-cboMonth.enabled = togDate
-cboYear.enabled = togDate
+cboMonth.Enabled = togDate
+cboYear.Enabled = togDate
 End Sub

@@ -10,29 +10,60 @@ Attribute VB_Exposed = False
 Option Compare Database
 Option Explicit
 
-Private reportDate As Variant
+Private varReportDate As Variant
+
+Public Function getReportDate() As Variant
+    getReportDate = Format(reportDate, "dd-mmm-yy")
+End Function
+
+Public Property Let reportDate(d As Variant)
+On Error GoTo errtrap
+Dim newSQL As String, db As DAO.Database: Set db = CurrentDb
+
+    newSQL = Replace(db.QueryDefs("qTraffic").sql, "[varDate]", "#" & d & "#")
+    Me.RecordSource = newSQL
+    varReportDate = d
+pexit:
+    Set db = Nothing
+    Exit Property
+errtrap:
+    ErrHandler err, Error$, Me.Name & ".reportDate(Let)"
+    Resume pexit
+End Property
+
+Public Property Get reportDate() As Variant
+    reportDate = varReportDate
+End Property
+
+Private Property Get isSubform() As Boolean
+On Error Resume Next
+    isSubform = Len(Me.Parent.Name) > 0
+End Property
 
 Private Sub btnPrint_Click()
 On Error GoTo errtrap
-DoCmd.RunCommand acCmdPrint
+    
+    Util.printReport Me.Name, ctlReportDate
+    
 sexit:
 Exit Sub
 errtrap:
-If err <> 2501 Then ErrHandler err, Error$, Me.Name & ".btnPrint_Click"
-End Sub
-
-Private Sub Report_Current()
-ctlReportDate = Format(Nz(reportDate, Date), "dd-mmm-yy")
+Select Case err
+    Case Is <> 2501
+        ErrHandler err, Error$, Me.Name & ".btnPrint_Click"
+End Select
+Resume sexit
 End Sub
 
 Private Sub Report_Open(cancel As Integer)
 On Error GoTo errtrap
 
 CurrentDb.Execute "qTrafficFlightStatusUpdate"
-
+CurrentDb
+If isSubform Then reportDate = Parent.Parent.reportDate
 'reportDate = Null
-reportDate = Parent.Parent.reportDate
-reportDate = Nz(reportDate, Date)
+If IsEmpty(reportDate) Then reportDate = Nz(openargs, Date)
+    
 
 Dim newSQL As String, db As DAO.Database: Set db = CurrentDb
 newSQL = Replace(db.QueryDefs("qTraffic").sql, "[varDate]", "#" & reportDate & "#")

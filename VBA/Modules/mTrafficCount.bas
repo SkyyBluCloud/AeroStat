@@ -111,5 +111,5 @@ setfalse:
 End Function
 
 Function userInitials() As String
-    userInitials = Nz(DLookup("opInitials", "tblUserAuth", "username = '" & Environ$("username") & "'"))
+    userInitials = Nz(DLookup("opInitials", "tblUserAuth", "username = '" & Util.getUser & "'"))
 End Function

@@ -16,7 +16,7 @@ End Sub
 
 Private Sub Form_Open(cancel As Integer)
 log "Starting WWADaemon...", Name & ".Open"
-Form.TimerInterval = Nz(DLookup("data", "tblSettings", "key = ""WWARefreshInterval"""), 0) * 1000
+Form.TimerInterval = Nz(DLookup("data", "tblSettings", "key = ""WWARefreshInterval"""), 5) * 1000
 End Sub
 
 Public Function updateWWAs() As Variant

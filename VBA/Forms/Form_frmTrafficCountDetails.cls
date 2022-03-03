@@ -18,6 +18,6 @@ Private Sub details_GotFocus()
 End Sub
 
 Private Sub Form_Load()
-details.RowSource = OpenArgs
+details.RowSource = openargs
 lblTotal.Caption = details.ListCount - 1 & " Flight Plan" & IIf(details.ListCount - 1 = 1, "", "s") & "."
 End Sub

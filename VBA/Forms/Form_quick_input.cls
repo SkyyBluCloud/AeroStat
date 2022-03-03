@@ -12,6 +12,41 @@ Public FPLType As Integer
 Dim bClose As Boolean
 Dim pprSelect As Boolean
 
+Private Sub btnAISRget_Click()
+On Error GoTo errtrap
+If IsNull(stereoPlan) Then Exit Sub
+sending.Visible = True
+DoEvents
+
+Dim AISR As String: AISR = getAISR(Callsign, Number, acType, ETD, stereoPlan)
+Dim dataObj As New MSForms.DataObject
+With dataObj
+    .SetText AISR
+    .putInClipboard
+    Beep
+End With
+
+sexit:
+    Set dataObj = Nothing
+    sending.Visible = False
+    DoEvents
+    Exit Sub
+errtrap:
+    ErrHandler err, Error$, Me.Name & ".btnAISRget"
+    Resume sexit
+End Sub
+
+Private Sub btnClr_Click()
+    If Status <> "Closed" Then
+        If MsgBox("Reset times?", vbQuestion + vbYesNo, "Flight Plan") = vbYes Then
+            ATD = ""
+            ATA = ""
+            Status = "Pending"
+            Call done_Click
+        End If
+    End If
+End Sub
+
 Private Sub btnReg_Click()
     DoCmd.OpenForm "frmListBoxDialog", , , , , acDialog, "qBaseAcft"
     
@@ -183,7 +218,7 @@ Dim f As Boolean
 Dim sperr As Boolean
 Dim spAccess As Boolean
 
-spAccess = DLookup("spaccess", "tbluserauth", "username = '" & getUSN & "'")
+spAccess = DLookup("spaccess", "tbluserauth", "username = '" & Util.getUser & "'")
 If Not spAccess Then spAccess = getAccessSP
 If spAccess Then
     If Not sp Then sp = (MsgBox("Connect to SharePoint", vbQuestion + vbYesNo, "PPR") = vbYes)
@@ -197,20 +232,20 @@ On Error GoTo save_Click_Err
 bClose = True
 
 sending.Visible = True
-sp.enabled = False
-done.enabled = False
-cancel_flt.enabled = False
-cPPR.enabled = False
+sp.Enabled = False
+done.Enabled = False
+cancel_flt.Enabled = False
+cPPR.Enabled = False
 DoEvents
 
 10  ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     '''''Grammar check''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-    For Each ctl In Controls
-        If TypeOf ctl Is TextBox And ctl.Name <> "Remarks" Then
-            ctl.Value = UCase(ctl.Value)
-        End If
-    Next
+'    For Each ctl In Controls
+'        If TypeOf ctl Is TextBox And ctl.Name <> "Remarks" Then
+'            ctl.Value = UCase(ctl.Value)
+'        End If
+'    Next
         
     If Nz(Tail) < 4 And Me.acType = "C172" Then
         Tail = Callsign
@@ -235,8 +270,9 @@ DoEvents
     Tail = Right(Tail, 7)
     
     If Not depPoint = stn And Not Destination = stn Then
-        MsgBox "If this aircraft is not landing here (full stop), a flight tracker entry is not needed." & vbCrLf & "Otherwise, please enter as two seperate flight plans.", vbInformation, "AeroStat"
-        GoTo done_fb
+'        MsgBox "If this aircraft is not landing here (full stop), a flight tracker entry is not needed." & vbCrLf & "Otherwise, please enter as two seperate flight plans.", vbInformation, "AeroStat"
+'        GoTo done_fb
+        flightRule = "A"
     End If
     
     If IsNull(opFPType) Then
@@ -246,7 +282,7 @@ DoEvents
         opFPType.BorderColor = RGB(166, 166, 166)
     End If
     
-    If IsNumeric(altitude) Then altitude = IIf(altitude <= 140, "A", "F") & altitude
+    If IsNumeric(altitude) Then altitude = IIf(altitude < getSettings("transitionAlt"), "A", "F") & altitude
     
     Me.acType = Replace(Me.acType, "-", "")
     Me.acType = Replace(Me.acType, "/", "")
@@ -274,27 +310,30 @@ DoEvents
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     '''''DOF error check''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+    depDate = ZToL(DOF + TimeValue(Nz(ATD, ETD)))
+    
     If Destination = stn Then
         'arrDate = Format(ZToL(DOF + (Nz(ATD, ETD) + ETE)), "dd-mmm-yy") & " " & Format(ZToL(Nz(ATA, IIf(IsNull(ATD), IIf(Not ETA = 0, ETA, ETD + ETE), ATD + ETE))), "hh:nn")
-        arrDate = ZToL(Util.cETA(DOF, ETD, ETE, ETA, ATD))
+        arrDate = ZToL(Util.cETA(DOF, ETD, ETE, ETA, ATD, ATA))
         arrordep = arrDate
-'        If Not Status = "Closed" And Not DateDiff("d", arrDate, Now) = 0 Then
-'            If MsgBox("Calculated ETA as " & arrDate & " (L). Is this correct?" & vbCrLf & "(DOF: " & DOF & ")", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
-'                GoTo done_fb
-'                Exit Sub
-'            End If
-'        End If
+        If Not Status = "Closed" And Not DateDiff("d", arrDate, Now) = 0 Then
+            If MsgBox("Calculated ETA as " & arrDate & " (L). Is this correct?" & vbCrLf & "(DOF: " & DOF & ")", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
+                GoTo done_fb
+                Exit Sub
+            End If
+        End If
     End If
     
     If depPoint = stn Then
-        depDate = DOF + ZToL(TimeValue(Nz(ATD, ETD)))
+        depDate = ZToL(DOF + TimeValue(Nz(ATD, ETD)))
+        'depDate = ZToL(Util.cETA(DOF, ETD, ETE, ETA, ATD))
         If arrordep = "" Then arrordep = depDate
-'        If Not Status = "Closed" And Not DateDiff("d", depDate, Now) = 0 Then
-'            If MsgBox("Calculated ETD as " & depDate & " (L). Is this correct?" & vbCrLf & "(DOF: " & DOF & ")", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
-'                GoTo done_fb
-'                Exit Sub
-'            End If
-'        End If
+        If Not Status = "Closed" And Not DateDiff("d", depDate, Now) = 0 Then
+            If MsgBox("Calculated ETD as " & depDate & " (L). Is this correct?" & vbCrLf & "(DOF: " & DOF & ")", vbQuestion + vbYesNo, "AeroStat") = vbNo Then
+                GoTo done_fb
+                Exit Sub
+            End If
+        End If
     End If
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -308,11 +347,11 @@ DoEvents
     Else
         Me.FPLType = 1
     End If
-    If OpenArgs = 4 Then Me.FPLType = 4
+    If openargs = 4 Then Me.FPLType = 4
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     '''''On Station Check'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
+    
     Set qdf = db.QueryDefs("qOnStation")
     qdf.Parameters("bos") = transient
     Set RS = qdf.OpenRecordset
@@ -361,7 +400,8 @@ DoEvents
 '            If Not Stationed Then Stationed = (MsgBox("Is this aircraft on station?" & vbCrLf & vbCrLf & "(Inbound record not found)", vbQuestion + vbYesNo, "Flight Plan") = vbYes)
 '        End If
     End If
-
+    
+    doCAPS Me
 
     ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     '''''Update PPR Tracker'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -392,7 +432,11 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                             !arrID = ID
                             spID = !spID
                             PPR = !PPR
-                            '!Tail = Tail
+                            If IsNull(!Tail) Or !Tail <> Nz(Tail) Then
+                                 !Tail = Tail
+                            Else
+                                Tail = !Tail
+                            End If
                             dvCode = !dvCode
                             If Nz(Spot) = "" Then
                                 Spot = !Spot
@@ -408,7 +452,11 @@ PPR: '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
                         ElseIf depPoint = stn Or Nz(PPR) = "" Then
                             
                             PPR = !PPR
-                            '!Tail = Tail
+                            If IsNull(!Tail) Then
+                                 !Tail = Tail
+                            Else
+                                Tail = !Tail
+                            End If
                             spID = !spID
                             dvCode = !dvCode
                             If Nz(Spot) = "" Then
@@ -736,7 +784,7 @@ els:
     Set RS = Nothing
     
 done_exit:
-    If btnAtlas Then atlasID = linkAtlas(NewRecord, Nz(atlasID, 0))
+    If btnAtlas And Nz(getSettings("syncAtlas"), False) Then atlasID = linkAtlas(NewRecord, Nz(atlasID, 0))
     If Dirty Then Dirty = False
     sending.Visible = False
     'syncTrafficLog ID, "Traffic", NewRecord
@@ -756,10 +804,10 @@ done_exit:
 done_fb:
     bClose = False
     sending.Visible = False
-    sp.enabled = True
-    done.enabled = True
-    cancel_flt.enabled = True
-    cPPR.enabled = True
+    sp.Enabled = True
+    done.Enabled = True
+    cancel_flt.Enabled = True
+    cPPR.Enabled = True
     Exit Sub
 
 save_Click_Err:
@@ -769,8 +817,9 @@ save_Click_Err:
     End If
     ErrHandler err, Error$, "quick_input.done_Click"
     sperr = IIf(err = 3011, True, False)
+    sending.Caption = "An error has occured. (" & err & ")"
+    Resume done_fb
     Resume Next
-    GoTo done_fb
 End Sub
 
 Private Sub altitude_LostFocus()

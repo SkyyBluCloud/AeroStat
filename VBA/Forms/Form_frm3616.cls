@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 '   AeroStat: Airfield Management(TM)
 '
 '
-'    Copyright 2017-2020 Shane J. DeSouza(SkyyBluCloud)
+'    Copyright 2017-2022 Shane J. DeSouza(SkyyBluCloud)
 '
 '   Licensed under the Apache License, Version 2.0 (the "License");
 '   you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ Private Sub addEntry_Click()
 On Error GoTo errtrap
 Dim ex As Boolean
 Dim RS As DAO.Recordset
-Dim oi As String: oi = getOpInitials(getUSN)
+Dim oi As String: oi = getOpInitials(Util.getUser)
     For Each ctl In Controls
         If TypeOf ctl Is TextBox Then
             If Nz(ctl.Value) = "" Then
@@ -46,7 +46,7 @@ Dim oi As String: oi = getOpInitials(getUSN)
     
     If Left(Right(entry, 3), 1) = "…" Then entry = Left(entry, Len(entry) - 3)
     If Left(Right(entry, 5), 3) = "..." Then
-        oi = IIf(Right(entry, 2) = getOpInitials(getUSN), getOpInitials(getUSN), IIf(DLookup("authlevel", "tblUserAuth", "username = '" & getUSN & "'") > 3, Right(entry, 2) & "*", Right(entry, 2)))
+        oi = IIf(Right(entry, 2) = getOpInitials(Util.getUser), getOpInitials(Util.getUser), IIf(DLookup("authlevel", "tblUserAuth", "username = '" & Util.getUser & "'") > 3, Right(entry, 2) & "*", Right(entry, 2)))
         entry = Left(entry, Len(entry) - 5)
     End If
     If Right(entry, 1) = "." Then entry = Left(entry, Len(entry) - 1)
@@ -154,7 +154,7 @@ Dim closeSt As Boolean
 '        .AddNew
 '        !shiftID = Me.shiftID
 '        !entryTime = LToZ(DLookup("shiftEnd", "tblShiftManager", "shiftID = " & shiftID))
-'        !Initials = DLookup("opInitials", "tblUserAuth", "username = '" & Environ$("username") & "'")
+'        !Initials = DLookup("opInitials", "tblUserAuth", "username = '" & Util.getUser & "'")
 '
 '        With rss
 '            rs!entry = UCase(!superLead) & _
@@ -203,7 +203,7 @@ Dim RS As DAO.Recordset
         If MsgBox("Delete entry?", vbQuestion + vbYesNo, "Events Log") = vbYes Then
             .edit
             !archive = True
-            !archiveBy = getOpInitials(getUSN)
+            !archiveBy = getOpInitials(Util.getUser)
             .update
             '.delete
         End If
@@ -216,6 +216,8 @@ Dim RS As DAO.Recordset
     logView.Requery
     entryTime = ""
     entry = ""
+    
+    FormSyncUtil.syncForm Me.Name
     
 End Sub
 
@@ -286,19 +288,19 @@ End Sub
 
 Private Sub Form_Load()
 On Error Resume Next
-shiftID = Nz(Me.OpenArgs, 0)
-If Parent.Name = "frmShiftBoard" Then shiftID = Nz(Parent.shiftID, Parent.OpenArgs)
+shiftID = Nz(Me.openargs, 0)
+If Parent.Name = "frmShiftBoard" Then shiftID = Nz(Parent.shiftID, Parent.openargs)
 If shiftID = 0 Then
-    If Parent.Parent.getShiftID = 0 Then
-        shiftID = Nz(OpenArgs, Parent.Parent.getShiftID)
+    If Parent.shiftID = 0 Then
+        shiftID = Nz(openargs, Parent.shiftID)
     Else
-        shiftID = Nz(OpenArgs, Parent.Parent.getShiftID)
+        shiftID = Nz(openargs, Parent.shiftID)
     End If
 End If
 Dim RS As DAO.Recordset
 logView.RowSource = "SELECT ID, entryTime, entry, initials, shiftID FROM tbl3616 WHERE shiftID = " & shiftID & " AND Not archive ORDER BY entryTime;"
 
-al = DLookup("authlevel", "tblUserAuth", "username = '" & Environ$("username") & "'")
+al = DLookup("authlevel", "tblUserAuth", "username = '" & Util.getUser & "'")
 Dim ctl: For Each ctl In Me.Controls
     If ctl.Tag Like "*admin*" Then ctl.Visible = (al < 5)
 Next
@@ -331,7 +333,7 @@ End Sub
 
 'Private Sub Form_Open(cancel As Integer)
 ''Dim isClosed As String
-''shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Environ$("username") & "'")
+''shiftID = DLookup("lastShift", "tblUserAuth", "username = '" & Util.getUser & "'")
 ''isClosed = Nz(DLookup("closed", "tblShiftManager", "shiftID = " & Nz(shiftID, 0)), True)
 ''
 ''    If isClosed Then
@@ -374,7 +376,7 @@ End Sub
 '    If .RecordCount = 1 Then
 '        For Each fld In .Fields
 '
-'            If Right(fld, 2) = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'") Then
+'            If Right(fld, 2) = DLookup("opinitials", "tbluserauth", "username = '" & Util.getUser & "'") Then
 '                inShift = True
 '                Exit For
 '            End If
@@ -414,7 +416,7 @@ End Sub
 '        !entryTime = Format(dateSelect.Column(1), "dd-mmm-yy") & " " & Format(Left(etime, 2) & "." & Right(etime, 2), "hh:nn")
 '        !entryTime = LToZ(!entryTime)
 '        !entry = IIf(Not InStr(1, Right(nEntry, 5), "...") = 0, Left(nEntry, Len(nEntry) - 5), nEntry)
-'        !Initials = DLookup("opinitials", "tblUserAuth", "username = '" & Environ$("username") & "'")
+'        !Initials = DLookup("opinitials", "tblUserAuth", "username = '" & Util.getUser & "'")
 '        .Update
 '        .close
 '    End With

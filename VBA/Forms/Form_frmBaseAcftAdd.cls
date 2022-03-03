@@ -38,9 +38,9 @@ Private Sub Form_Load()
 '            Dim a: a = .Column(2) & ";" & .Column(1)
 '        End With
 '    End If
-    If Not IsNull(OpenArgs) Then
+    If Not IsNull(openargs) Then
         Dim s() As String
-        s = Split(OpenArgs, ";")
+        s = Split(openargs, ";")
         acType = s(0)
         Tail = s(1)
     End If

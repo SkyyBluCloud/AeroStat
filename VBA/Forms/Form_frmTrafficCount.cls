@@ -194,7 +194,7 @@ On Error GoTo poperr
     
     qdfWC.Parameters("date1") = date1
     qdfWC.Parameters("date2") = date2
-    qdfWC.Parameters("isTransient") = isTransient
+    qdfWC.Parameters("isTransient") = Nz(isTransient, True)
     Set lstPassCategory.Recordset = qdfWC.OpenRecordset
     
     qdfIC.Parameters("date1") = date1

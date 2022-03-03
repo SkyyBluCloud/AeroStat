@@ -4,7 +4,7 @@ Option Compare Database
 Public Function isShiftClosed(ByVal shiftID As Integer) As Boolean
 
     If DLookup("closed", "tblShiftManager", "shiftid = " & shiftID) Then
-        If Util.getOpInitials(getUSN) <> DLookup("right(superlead,2)", "tblshiftmanager", "shiftid = " & shiftID) Then
+        If Util.getOpInitials(Util.getUser) <> DLookup("right(superlead,2)", "tblshiftmanager", "shiftid = " & shiftID) Then
             MsgBox "This shift is closed. Only the AMOS can make changes.", vbInformation, "Checklist"
             Exit Function
         End If

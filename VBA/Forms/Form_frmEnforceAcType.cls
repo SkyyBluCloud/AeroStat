@@ -12,7 +12,7 @@ Public response As String
 
 Private Sub btnCancel_Click()
     If MsgBox("Not choosing a type from this list might cause the traffic count to be wrong. Continue?", vbQuestion + vbYesNo, "A/C Type") = vbNo Then Exit Sub
-    response = OpenArgs
+    response = openargs
     Me.Visible = False
 End Sub
 

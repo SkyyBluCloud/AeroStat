@@ -8,6 +8,8 @@ Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Compare Database
+Option Explicit
+
 'OpenArgs = The date to be checked
 Private Sub cancel_Click()
     Forms!new_ppr.frmRestrictionsResponse = True
@@ -19,8 +21,9 @@ DoCmd.Close acForm, "frmrestrictions", acSaveNo
 End Sub
 
 Private Sub Form_Load()
-Dim qdf As DAO.QueryDef
-Set qdf = CurrentDb.QueryDefs("qAnnounce")
-qdf.Parameters("checkDate") = OpenArgs
-Set restrictions.Recordset = qdf.OpenRecordset
+    Dim qdf As DAO.QueryDef
+    Set qdf = CurrentDb.QueryDefs("qAnnounce")
+    qdf.Parameters("cd1") = Split(openargs, ";")(0)
+    qdf.Parameters("cd2") = Split(openargs, ";")(1)
+    Set restrictions.Recordset = qdf.OpenRecordset
 End Sub

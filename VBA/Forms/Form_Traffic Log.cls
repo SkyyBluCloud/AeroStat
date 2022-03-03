@@ -12,7 +12,7 @@ Dim tCount As Integer
 Private isSubFormOpen As Boolean
 
 Private Sub alertClear_Click()
-Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & Environ$("username") & "'")
+Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & Util.getUser & "'")
 With RS
     .edit
     !frmtrafficlogalert = alert.ItemData(alert.ListCount - 1)
@@ -112,7 +112,7 @@ Dim initialized As Boolean
             !DOF = DateSerial(Year(rs2.Fields("arrDate")), Month(rs2.Fields("arrDate")), Day(rs2.Fields("arrDate")))
             !ETA = Format(LToZ(TimeSerial(Hour(rs2.Fields("arrDate")), Minute(rs2.Fields("arrDate")), 0)), "hh:nn")
             !entryDate = Now
-            !AMOPS = Util.getOpInitials(getUSN)
+            !AMOPS = Util.getOpInitials(Util.getUser)
             !Status = "Pending"
             !Destination = DLookup("data", "tblSettings", "key = 'station'")
             .update
@@ -179,7 +179,7 @@ Set db = CurrentDb
             RS!Status = "Cancelled"
             RS!approval = 0
             RS.update
-            If DLookup("spAccess", "tblUserAuth", "username = '" & Environ$("username") & "'") And Not IsNull(RS!spID) Then
+            If DLookup("spAccess", "tblUserAuth", "username = '" & Util.getUser & "'") And Not IsNull(RS!spID) Then
                 Set qdf = db.QueryDefs("qMissionTrackerByID")
                 qdf.Parameters("mtbid") = RS!spID
                 Set rstSP = qdf.OpenRecordset()
@@ -199,7 +199,7 @@ Set db = CurrentDb
                 RS!Status = IIf(RS!approach, "Approach", "Approved")
                 RS!approval = 1
                 RS.update
-                If DLookup("spAccess", "tblUserAuth", "username='" & Environ$("username") & "'") And Not IsNull(RS!spID) Then
+                If DLookup("spAccess", "tblUserAuth", "username='" & Util.getUser & "'") And Not IsNull(RS!spID) Then
                     Set qdf = db.QueryDefs("qMissionTrackerByID")
                     qdf.Parameters("mtbid") = RS!spID
                     Set rstSP = qdf.OpenRecordset()
@@ -279,7 +279,7 @@ Private Sub Form_Load()
 Dim update As DAO.Recordset
 Set update = CurrentDb.OpenRecordset("lclver")
 
-    'If Not DLookup("spAccess", "tblUserAuth", "username='" & Environ$("username") & "'") Then sperr.Visible = True
+    'If Not DLookup("spAccess", "tblUserAuth", "username='" & Util.getUser & "'") Then sperr.Visible = True
     osReload
     pprlogReload
     refreshAlert
@@ -323,14 +323,14 @@ Public Function refreshAlert(Optional All As Boolean)
 '    If All Then
 '        alert.RowSource = "SELECT tblTrafficLogAlert.id, tblTrafficLogAlert.timestamp, tblTrafficLogAlert.msg FROM tblTrafficLogAlert ORDER BY timestamp DESC;"
 '    Else
-'        alert.RowSource = "SELECT tblTrafficLogAlert.id, tblTrafficLogAlert.timestamp, tblTrafficLogAlert.msg FROM tblTrafficLogAlert WHERE (((tblTrafficLogAlert.id)>" & DLookup("frmtrafficlogalert", "tbluserauth", "username = '" & Environ$("username") & "'") & ")) ORDER BY timestamp DESC;"
+'        alert.RowSource = "SELECT tblTrafficLogAlert.id, tblTrafficLogAlert.timestamp, tblTrafficLogAlert.msg FROM tblTrafficLogAlert WHERE (((tblTrafficLogAlert.id)>" & DLookup("frmtrafficlogalert", "tbluserauth", "username = '" & Util.getUser & "'") & ")) ORDER BY timestamp DESC;"
 '    End If
 '    alert.Visible = (ud = "Show") And ((alert.ListCount >= 1) And alert.RowSource <> "")
 '    ud = IIf(Not alert.Visible, "Show", "Hide")
 '
 '    btnUpdate.Caption = Replace(btnUpdate.Caption, IIf(ud = "Hide", "Show", "Hide"), IIf(ud = "Hide", "Hide", "Show"))
     
-'    Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & Environ$("username") & "'")
+'    Set rs = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & Util.getUser & "'")
 '    With rs
 '    If Not IsNull(alert.ItemData(0)) Then
 '        .edit
@@ -343,7 +343,7 @@ End Function
 
 Private Sub btnUpdate_Click()
 Dim RS As DAO.Recordset
-Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & Environ$("username") & "'")
+Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & Util.getUser & "'")
 'Set rs = CurrentDb.OpenRecordset("lclver")
 '    With rs
 '        .edit
@@ -683,7 +683,7 @@ End Sub
 
 Private Sub sperr_Click()
 Dim RS As DAO.Recordset
-Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & Environ$("username") & "'")
+Set RS = CurrentDb.OpenRecordset("SELECT * FROM tblUserAuth WHERE username = '" & Util.getUser & "'")
 RS.edit
 RS!spAccess = getAccessSP
 RS.update

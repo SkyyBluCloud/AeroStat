@@ -18,7 +18,10 @@ End Sub
 Private Sub Report_Open(cancel As Integer)
 On Error GoTo errtrap
 reportDate = Parent.Parent.reportDate
-Me.RecordSource = "SELECT tblNOTAM.* FROM tblNOTAM WHERE datevalue(tblNOTAM.startTime) = #" & Nz(reportDate, Date) & "#;"
+If Not IsDate(reportDate) Then reportDate = Date
+
+'Me.RecordSource = "SELECT tblNOTAM.* FROM tblNOTAM WHERE datevalue(tblNOTAM.startTime) = #" & Nz(reportDate, Date) & "#;"
+    'Me.RecordSource = Replace(Me.RecordSource, "[varDate]", "#" & reportDate & "#")
 
     Dim newSQL As String, db As DAO.Database: Set db = CurrentDb
     newSQL = Replace(db.QueryDefs("qNOTAMReport").sql, "[varDate]", "#" & reportDate & "#")

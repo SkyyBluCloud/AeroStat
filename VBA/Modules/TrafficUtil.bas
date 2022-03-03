@@ -2,13 +2,46 @@ Attribute VB_Name = "TrafficUtil"
 Option Compare Database
 Option Explicit
 
+Public Function getAISR(ByVal Callsign As String, ByVal Number As Integer, ByVal acType As String, ByVal ETD As Date, ByVal Stereo As String) As String
+
+Dim RS As DAO.Recordset: Set RS = CurrentDb.OpenRecordset("tblStereoFlightPlan")
+Dim rs1 As DAO.Recordset
+Dim seq As Integer
+'    With qdf
+'        .Parameters("varDate") = Date
+'        Set rs1 = .OpenRecordset
+'        With rs1
+'            If Not .EOF Then
+''                .MoveLast
+''                .MoveFirst
+'            End If
+'            seq = .RecordCount + 1
+'        End With
+'    End With
+
+    seq = DCount("flightrule", "tblTraffic", "flightrule = 'S' AND nz(DOF,#12/31/9999#) = datevalue(ltoz(now()))") + 1
+    
+    Dim timestamp As String: timestamp = Right(DLookup("data", "tblSettings", "key = 'station'"), 3) & _
+                                            Format(LToZ(Now), "hhnn") & _
+                                            Format(seq, "000")
+
+    With RS
+        .FindFirst "stereotag = '" & Stereo & "'"
+        If Not .EOF Then
+            getAISR = timestamp & " " & UCase("SP " & Callsign & " " & IIf(Number > 1, Number & "/", "") & acType & "/" & !equipment & " " & !speed & Format(ETD, """ P""hhnn") & " " & !stereoTag)
+        End If
+        .Close
+    End With
+    Set RS = Nothing
+
+End Function
+
 Public Function getArrDate(ByVal DOF As Date, ByVal ATD As Date, _
                             ByVal ETD As Date, ByVal ETE As Date, _
                             ByVal cETA As Date) As Date
 Dim tz As Integer: tz = DLookup("data", "tblSettings", "key = ""timezone""")
 
     getArrDate = Format(DateAdd("h", tz, (DOF + (Nz(ATD, ETD) + ETE))), "dd-mmm-yy") & " " & Format(DateAdd("h", tz, cETA), "hh:nn")
-    
 End Function
 
 Public Function atlasPull(ByVal varDate As Variant) As Boolean
@@ -108,6 +141,7 @@ fexit:
     Exit Function
     Resume Next
 errtrap:
+    'log fld.Name & " " & fld.Value, "TrafficUtil.atlasPull", "ERR"
     ErrHandler err, Error$, "TrafficUtil.atlasPull"
 End Function
 

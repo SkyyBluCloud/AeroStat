@@ -4,7 +4,7 @@ Option Explicit
 Const spTable As String = "spPPRLog"
 
 Public Function getSPID(Optional ByVal username As Variant = Null) As Variant
-username = Nz(username, getUSN)
+username = Nz(username, Util.getUser)
 Dim fName As String: fName = DLookup("firstName", "tblUserAuth", "username = '" & username & "'")
 Dim lName As String: lName = DLookup("lastName", "tblUserAuth", "username = '" & username & "'")
 

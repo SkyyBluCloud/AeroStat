@@ -49,14 +49,15 @@ Private Sub arrDate_AfterUpdate()
         Set qdf = CurrentDb.QueryDefs("qAnnounce")
         cd1 = Format(arrDate, "mm/dd/yyyy")
         cd2 = Format(Nz(depDate, arrDate), "mm/dd/yyyy")
-        qdf.Parameters("checkDate") = cd1
+        qdf.Parameters("cd1") = cd1
+        qdf.Parameters("cd2") = cd2
         Set rsRes = qdf.OpenRecordset
         With rsRes
             If Not .EOF Then
     '            .MoveLast
     '            .MoveFirst
                 rcheck = True
-                DoCmd.OpenForm "frmRestrictions", , , , , acDialog, cd1
+                DoCmd.OpenForm "frmRestrictions", , , , , acDialog, cd1 & ";" & cd2
                 If frmRestrictionsResponse Then
                     arrDate.SetFocus
                 End If
@@ -144,6 +145,29 @@ Dim rss As DAO.Recordset
     
 End Sub
 
+Private Sub btnDelete_Click()
+On Error GoTo errtrap
+Dim loopGuard As Integer
+If MsgBox("This will delete the PPR from the database. Continue?", vbInformation + vbYesNo, "PPR") = vbNo Then Exit Sub
+
+    Do While Not IsNull(spID)
+        CurrentDb.Execute "DELETE FROM spPPRLog WHERE ID = " & spID
+        spID = Null
+        
+        loopGuard = loopGuard + 1
+        If loopGuard > 2 Then Exit Do
+    Loop
+    
+    CurrentDb.Execute "DELETE FROM tblPPR WHERE ID = " & ID
+    DoCmd.Close acForm, Me.Name
+    
+sexit:
+    Exit Sub
+errtrap:
+    ErrHandler err, Error$, Me.Name & ".btnDelete_Click"
+    Resume Next
+End Sub
+
 Private Sub btnDeleteComment_Click()
 If Nz(internalComments, 0) = 0 Then Exit Sub
 Dim RS As DAO.Recordset
@@ -152,7 +176,7 @@ With RS
     .edit
     !archive = True
     !archiveTime = Now
-    !archiveBy = Util.getOpInitials(getUSN)
+    !archiveBy = Util.getOpInitials(Util.getUser)
     .update
     .Close
 End With
@@ -172,7 +196,7 @@ If comment = "" Then Exit Sub
         !PPR = formPPR
         !inputTime = Now
         !comment = comment
-        !opInitials = Util.getOpInitials(getUSN)
+        !opInitials = Util.getOpInitials(Util.getUser)
         .update
         .Bookmark = .LastModified
         If NewRecord Then unsavedComment = !ID
@@ -198,35 +222,37 @@ Private Sub depDate_AfterUpdate()
             Set qdf = CurrentDb.QueryDefs("qAnnounce")
             cd1 = Format(arrDate, "mm/dd/yyyy")
             cd2 = Format(Nz(depDate, arrDate), "mm/dd/yyyy")
-            qdf.Parameters("checkDate") = cd1
-            Set rsRes = qdf.OpenRecordset
-        '    With rsRes
-        '        If Not .EOF Then
-        ''            .MoveLast
-        ''            .MoveFirst
-        '            rcheck = True
-        '            DoCmd.OpenForm "frmRestrictions", , , , , acDialog, cd1
-        '            If frmRestrictionsResponse Then
-        '                arrDate.SetFocus
-        '                arrDate = ""
-        '            End If
-        '        End If
-        '    End With
+            qdf.Parameters("cd1") = cd1
+            qdf.Parameters("cd2") = cd2
             
-            If cd1 <> cd2 Then
-                qdf.Parameters("checkDate") = cd2
-                Set rsRes = qdf.OpenRecordset
-                With rsRes
-                    If Not .EOF Then
-            '            .MoveLast
-            '            .MoveFirst
-                        DoCmd.OpenForm "frmRestrictions", , , , , acDialog, cd2
-                        If frmRestrictionsResponse Then
-                            depDate.SetFocus
-                        End If
+            Set rsRes = qdf.OpenRecordset
+            With rsRes
+                If Not .EOF Then
+        '            .MoveLast
+        '            .MoveFirst
+                    rcheck = True
+                    DoCmd.OpenForm "frmRestrictions", , , , , acDialog, cd1 & ";" & cd2
+                    If frmRestrictionsResponse Then
+                        arrDate.SetFocus
+                        arrDate = ""
                     End If
-                End With
-            End If
+                End If
+            End With
+            
+'            If cd1 <> cd2 Then
+'                qdf.Parameters("checkDate") = cd2
+'                Set rsRes = qdf.OpenRecordset
+'                With rsRes
+'                    If Not .EOF Then
+'            '            .MoveLast
+'            '            .MoveFirst
+'                        DoCmd.OpenForm "frmRestrictions", , , , , acDialog, cd2
+'                        If frmRestrictionsResponse Then
+'                            depDate.SetFocus
+'                        End If
+'                    End If
+'                End With
+'            End If
         End If
     End If
 
@@ -267,13 +293,21 @@ Private Sub Form_Load()
 '    End If
 '    '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     'NAMT and above can change the PPR number
-    If DLookup("authlevel", "tbluserauth", "username='" & Environ$("username") & "'") < 5 Or DLookup("opinitials", "tbluserauth", "username='" & Environ$("username") & "'") Like "XD" Then 'And me, LOL
-        formPPR.enabled = True
+    If DLookup("authlevel", "tbluserauth", "username='" & Util.getUser & "'") < 5 Or DLookup("opinitials", "tbluserauth", "username='" & Util.getUser & "'") Like "XD" Then 'And me, LOL
+        formPPR.Enabled = True
         formPPR.Locked = False
     End If
     
+    For Each ctl In Me.Controls
+        If ctl.Tag = "ro" Then ctl.Enabled = Me.AllowEdits
+    Next
+    If Not Me.AllowEdits Then
+        internalComments.Visible = False
+        Remarks.width = (internalComments.Left + internalComments.width) - Remarks.Left
+    End If
+    
     On Error Resume Next
-    If OpenArgs = "frmPPRSelect" Then
+    If openargs = "frmPPRSelect" Then
         With Forms!quick_input
             For Each ctl In .Controls
                 If ctl.Name = "Callsign" Or _
@@ -342,6 +376,10 @@ On Error GoTo save_err
     
     If Dirty Then Dirty = False
     syncTrafficLog ID, "tblPPR", NewRecord
+    
+    FormSyncUtil.syncForm "frmTrafficLog"
+    FormSyncUtil.syncForm "frmFlightMonitor"
+    
     Me.Visible = False
     
 '    If MsgBox("Email request?", vbQuestion + vbYesNo, "PPR") = vbYes Then
@@ -514,16 +552,15 @@ If spEnabled Then spEnabled = btnSP
         Dim RS As DAO.Recordset: Set RS = db.OpenRecordset("spPPRLog")
         With RS
         
-            If NewRecord Then
+            If approval = 1 And (NewRecord Or IsNull(spID)) Then
                 .AddNew
+                 
             Else
-            
                 .FindFirst "[ID] = " & spID
                 If .EOF Then
                     log "Sharepoint ID did not point to record (EOF) " & spID, Me.Name & ".savePPR", "WARN"
                     Exit Do
                 End If
-                
                 .edit
             End If
             
@@ -537,21 +574,28 @@ If spEnabled Then spEnabled = btnSP
             
             .update
             .Bookmark = .LastModified
-            If NewRecord Then spID = !ID
+            
+            If NewRecord Or IsNull(spID) Then spID = !ID
+            If approval <> 1 Then
+                .delete
+                spID = Null
+            End If
+            
             sending.Caption = "Success!"
             DoEvents
-            log "PPR sent to SharePoint! (" & spID & ")", Me.Name & ".savePPR"
+            log "PPR sent to SharePoint! (" & Nz(spID) & ")", Me.Name & ".savePPR"
             RS.Close
             Set RS = Nothing
             Set db = Nothing
-        Exit Do
+        
         End With
+        Exit Do
     Loop
     
     'End SharePoint
     
     bClose = True
-    If Dirty Then Dirty = False
+    
     
     If NewRecord Then MsgBox "Callsign: " & Callsign & vbCrLf & _
             "Type: " & Me.Type & vbCrLf & _
@@ -561,6 +605,8 @@ If spEnabled Then spEnabled = btnSP
             vbCrLf & _
             "The PPR number for this mission is: " & formPPR _
             , vbInformation, "New PPR"
+            
+    If Dirty Then Dirty = False
     savePPR = True
         
 fexit:
@@ -576,7 +622,7 @@ End Function
 'Dim spAccess As Boolean
 'Dim stn As String
 'stn = DLookup("data","tblSettings","key = 'station'")
-'spAccess = DLookup("spaccess", "tbluserauth", "username = '" & getUSN & "'")
+'spAccess = DLookup("spaccess", "tbluserauth", "username = '" & util.getuser & "'")
 'If Not spAccess Then spAccess = getAccessSP
 'If spAccess Then
 '    If Not sp Then sp = (MsgBox("Connect to SharePoint", vbQuestion + vbYesNo, "PPR") = vbYes)

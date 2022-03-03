@@ -60,7 +60,7 @@ Dim rsLog As DAO.Recordset
     If IsNull(DLookup("af483", "tbl483", "af483 = '" & AF483 & "'")) Then
         If MsgBox("Confirm information:" & vbCrLf & vbCrLf & _
             AF483 & vbCrLf & _
-            rank & " " & lastName & ", " & firstName & " " & unit, vbInformation + vbYesNo, "AF483") = vbYes Then
+            rank & " " & lastName & ", " & firstName & " " & Unit, vbInformation + vbYesNo, "AF483") = vbYes Then
             
             Dim appendData() As String
             Dim idx As Integer
@@ -86,7 +86,7 @@ Dim rsLog As DAO.Recordset
             'CurrentDb.Execute "INSERT INTO tbl483 (af483,rankID,lastname,firstname,midinit,unit) " & _
                                 "SELECT '" & cAF483 & "', '" & rankID & "', '" & lastName & "', '" & firstName & "', '" & midInit & "', '" & Unit & "'", dbFailOnError
             CurrentDb.Execute "INSERT INTO tbl483 (af483,rankID,lastname,firstname,midinit,unit,issuedBy,issueDate,lastCheck) " & _
-                                "SELECT '" & join(appendData, "', '") & "', '" & Util.getOpInitials(getUSN) & "', now(), now()", dbFailOnError
+                                "SELECT '" & join(appendData, "', '") & "', '" & Util.getOpInitials(Util.getUser) & "', now(), now()", dbFailOnError
 
             Undo
 
@@ -95,7 +95,7 @@ Dim rsLog As DAO.Recordset
             Me.compliant = copyCompliant
             Me.reason = copyReason
             Me.shiftID = copyShift
-            Me.by = Util.getOpInitials(getUSN)
+            Me.by = Util.getOpInitials(Util.getUser)
             If Dirty Then Dirty = False
         End If
     End If
@@ -123,7 +123,7 @@ Dim rsLog As DAO.Recordset
                     !shiftID = shiftID
                     !entryTime = LToZ(checkDate)
                     !entry = "483 CK LOGGED " & IIf(compliant, "IN COMPLIANCE", "NOT IN COMPLIANCE")
-                    !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
+                    !Initials = DLookup("opinitials", "tbluserauth", "username = '" & Util.getUser & "'")
                     .update
                 End With
             End If
@@ -179,13 +179,13 @@ Private Sub Form_Error(DataErr As Integer, response As Integer)
 End Sub
 
 Private Sub Form_Load()
-    shiftID = OpenArgs
-    by = DLookup("opinitials", "tbluserauth", "username = '" & Environ$("username") & "'")
+    shiftID = openargs
+    by = DLookup("opinitials", "tbluserauth", "username = '" & Util.getUser & "'")
 End Sub
 
 Private Sub Form_Open(cancel As Integer)
-    If IsNull(OpenArgs) Then
-        MsgBox "This form was opened illegally!" & vbCrLf & "OpenArgs: " & Nz(OpenArgs, "NULL!"), vbCritical, "AeroStat"
+    If IsNull(openargs) Then
+        MsgBox "This form was opened illegally!" & vbCrLf & "OpenArgs: " & Nz(openargs, "NULL!"), vbCritical, "AeroStat"
         'Cancel = True
     End If
 End Sub

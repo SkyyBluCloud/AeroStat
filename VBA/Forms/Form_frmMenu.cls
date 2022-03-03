@@ -16,7 +16,7 @@ End Sub
 
 Private Sub btnJoinShift_Click()
 Dim user As String
-user = getUSN
+user = Util.getUser
     If Not Util.isShiftClosed(user) Then
         If MsgBox("Your previous wasn't closed. Continue last shift?", vbQuestion + vbYesNo, "New Shift") = vbNo Then
             DoCmd.OpenForm "frmShiftSelect", , , , , acDialog
@@ -33,7 +33,7 @@ Private Sub btnNewShift_Click()
 
     If Not Util.isShiftClosed(user) Then
         If MsgBox("Your previous shift must be closed before joining a new one. Would you like to review it?", vbQuestion + vbYesNo, "New Shift") = vbNo Then Exit Sub
-        DoCmd.OpenForm "frmShiftDash", , , , , acDialog, DLookup("lastshift", "tbluserauth", "username = '" & Util.getUSN & "'")
+        DoCmd.OpenForm "frmShiftDash", , , , , acDialog, DLookup("lastshift", "tbluserauth", "username = '" & Util.getUser & "'")
         
     Else
         DoCmd.OpenForm "frmShiftDash", , , , acFormAdd, acDialog, Me.Name

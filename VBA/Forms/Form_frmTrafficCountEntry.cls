@@ -54,9 +54,9 @@ End Sub
 
 Private Sub Form_Load()
 'Check if count for OpenArgs(or today) exists
-Dim cd As Variant: cd = DLookup("countDate", "tblAnalyticsData", "countDate = #" & Nz(OpenArgs, Date) & "#")
+Dim cd As Variant: cd = DLookup("countDate", "tblAnalyticsData", "countDate = #" & Nz(openargs, Date) & "#")
 If IsNull(cd) Then
-    newCount Nz(OpenArgs, Date)
+    newCount Nz(openargs, Date)
 Else
     ctlCountDate = cd
 End If

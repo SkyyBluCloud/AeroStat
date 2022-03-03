@@ -30,7 +30,7 @@ si = DLookup("suppInitials", "tblchecklistitems", "itemid = " & itemID)
     
     'Check if shift is closed and signed; if true, restrict to amos
     If DLookup("certifierID", "tblShiftManager", "shiftid = " & shiftID) <> 0 Then
-        If Util.getOpInitials(getUSN) <> DLookup("right(superlead,2)", "tblshiftmanager", "shiftid = " & shiftID) Then
+        If Util.getOpInitials(Util.getUser) <> DLookup("right(superlead,2)", "tblshiftmanager", "shiftid = " & shiftID) Then
             MsgBox "This shift is closed. Only the AMOS can make changes.", vbInformation, "Checklist"
             Exit Sub
         End If
@@ -53,7 +53,7 @@ si = DLookup("suppInitials", "tblchecklistitems", "itemid = " & itemID)
     
     '???
     'exe = "UPDATE tblChecklistItemsData " & _
-                "SET opInitials = '" & Util.getOpInitials(getUSN) & "', " & _
+                "SET opInitials = '" & Util.getOpInitials(util.getuser) & "', " & _
                 "completeDate = format('" & Now & "','dd-mmm-yy hh:nn')" & _
                 IIf(Not IsNull(si), ", suppInitials = '" & suppInitials & "'", "") & _
             " WHERE ID = " & ccdID
@@ -61,7 +61,7 @@ si = DLookup("suppInitials", "tblchecklistitems", "itemid = " & itemID)
     'Profit
     
     'CurrentDb.Execute exe
-    opInitials = Nz(opInitials, Util.getOpInitials(getUSN))
+    opInitials = Nz(opInitials, Util.getOpInitials(Util.getUser))
     completeDate = Format(Now, "dd-mmm-yy hh:nn")
                         
     bClose = True
@@ -181,8 +181,8 @@ End Select
 End Sub
 
 Private Sub Form_Load()
-shiftID = Nz(Me.OpenArgs, 0)
-If Parent.Name = "frmShiftBoard" Then shiftID = Nz(Parent.shiftID, Parent.OpenArgs)
+shiftID = Nz(Me.openargs, 0)
+If Parent.Name = "frmShiftBoard" Then shiftID = Nz(Parent.shiftID, Parent.openargs)
 shiftID = Nz(shiftID, 0)
 populate
 End Sub

@@ -10,6 +10,7 @@ Attribute VB_Exposed = False
 Option Compare Database
 Dim doOrderArrDate, doOrderDepDate, doOrderPPR, obArrDate, obDepDate, obPPR As Boolean
 Public hLight As String 'CSV
+Private reportDate As Variant
 
 Private Sub arrdate_Label_Click()
 doOrderArrDate = True
@@ -51,12 +52,13 @@ On Error GoTo errtrap
                 .MoveNext
             Loop
             If .EOF Then .MoveFirst
-        
-            subj = DLookup("data", "tblSettings", "key = ""pprEmailSubject""")
-            subj = Replace(subj, "[ppr]", !PPR)
-            subj = Replace(subj, "[callsign]", UCase(!Callsign))
-            subj = Replace(subj, "[type]", UCase(!Type))
-            subj = Replace(subj, "[arrdate]", UCase(Format(!arrDate, "d mmm yy")))
+            
+            subj = "PPR Report " & Format(Now, "dd-mmm-yy hh:nn")
+'            subj = DLookup("data", "tblSettings", "key = ""pprEmailSubject""")
+'            subj = Replace(subj, "[ppr]", !PPR)
+'            subj = Replace(subj, "[callsign]", UCase(!Callsign))
+'            subj = Replace(subj, "[type]", UCase(!Type))
+'            subj = Replace(subj, "[arrdate]", UCase(Format(!arrDate, "d mmm yy")))
             
     '        Dim RS As DAO.Recordset: Set RS = CurrentDb.OpenRecordset(Me.RecordSource)
     '        Dim details As String
@@ -68,21 +70,23 @@ On Error GoTo errtrap
     '        End With: Set RS = Nothing
     '        details = details & vbCrLf & vbCrLf
             
-            body = DLookup("data", "tblSettings", "key = ""pprEmailBody""")
-            body = Replace(body, "[ppr]", !PPR)
-            body = Replace(body, "[callsign]", UCase(!Callsign))
-            body = Replace(body, "[type]", UCase(!Type))
-            body = Replace(body, "[arrdate]", UCase(Format(!arrDate, "d mmm yy")))
+'            body = DLookup("data", "tblSettings", "key = ""pprEmailBody""")
+'            body = Replace(body, "[ppr]", !PPR)
+'            body = Replace(body, "[callsign]", UCase(!Callsign))
+'            body = Replace(body, "[type]", UCase(!Type))
+'            body = Replace(body, "[arrdate]", UCase(Format(!arrDate, "d mmm yy")))
             'body = Replace(body, "[details]", UCase(details))
             
             
             'body = body & vbCrLf & vbCrLf & !details
             
+            body = "Please see the attached PPR Report."
+            
             'DoCmd.OpenReport "rPPR", acViewPreview, , "arrDate = #" & arrDate & "#", acHidden, Me.ID
             DoCmd.SendObject acSendReport, "rPPR", acFormatPDF, , , , subj, body, True
-            DoCmd.Close acReport, "rPPR"
+            
         End With
-        Set RS = Nothing
+        
     End If
     
     
@@ -97,15 +101,24 @@ On Error GoTo errtrap
 '    End With
 
 sexit:
+    DoCmd.Close acReport, "rPPR"
+    Set RS = Nothing
     Exit Sub
     Resume Next
 errtrap:
     ErrHandler err, Error$, Me.Name
+    GoTo sexit
 End Sub
 
 Private Sub btnPrint_Click()
-On Error Resume Next
-    DoCmd.RunCommand acCmdPrint
+On Error GoTo errtrap
+
+    Util.printReport Me.Name, reportDate
+sexit:
+Exit Sub
+errtrap:
+If err <> 2501 Then ErrHandler err, Error$, Me.Name & ".btnPrint_Click"
+Resume sexit
 End Sub
 
 Private Sub depdate_Label_Click()
@@ -115,7 +128,7 @@ refreshOrder 2
 End Sub
 
 Public Function doHighlight(ByVal xID As Integer) As Boolean
-'This function is called from the 'Conditional Formatting' module(?) of the report
+'This function is called from the 'Conditional Formatting' section of the report
     For Each h In Split(hLight, ",")
         
         doHighlight = (xID = h)
@@ -179,16 +192,27 @@ End Sub
 
 Private Sub Report_Load()
     Caption = "PPR Report " & Format(Now, "dd-mmm-yy hhnn(L)")
-    If Nz(OpenArgs) <> "" Then
-        Me.RecordSource = OpenArgs
-    Else
-        Dim newSQL As String
-        Dim db As DAO.Database: Set db = CurrentDb
+
+    Dim newSQL As String
+    Dim db As DAO.Database: Set db = CurrentDb
+    
+    With CurrentProject
+        Select Case True
+        Case .AllForms("frmAllPPRs").IsLoaded
+            newSQL = Replace(db.QueryDefs("qPPRReport").sql, "[varDate1]", "#" & Forms("frmAllPPRs")!varDate1 & "#")
+            newSQL = Replace(newSQL, "[varDate2]", "#" & Forms("frmAllPPRs")!varDate2 & "#")
+            
+        Case .AllForms("frmReports").IsLoaded
+            newSQL = Replace(db.QueryDefs("qPPRReport").sql, "[varDate1]", "#" & Forms("frmReports").reportDate & "#")
+            newSQL = Replace(newSQL, "[varDate2]", "#" & Forms("frmReports").reportDate & "#")
         
-        newSQL = Replace(db.QueryDefs("qPPRReport").sql, "[varDate]", "#" & Parent.Parent.reportDate & "#")
-        Me.RecordSource = newSQL
+        End Select
+    End With
+    Me.RecordSource = newSQL
+    
+    
         
-    End If
+
 End Sub
 
 Private Sub btnOverlay_Click()
@@ -214,3 +238,11 @@ Dim found As Boolean
     Report.Requery
     Me.btnEmail.SetFocus
 End Sub
+
+'Private Sub Report_Open(cancel As Integer)
+'If IsDate(openargs) Then
+'    reportDate = openargs
+'Else
+'    reportDate = Parent.Parent.reportDate
+'End If
+'End Sub

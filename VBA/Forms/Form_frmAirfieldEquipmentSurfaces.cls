@@ -13,4 +13,3 @@ Option Explicit
 Private Sub lstSfc_AfterUpdate()
 lstEquipName.Requery
 End Sub
-'8138087817 - pol rdo

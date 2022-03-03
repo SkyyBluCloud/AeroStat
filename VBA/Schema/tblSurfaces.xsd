@@ -48,6 +48,8 @@
 </xsd:simpleType>
 </xsd:element>
 <xsd:element name="metric" minOccurs="0" od:jetType="longinteger" od:sqlSType="int" type="xsd:int"/>
+<xsd:element name="SUSP" minOccurs="1" od:jetType="yesno" od:sqlSType="bit" od:nonNullable="yes" type="xsd:boolean"/>
+<xsd:element name="CLSD" minOccurs="1" od:jetType="yesno" od:sqlSType="bit" od:nonNullable="yes" type="xsd:boolean"/>
 </xsd:sequence>
 </xsd:complexType>
 </xsd:element>

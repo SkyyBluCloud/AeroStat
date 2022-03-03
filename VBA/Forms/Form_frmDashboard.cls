@@ -62,6 +62,7 @@ Private Sub Form_Load()
 End Sub
 
 Private Sub Form_Timer()
+On Error Resume Next
     users.Requery
 End Sub
 

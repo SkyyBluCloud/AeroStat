@@ -108,13 +108,12 @@ On Error GoTo errtrap
 Dim dupeEntry As String
 dupeEntry = Nz(DLookup("entry", "tbl3616", "shiftid = " & shiftID & " AND Not archive AND entrytime = #" & zuluDateTime & "#"))
 
-    If dupeEntry <> "" Then
+    If dupeEntry <> "" And Not Util.getSettings("frm3616AllowDuplicateTimes") Then
         If MsgBox("The following entry will be replaced:" & vbCrLf & Format(zuluDateTime, "hhnn") & ": " & dupeEntry & vbCrLf & vbCrLf & "Replace?", vbQuestion + vbYesNo, "Events Log") = vbNo Then
             While Not IsNull(DLookup("entrytime", "tbl3616", "shiftid = " & shiftID & " AND format(entrytime,'hhnn') = '" & Format(zuluDateTime, "hhnn" & "'")))
                 zuluDateTime = DateAdd("n", 1, zuluDateTime)
             Wend
         Else
-            'This little shit right here.... (26 Nov 20)
             'CurrentDb.Execute "UPDATE tbl3616 SET archive = True, archiveBy = '" & opInitials & "' WHERE entry = " & """" & dupeEntry & """", dbFailOnError
             Dim db As DAO.Database: Set db = CurrentDb
             db.Execute "UPDATE tbl3616 SET archive = True, archiveBy = '" & opInitials & "', archiveTime = Now() WHERE entrytime = #" & zuluDateTime & "# AND entry = " & """" & dupeEntry & """", dbFailOnError
@@ -123,11 +122,11 @@ dupeEntry = Nz(DLookup("entry", "tbl3616", "shiftid = " & shiftID & " AND Not ar
         End If
     End If
     
-    If Nz(opInitials) = "" Then opInitials = Util.getOpInitials(getUSN)
+    If Nz(opInitials) = "" Then opInitials = Util.getOpInitials(Util.getUser)
     entry = UCase(Trim(entry))
 
     CurrentDb.Execute "INSERT INTO tbl3616 (shiftID,originalOpInitials,entryTime,entry,initials) " & _
-                        "SELECT " & shiftID & ", getopinitials(getusn()), '" & Format(zuluDateTime, "dd-mmm-yy") & " " & _
+                        "SELECT " & shiftID & ", getopinitials(getuser()), '" & Format(zuluDateTime, "dd-mmm-yy") & " " & _
                         Left(Format(zuluDateTime, "hhnn"), 2) & "." & Right(Format(zuluDateTime, "hhnn"), 2) & "', " & """" & entry & """" & ", '" & opInitials & "'", dbFailOnError
 
 fexit:
@@ -135,7 +134,9 @@ fexit:
     Exit Function
 errtrap:
     MsgBox "Entry could not be made. (" & err & ")", vbCritical, "Events Log"
-    handleError "newEntry"
+    ErrHandler err, Error$, "Util3616.newEntry"
+    Exit Function
+    Resume Next
 End Function
 
 Public Function signLog(ByVal shiftID As Integer, ByVal role As Integer) As Boolean
@@ -152,8 +153,8 @@ If rsShift.RecordCount = 0 Then Exit Function
     
     Select Case role
     Case 1
-        'If rsShift!certifierID <> 0 Then
-        If IsNull(amosSig) Then
+        If rsShift!certifierID <> 0 Then
+        'If IsNull(amosSig) Then
             MsgBox "This shift was already signed.", vbInformation, "Events Log"
             Exit Function
         End If
@@ -161,14 +162,14 @@ If rsShift.RecordCount = 0 Then Exit Function
         roleStr = "AMOS"
         
     Case 2
-        If rsShift!certifierID = 0 Then
+        If rsShift!certifierID <> 0 Then
             MsgBox "This shift was already signed.", vbInformation, "Events Log"
             Exit Function
         End If
         
         roleStr = "NAMO"
     Case 3
-        If rsShift!certifierID = 0 Then
+        If rsShift!certifierID <> 0 Then
             MsgBox "This shift was already signed.", vbInformation, "Events Log"
             Exit Function
         End If
@@ -191,16 +192,16 @@ If rsShift.RecordCount = 0 Then Exit Function
         Case 1
             .edit
             !closed = True
-            '!certifierID = newCert(getUSN)
-            !amosSig = getUSN
+            !certifierID = newCert(Util.getUser)
+            !amosSig = Util.getUser
             !amosSigTime = Now
             .update
         Case 2 Or 3
-            If Not UtilCertifier.certifyShiftDay(role, getUSN, DateValue(!shiftStart)) Then GoTo errtrap
+            If Not UtilCertifier.certifyShiftDay(role, Util.getUser, DateValue(!shiftStart)) Then GoTo errtrap
             
         End Select
             'Old Sig
-'            CurrentDb.Execute "UPDATE tblShiftManager SET " & LCase(roleStr) & "Sig = '" & getUSN & "', " & _
+'            CurrentDb.Execute "UPDATE tblShiftManager SET " & LCase(roleStr) & "Sig = '" & util.getuser & "', " & _
 '                                                                LCase(roleStr) & "SigTime = Now() " & _
 '                                                                Mid(eLogRecSrc, InStr(1, eLogRecSrc, "WHERE"), Len(eLogRecSrc))
     End With

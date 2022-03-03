@@ -297,7 +297,7 @@ Dim initialized As Boolean
             !DOF = DateSerial(Year(rs2.Fields("arrDate")), Month(rs2.Fields("arrDate")), Day(rs2.Fields("arrDate")))
             !ETA = Format(LToZ(TimeSerial(Hour(rs2.Fields("arrDate")), Minute(rs2.Fields("arrDate")), 0)), "hh:nn")
             !entryDate = Now
-            !AMOPS = Util.getOpInitials(getUSN)
+            !AMOPS = Util.getOpInitials(Util.getUser)
             !Status = "Pending"
             !Destination = DLookup("data", "tblSettings", "key = 'station'")
             .update
@@ -364,7 +364,7 @@ Set db = CurrentDb
             RS!Status = "Cancelled"
             RS!approval = 0
             RS.update
-            If DLookup("spAccess", "tblUserAuth", "username = '" & Environ$("username") & "'") And Not IsNull(RS!spID) Then
+            If DLookup("spAccess", "tblUserAuth", "username = '" & Util.getUser & "'") And Not IsNull(RS!spID) Then
                 Set qdf = db.QueryDefs("qMissionTrackerByID")
                 qdf.Parameters("mtbid") = RS!spID
                 Set rstSP = qdf.OpenRecordset()
@@ -384,7 +384,7 @@ Set db = CurrentDb
                 RS!Status = IIf(RS!approach, "Approach", "Approved")
                 RS!approval = 1
                 RS.update
-                If DLookup("spAccess", "tblUserAuth", "username='" & Environ$("username") & "'") And Not IsNull(RS!spID) Then
+                If DLookup("spAccess", "tblUserAuth", "username='" & Util.getUser & "'") And Not IsNull(RS!spID) Then
                     Set qdf = db.QueryDefs("qMissionTrackerByID")
                     qdf.Parameters("mtbid") = RS!spID
                     Set rstSP = qdf.OpenRecordset()

@@ -174,5 +174,5 @@ replaceGhost
 End Sub
 
 Private Sub Unit_Enter()
-If Nz(unit.Value) = Replace(unit.DefaultValue, """", "") Then unit = ""
+If Nz(Unit.Value) = Replace(Unit.DefaultValue, """", "") Then Unit = ""
 End Sub
